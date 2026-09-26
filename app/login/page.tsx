@@ -1,5 +1,5 @@
 'use client';
-// SRS: CUST-FR-010 CUST-FR-011 CUST-FR-017 CUST-FR-021 (minimal signup data, consent version recorded, no account-existence disclosure, single-use expiring OTP)
+// SRS: CUST-FR-010 CUST-FR-011 CUST-FR-017 CUST-FR-021 CUST-FR-008 (sign up from the account page or mid-checkout via ?next; minimal signup data, consent version recorded, no account-existence disclosure, single-use expiring OTP)
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sb } from '@/lib/sb-browser';
@@ -21,7 +21,7 @@ function Login() {
     });
     setBusy(false);
     if (error) { setErr(/rate|seconds/i.test(error.message) ? 'Please wait a minute before requesting another email.' : 'We couldn’t send the email. Check the address and try again.'); return; }
-    setStep('code'); setInfo(`We sent a sign-in link to ${email}. Open it on this device, or enter the 6-digit code if your email shows one.`);
+    setStep('code'); setInfo(`We sent a sign-in code to ${email}. Enter it below, or tap the link in the email on this device.`);
   }
   async function verify(e: React.FormEvent) {
     e.preventDefault(); setErr(''); setBusy(true);
@@ -33,7 +33,7 @@ function Login() {
   return (
     <div className="wrap section" style={{ maxWidth: 520 }}>
       <h1>Sign in or create an account</h1>
-      <p className="muted">No password needed. We’ll email you a secure link.</p>
+      <p className="muted">No password needed. We’ll email you a one-time code.</p>
       {step === 'email' ? (
         <form className="form panel" onSubmit={send}>
           <label>Email address<input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
@@ -42,15 +42,16 @@ function Login() {
             <input type="checkbox" required checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 'auto', marginTop: 4 }} />
             <span>I agree to ShopEye’s Terms and Privacy Policy.</span></label>
           {err && <div className="msg err" role="alert">{err}</div>}
-          <button className="btn" disabled={busy}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
+          <button className="btn" disabled={busy}>{busy ? 'Sending…' : 'Email me a sign-in code'}</button>
         </form>
       ) : (
         <form className="form panel" onSubmit={verify}>
           <div className="msg info">{info}</div>
-          <label>6-digit code<input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} /></label>
+          <label>Sign-in code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" maxLength={10} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} autoFocus /></label>
           {err && <div className="msg err" role="alert">{err}</div>}
-          <button className="btn" disabled={busy || code.length !== 6}>Sign in</button>
-          <button type="button" className="btn ghost" onClick={() => setStep('email')}>Use a different email</button>
+          <button className="btn" disabled={busy || code.length < 6}>{busy ? 'Checking…' : 'Sign in'}</button>
+          <button type="button" className="btn ghost" disabled={busy} onClick={(e) => send(e as any)}>Send a new code</button>
+          <button type="button" className="linklike" onClick={() => { setStep('email'); setCode(''); setErr(''); }}>Use a different email</button>
         </form>
       )}
     </div>
