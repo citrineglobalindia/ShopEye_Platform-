@@ -1,24 +1,29 @@
 import './globals.css';
-import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Mark } from '@/components/Logo';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { sbServer } from '@/lib/sb-server';
-import { listCategories } from '@/lib/catalog';
+import { listCategories, FIXTURES } from '@/lib/catalog';
 
 export const viewport = { themeColor: '#021A53' };
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.shopeye.in'),
   title: { default: 'ShopEye — shop from independent Indian sellers', template: '%s | ShopEye' },
-  description: 'A marketplace of independent Indian sellers. Secure payments, tracked delivery and easy returns.',
+  description: 'A marketplace of independent Indian sellers. Every listing reviewed, secure payments, tracked delivery and easy returns.',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await sbServer();
   const [{ data: { user } }, cats] = await Promise.all([supabase.auth.getUser(), listCategories()]);
-  let roles: string[] = [];
-  if (user) { const { data } = await supabase.rpc('my_roles'); roles = data ?? []; }
-  const isSeller = roles.some((r) => r === 'vendor_owner' || r === 'vendor_staff');
-  const isAdmin = roles.includes('super_admin') || roles.includes('catalog_moderator');
+  let roles: string[] = []; let cartCount = 0; let name: string | undefined;
+  if (user) {
+    const [{ data: r }, { data: prof }, { data: cart }] = await Promise.all([
+      supabase.rpc('my_roles'), supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+      supabase.from('carts').select('id').eq('customer_id', user.id).eq('status', 'active').maybeSingle()]);
+    roles = r ?? []; name = prof?.full_name;
+    if (cart) { const { data: items } = await supabase.from('cart_items').select('qty').eq('cart_id', cart.id).eq('saved_for_later', false); cartCount = (items ?? []).reduce((s: number, i: any) => s + i.qty, 0); }
+  }
+  if (FIXTURES && !user) cartCount = 2;
   return (
     <html lang="en-IN">
       <head>
@@ -27,33 +32,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <a href="#main" className="small" style={{ position: 'absolute', left: -9999 }}>Skip to content</a>
-        <header className="top">
-          <div className="wrap">
-            <Link href="/" className="brand" aria-label="ShopEye home"><Mark /></Link>
-            <form action="/search" className="search" role="search">
-              <input name="q" placeholder="Search kurtas, sarees, handloom…" aria-label="Search products" />
-              <button type="submit">Search</button>
-            </form>
-            <nav className="nav" aria-label="Account">
-              {isAdmin && <Link href="/admin">Admin</Link>}
-              <Link href="/seller">{isSeller ? 'Seller hub' : 'Sell on ShopEye'}</Link>
-              {user ? <Link href="/account/orders">Orders</Link> : <Link href="/login">Sign in</Link>}
-              <Link href="/cart">Cart</Link>
-            </nav>
-          </div>
-        </header>
-        {cats.length > 0 && (
-          <nav className="cats" aria-label="Categories"><div className="wrap">
-            {cats.filter((c: any) => !c.parent_id).map((c: any) => <Link key={c.id} href={`/c/${c.slug}`}>{c.name}</Link>)}
-          </div></nav>
-        )}
+        <a href="#main" className="skip">Skip to content</a>
+        <Header user={user ? { email: user.email, name } : null} cartCount={cartCount} cats={cats as any}
+          isSeller={roles.some((r) => r === 'vendor_owner' || r === 'vendor_staff')} isAdmin={roles.includes('super_admin') || roles.includes('catalog_moderator')} />
         <main id="main">{children}</main>
-        <footer className="foot"><div className="wrap">
-          <span>© {new Date().getFullYear()} ShopEye</span>
-          <span>Prices include GST. Payments are processed securely by Razorpay.</span>
-          {user && <a href="/auth/signout">Sign out</a>}
-        </div></footer>
+        <Footer signedIn={!!user} />
       </body>
     </html>
   );

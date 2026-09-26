@@ -127,6 +127,11 @@ PASS  Every sign-off kept in history
 PASS  Sign-off history cannot be deleted (rejected: IMMUTABLE_RECORD: DELETE on public.requirement_signoff_log is not permitted; post a revers)
 PASS  Public sees result but not note or tester
 PASS  Public cannot read sign-off history
+== 16. Pincode delivery check without login (CUST-FR-046)
+PASS  Listed pincode: deliverable with COD (CUST-FR-046)
+PASS  Listed pincode without COD reports no COD
+PASS  Malformed pincode rejected
+PASS  Unlisted pincode not serviceable when all-India is off
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)

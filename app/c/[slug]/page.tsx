@@ -1,19 +1,24 @@
 import { notFound } from 'next/navigation';
-import { ProductGrid } from '@/components/ProductGrid';
-import { listCards } from '@/lib/catalog';
-import { sbPublic } from '@/lib/sb-server';
-export const revalidate = 60;
+import Link from 'next/link';
+import { Listing, parseList, type Params } from '@/components/Listing';
+import { Crumbs } from '@/components/Crumbs';
+import { listProducts, getCategory } from '@/lib/catalog';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const { data } = await sbPublic().from('categories').select('name').eq('slug', slug).maybeSingle();
-  return { title: data?.name ?? 'Category' };
+  const c = await getCategory((await params).slug);
+  return c ? { title: c.name, description: `Shop ${c.name} from independent Indian sellers on ShopEye.`, alternates: { canonical: `/c/${c.slug}` } } : { title: 'Category' };
 }
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const { data: cat } = await sbPublic().from('categories').select('id,name').eq('slug', slug).maybeSingle();
+export default async function CategoryPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Params> }) {
+  const { slug } = await params; const sp = await searchParams;
+  const cat = await getCategory(slug);
   if (!cat) notFound();
-  const items = await listCards({ categoryId: cat.id });
-  return (<div className="wrap section"><h1>{cat.name}</h1><p className="muted">{items.length} products</p>
-    <ProductGrid items={items} empty={<p>No products in {cat.name} yet. Check back soon.</p>} /></div>);
+  const result = await listProducts({ categoryId: cat.id, ...parseList(sp) });
+  return (
+    <div className="wrap section stack">
+      <Crumbs items={[['Home', '/'], [cat.name]]} />
+      <h1 style={{ margin: 0 }}>{cat.name}</h1>
+      <Listing base={`/c/${slug}`} params={sp} result={result}
+        empty={<><h3>Nothing matches yet</h3><p className="muted">Try removing a filter, or <Link href="/">browse everything</Link>.</p></>} />
+    </div>
+  );
 }

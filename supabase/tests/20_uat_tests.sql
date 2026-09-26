@@ -329,6 +329,17 @@ do $$ begin
   perform test.ok((select count(*) from public.requirement_signoff_history('CUST-FR-001')) = 0, 'Public cannot read sign-off history');
 end $$;
 
+
+\echo '== 16. Pincode delivery check without login (CUST-FR-046)'
+set role anon;
+do $$ begin
+  perform test.ok((public.check_pincode('560034')->>'serviceable')::boolean and (public.check_pincode('560034')->>'cod')::boolean, 'Listed pincode: deliverable with COD (CUST-FR-046)');
+  perform test.ok((public.check_pincode('110001')->>'cod')::boolean = false, 'Listed pincode without COD reports no COD');
+  perform test.ok((public.check_pincode('12345')->>'valid')::boolean = false, 'Malformed pincode rejected');
+  perform test.ok((public.check_pincode('999999')->>'serviceable')::boolean = false, 'Unlisted pincode not serviceable when all-India is off');
+end $$;
+reset role;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;
