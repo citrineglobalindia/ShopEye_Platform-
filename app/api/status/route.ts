@@ -24,5 +24,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ admin, generatedAt: d.generatedAt, commit: d.commit, row: shape(d.rows[i]), history,
       prev: d.rows[i - 1]?.id ?? null, next: d.rows[i + 1]?.id ?? null }, { headers });
   }
-  return NextResponse.json({ generatedAt: d.generatedAt, commit: d.commit, evidenceAt: d.evidenceAt, total: d.total, admin, rows: d.rows.map(shape) }, { headers });
+  return NextResponse.json({ generatedAt: d.generatedAt, commit: d.commit, evidenceAt: d.evidenceAt, total: d.total, admin, rows: d.rows.map((r: any) => { const { pages, built, notes, groundwork, ...lean } = shape(r); return lean; }) }, { headers });
 }

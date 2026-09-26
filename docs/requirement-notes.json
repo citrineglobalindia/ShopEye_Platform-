@@ -1,0 +1,2159 @@
+{
+ "_note": "Plain-language notes per requirement for /status pages: what was built (or is planned), where to try it, how to check it, and what it is waiting on. Written in our own words; the SRS text itself stays admin-only. go:<target> links resolve at /status/go.",
+ "CUST-FR-001": {
+  "what": "Every page opens with the same header: the ShopEye logo (links home), category menu, search box, account link, wishlist and cart.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Open any page and confirm all six header items are present.",
+   "Click the logo from a deep page and confirm it returns home."
+  ]
+ },
+ "CUST-FR-002": {
+  "what": "The cart icon shows the live item count and updates as soon as you add, change or remove items, without reloading the page.",
+  "try": [
+   {
+    "label": "Any product",
+    "href": "go:product"
+   },
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Note the count, add an item from a product page, and watch the count change without a reload."
+  ]
+ },
+ "CUST-FR-003": {
+  "what": "Signed-out visitors see “Sign in” in the header; signed-in customers see “Hi, <name>” leading to their account menu.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   },
+   {
+    "label": "My account",
+    "href": "/account"
+   }
+  ],
+  "check": [
+   "Check the header signed out, then sign in and check it again."
+  ]
+ },
+ "CUST-FR-004": {
+  "what": "On phones the header collapses into a menu drawer, while search and cart stay visible without opening it.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Narrow the browser to phone width (about 375px).",
+   "Confirm search and cart are on screen and the other links are inside the menu."
+  ]
+ },
+ "CUST-FR-005": {
+  "what": "When a page needs sign-in (checkout, wishlist, account), you are sent to sign-in and then brought back to the same page.",
+  "try": [
+   {
+    "label": "Checkout (signed out)",
+    "href": "/checkout"
+   },
+   {
+    "label": "Sign in",
+    "href": "/login?next=/wishlist"
+   }
+  ],
+  "check": [
+   "Sign out, open /checkout, sign in, and confirm you land back on checkout."
+  ]
+ },
+ "CUST-FR-006": {
+  "what": "Breadcrumbs appear on customer pages so you always know where you are. They are left off home, sign-in and checkout, where they would distract.",
+  "try": [
+   {
+    "label": "A category",
+    "href": "go:category"
+   },
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Open a category and a product and follow the breadcrumb trail back."
+  ]
+ },
+ "CUST-FR-007": {
+  "what": "Each verified email address can only belong to one ShopEye account, so the same email can’t create a second account.",
+  "try": [
+   {
+    "label": "Sign in or sign up",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Sign up with an email that already has an account; you are signed in to the existing account rather than getting a duplicate."
+  ]
+ },
+ "CUST-FR-008": {
+  "what": "You can create an account from the sign-in page or in the middle of an action (checkout, wishlist); either way you return to what you were doing.",
+  "try": [
+   {
+    "label": "Sign up",
+    "href": "/login"
+   },
+   {
+    "label": "Sign up mid-checkout",
+    "href": "/login?next=/checkout"
+   }
+  ],
+  "check": [
+   "Start at /checkout signed out, create an account, and confirm you return to checkout."
+  ]
+ },
+ "CUST-FR-009": {
+  "what": "Items added to the cart before signing up are kept and merged into the new account’s cart.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Signed out, add an item to the cart.",
+   "Sign up or sign in, and confirm the item is still in the cart."
+  ]
+ },
+ "CUST-FR-010": {
+  "what": "Sign-up only asks for an email (and optionally your name). Address, gender and date of birth are never required up front.",
+  "try": [
+   {
+    "label": "Sign up",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Go through sign-up and confirm only email and name are asked."
+  ]
+ },
+ "CUST-FR-011": {
+  "what": "When you sign up, the version of the terms and privacy notice you accepted is saved with the time your email was verified.",
+  "try": [
+   {
+    "label": "Sign up",
+    "href": "/login"
+   },
+   {
+    "label": "Terms",
+    "href": "/terms"
+   },
+   {
+    "label": "Privacy",
+    "href": "/privacy"
+   }
+  ],
+  "check": [
+   "Sign up with a new email; an admin can see the consent version and verification time on the profile record."
+  ]
+ },
+ "CUST-FR-012": {
+  "what": "Sending and checking one-time codes is rate-limited, so repeated requests or guesses are slowed down and then blocked for a while.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Request a code several times quickly; after the limit the page asks you to wait before trying again."
+  ]
+ },
+ "CUST-FR-013": {
+  "what": "Forms show an error next to each field that needs fixing, plus a summary at the top, and screen readers announce both.",
+  "try": [
+   {
+    "label": "Checkout form",
+    "href": "/checkout"
+   },
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Submit the checkout address form with empty fields and check the inline messages and the summary."
+  ]
+ },
+ "CUST-FR-014": {
+  "what": "A welcome email is sent only after your email is verified, and only if your message preferences allow it.",
+  "try": [
+   {
+    "label": "Message preferences",
+    "href": "/account#prefs-h"
+   }
+  ],
+  "check": [
+   "Create a new account and confirm the welcome email arrives after verification, not before."
+  ]
+ },
+ "CUST-FR-015": {
+  "what": "Planned: sign up with a social identity (for example Google) while still accepting ShopEye’s terms and privacy notice before the account is created. Today sign-up is by email code only; the login and consent groundwork it would build on is in place.",
+  "try": [
+   {
+    "label": "Current sign-up",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on which social logins to offer (Google, Apple, others), then provider setup in Supabase Auth and a terms-acceptance step for social sign-ups."
+ },
+ "CUST-FR-016": {
+  "what": "After signing in or up you go straight back to the action you started, such as adding to wishlist or continuing checkout. Only ShopEye addresses are allowed as the return target.",
+  "try": [
+   {
+    "label": "Wishlist via sign-in",
+    "href": "/login?next=/wishlist"
+   }
+  ],
+  "check": [
+   "Signed out, tap the wishlist heart on a product, sign in, and confirm you return to that product."
+  ]
+ },
+ "CUST-FR-017": {
+  "what": "Sign-in messages never reveal whether an email already has an account; every email gets the same “we sent you a code” response.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Enter an unknown email and a known one; the messages look the same."
+  ]
+ },
+ "CUST-FR-018": {
+  "what": "Repeated failed sign-in or code attempts are throttled and temporarily blocked.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Enter wrong codes repeatedly and confirm you are told to wait."
+  ]
+ },
+ "CUST-FR-019": {
+  "what": "You can sign out of the current device from the account menu or footer.",
+  "try": [
+   {
+    "label": "My account",
+    "href": "/account"
+   }
+  ],
+  "check": [
+   "Click Sign out and confirm the header shows “Sign in” again."
+  ]
+ },
+ "CUST-FR-020": {
+  "what": "The account page lets you sign out of all your other devices and browsers in one click.",
+  "try": [
+   {
+    "label": "Privacy and security",
+    "href": "/account#sec-h"
+   }
+  ],
+  "check": [
+   "Sign in on two browsers, press “Sign out other devices” on one, and confirm the other is signed out."
+  ]
+ },
+ "CUST-FR-021": {
+  "what": "One-time codes and magic links work once and expire after an hour.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Use a code, then try the same code again; it is rejected."
+  ]
+ },
+ "CUST-FR-022": {
+  "what": "Planned: an email alert whenever your sign-in method or password changes. ShopEye uses email codes rather than passwords, so this applies once passwords or social login are added.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with the social-login / password decision; the email outbox that would send it already exists."
+ },
+ "CUST-FR-023": {
+  "what": "Planned: a full audit that passwords and sign-in tokens never appear in URLs, logs or error messages. Sign-in codes already travel only in the request body; the audit and log redaction are part of pre-launch hardening.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch security hardening pass."
+ },
+ "CUST-FR-024": {
+  "what": "If you started checkout before signing in, your cart and checkout progress are still there afterwards.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Signed out, add items and open checkout, sign in, and confirm the cart and checkout page are unchanged."
+  ]
+ },
+ "CUST-FR-025": {
+  "what": "The home page adapts to phone, tablet and desktop and loads images lazily so the page appears quickly.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Resize the window from phone to desktop width and scroll; images load as they come into view."
+  ]
+ },
+ "CUST-FR-026": {
+  "what": "Promotional banners have start and end dates; the database only returns banners that are live today, so expired offers never show.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "An admin sets a banner end date in the past and confirms it disappears from the home page."
+  ]
+ },
+ "CUST-FR-027": {
+  "what": "Product cards everywhere show the current price and stock; sold-out products are labelled instead of looking buyable.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   },
+   {
+    "label": "Search",
+    "href": "/search"
+   }
+  ],
+  "check": [
+   "Compare a card’s price with its product page; they match."
+  ]
+ },
+ "CUST-FR-028": {
+  "what": "The home page works fully by keyboard, and every informative image has a text description.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Press Tab through the page and confirm every link and button is reachable with a visible focus ring."
+  ]
+ },
+ "CUST-FR-029": {
+  "what": "Links to products and categories always open the right page, and a removed or unknown product shows a friendly “not found” page instead of an error.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "A missing product",
+    "href": "go:missing-product"
+   }
+  ],
+  "check": [
+   "Open the missing-product link and confirm a clean not-found page with a way back."
+  ]
+ },
+ "CUST-FR-030": {
+  "what": "Search results show what you searched for, how many results were found, the active filters, a sort menu and the product grid. Your search text is displayed safely.",
+  "try": [
+   {
+    "label": "Search “saree”",
+    "href": "/search?q=saree"
+   }
+  ],
+  "check": [
+   "Search for a word and check the heading, count, filters, sort and grid."
+  ]
+ },
+ "CUST-FR-031": {
+  "what": "Results are split into pages with their own URLs, so the browser Back button and shared links return to the same page of results.",
+  "try": [
+   {
+    "label": "Search page 2",
+    "href": "/search?page=2"
+   }
+  ],
+  "check": [
+   "Go to page 2, open a product, press Back, and confirm you are still on page 2."
+  ]
+ },
+ "CUST-FR-032": {
+  "what": "Out-of-stock items can still appear in results but are labelled and always listed after items that are in stock.",
+  "try": [
+   {
+    "label": "Search",
+    "href": "/search"
+   }
+  ],
+  "check": [
+   "Search a term that matches an out-of-stock product and confirm it appears after in-stock ones, labelled “Out of stock”."
+  ]
+ },
+ "CUST-FR-033": {
+  "what": "Whatever you type into search is shown as plain text, so code typed into the box can never run on the page.",
+  "try": [
+   {
+    "label": "Search with HTML",
+    "href": "/search?q=%3Cb%3Etest%3C%2Fb%3E"
+   }
+  ],
+  "check": [
+   "Open the link; the text appears literally, not in bold."
+  ]
+ },
+ "CUST-FR-034": {
+  "what": "Planned: record search terms and clicks for analytics, anonymised and only with the visitor’s consent.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+ },
+ "CUST-FR-035": {
+  "what": "Filters and sort are stored in the page URL, so a filtered listing can be bookmarked or shared and opens exactly the same.",
+  "try": [
+   {
+    "label": "A category",
+    "href": "go:category"
+   },
+   {
+    "label": "Filtered search",
+    "href": "/search?sort=price_asc"
+   }
+  ],
+  "check": [
+   "Apply filters, copy the URL into a new tab, and confirm the same filters are applied."
+  ]
+ },
+ "CUST-FR-036": {
+  "what": "On phones the filters open in their own drawer with Apply and Clear buttons.",
+  "try": [
+   {
+    "label": "A category",
+    "href": "go:category"
+   }
+  ],
+  "check": [
+   "At phone width, open Filters, change a value and press Apply; then use Clear."
+  ]
+ },
+ "CUST-FR-037": {
+  "what": "Each active filter appears as a chip above the results and can be removed on its own with its ×.",
+  "try": [
+   {
+    "label": "Search sorted by price",
+    "href": "/search?min=100&sort=price_asc"
+   }
+  ],
+  "check": [
+   "Apply two filters and remove one chip; the other stays applied."
+  ]
+ },
+ "CUST-FR-038": {
+  "what": "Changing sort or filters updates the results in place, without a full reload and without jumping you back to the top.",
+  "try": [
+   {
+    "label": "A category",
+    "href": "go:category"
+   }
+  ],
+  "check": [
+   "Scroll down, change the sort, and confirm the page stays where you were."
+  ]
+ },
+ "CUST-FR-039": {
+  "what": "Unavailable products and variants are clearly labelled in listings.",
+  "try": [
+   {
+    "label": "Search",
+    "href": "/search"
+   }
+  ],
+  "check": [
+   "Look for the “Out of stock” label on an unavailable product card."
+  ]
+ },
+ "CUST-FR-040": {
+  "what": "You can add products to a comparison and view them side by side.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "Compare",
+    "href": "/compare"
+   }
+  ],
+  "check": [
+   "Add two products to compare from their pages, then open Compare."
+  ]
+ },
+ "CUST-FR-041": {
+  "what": "Add to Cart stays disabled until every required option (such as size or colour) is chosen.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "On a product with variants, try Add to Cart before choosing; you are asked to pick an option."
+  ]
+ },
+ "CUST-FR-042": {
+  "what": "Buy Now adds the selected variant and takes you straight to checkout, keeping whatever was already in your cart.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Press Buy Now and confirm checkout opens with this item plus your existing cart."
+  ]
+ },
+ "CUST-FR-043": {
+  "what": "The quantity picker can’t go above the stock available or the per-order limit.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Try to raise the quantity past the stock shown; it stops at the limit."
+  ]
+ },
+ "CUST-FR-044": {
+  "what": "The price you see is recalculated on the server when you place the order, so a stale page can never set the price you pay.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Covered by automated tests; the server recomputes every total at order time."
+  ]
+ },
+ "CUST-FR-045": {
+  "what": "Choosing a different variant updates the photos, price, stock and delivery details on the product page.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Switch between variants and watch price, stock and photos change."
+  ]
+ },
+ "CUST-FR-046": {
+  "what": "Anyone can check delivery to a pincode on the product page without signing in.",
+  "try": [
+   {
+    "label": "Pincode check on a product",
+    "href": "go:product#pin"
+   }
+  ],
+  "check": [
+   "Signed out, enter a pincode and see whether and when it can be delivered."
+  ]
+ },
+ "CUST-FR-047": {
+  "what": "If the selected item is unavailable, buying is disabled and the page offers similar products and a back-in-stock alert.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Open a sold-out product and confirm the buy buttons are disabled with alternatives and an alert option."
+  ]
+ },
+ "CUST-FR-048": {
+  "what": "The product page shows whether the item can be returned, and for how long, before you buy.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "Returns policy",
+    "href": "/returns-policy"
+   }
+  ],
+  "check": [
+   "Look for the return window near the buy buttons."
+  ]
+ },
+ "CUST-FR-049": {
+  "what": "Ratings are only shown when real reviews exist; products without reviews say “No reviews yet” rather than showing a made-up score.",
+  "try": [
+   {
+    "label": "Reviews on a product",
+    "href": "go:product#rev-h"
+   }
+  ],
+  "check": [
+   "Open a product with no reviews and confirm there is no star rating."
+  ]
+ },
+ "CUST-FR-050": {
+  "what": "Product pages include search-engine product data and a canonical URL.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "View the page source and find the JSON-LD product block and the canonical link."
+  ]
+ },
+ "CUST-FR-051": {
+  "what": "Recently viewed products appear on your account page and can be cleared with one click.",
+  "try": [
+   {
+    "label": "Recently viewed",
+    "href": "/account#rv-h"
+   }
+  ],
+  "check": [
+   "View a few products, open your account and press Clear under Recently viewed."
+  ]
+ },
+ "CUST-FR-052": {
+  "what": "A back-in-stock alert is tied to the exact variant you chose and says it will arrive by email.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "Your alerts",
+    "href": "/account#al-h"
+   }
+  ],
+  "check": [
+   "On an out-of-stock variant, turn on the alert; your account lists it with the variant name."
+  ]
+ },
+ "CUST-FR-053": {
+  "what": "You can ask for a price-drop alert on a product and turn it off at any time from the product or your account.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "Your alerts",
+    "href": "/account#al-h"
+   }
+  ],
+  "check": [
+   "Turn on a price-drop alert, then turn it off from the account page."
+  ]
+ },
+ "CUST-FR-054": {
+  "what": "Moving an item from the wishlist to the cart re-checks today’s stock, variant and price.",
+  "try": [
+   {
+    "label": "Wishlist",
+    "href": "/wishlist"
+   }
+  ],
+  "check": [
+   "Move a wishlist item to the cart; out-of-stock or changed items are flagged instead of added silently."
+  ]
+ },
+ "CUST-FR-055": {
+  "what": "“Save for later” items sit in their own list below the cart and are not counted in the total.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Save an item for later and confirm the total drops and the item appears under “Saved for later”."
+  ]
+ },
+ "CUST-FR-056": {
+  "what": "Signed-in customers’ carts are stored on the account, so they follow you across devices and sessions.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Add an item on one device and open the cart on another while signed in."
+  ]
+ },
+ "CUST-FR-057": {
+  "what": "Guests’ carts are kept in the browser and survive closing the tab.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Signed out, add an item, close the browser, reopen /cart."
+  ]
+ },
+ "CUST-FR-058": {
+  "what": "When you sign in, each guest-cart item is added to your account cart through the same stock-checked add-to-cart; anything that can no longer be added is skipped.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Have items in both a guest cart and your account cart, then sign in and check the merged result."
+  ]
+ },
+ "CUST-FR-059": {
+  "what": "Cart totals are recalculated whenever quantity, items or prices change.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Change a quantity and watch the total update."
+  ]
+ },
+ "CUST-FR-060": {
+  "what": "Order and payment amounts are always calculated on the server; totals sent from the browser are ignored.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (subtotal recomputed server-side; customer cannot edit totals)."
+  ]
+ },
+ "CUST-FR-061": {
+  "what": "Checkout is blocked while the cart has unavailable, undeliverable or over-limit items, and each one shows what to do.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Put an out-of-stock item in the cart; “Continue to checkout” is blocked with a message on that line."
+  ]
+ },
+ "CUST-FR-062": {
+  "what": "Each cart item can be removed on its own, including unavailable ones.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Press Remove on one line and confirm only that item goes."
+  ]
+ },
+ "CUST-FR-063": {
+  "what": "Planned: a “spend ₹X more for free shipping” bar, shown only when it is accurate for the current cart. Today each package already shows “This package ships free” when it qualifies.",
+  "try": [
+   {
+    "label": "Cart",
+    "href": "/cart"
+   }
+  ],
+  "check": [
+   "Partly visible today: the per-package free shipping message."
+  ],
+  "next": "Needs the platform-wide shipping rules to be finalised so the threshold is always correct."
+ },
+ "CUST-FR-064": {
+  "what": "You can add, edit, delete and choose saved addresses in your account and at checkout.",
+  "try": [
+   {
+    "label": "Addresses",
+    "href": "/account"
+   },
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Add an address, edit it, make it default, then delete it."
+  ]
+ },
+ "CUST-FR-065": {
+  "what": "Deleting an address archives it, so past orders still show the address they were sent to.",
+  "try": [
+   {
+    "label": "Addresses",
+    "href": "/account"
+   },
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Delete an address used on an order, then open the order; the original address is still shown."
+  ]
+ },
+ "CUST-FR-066": {
+  "what": "Changing the delivery address at checkout re-checks the pincode and delivery estimate.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "At checkout switch to an address with a different pincode and watch the delivery check refresh."
+  ]
+ },
+ "CUST-FR-067": {
+  "what": "Editing a saved address never changes orders already placed; each order keeps its own copy.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Edit an address used on an old order and confirm the order still shows the old details."
+  ]
+ },
+ "CUST-FR-068": {
+  "what": "Planned: if a map pin is added, it will only fill in the address after you confirm, never overwrite it silently. There is no map pin today.",
+  "check": [
+   "Not applicable until a map pin is added."
+  ],
+  "next": "Only needed if you decide to add map-based address entry."
+ },
+ "CUST-FR-069": {
+  "what": "Double-clicking, refreshing or retrying “Place order” can never create two orders.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (replay did not reserve stock twice; race test with 10 simultaneous checkouts)."
+  ]
+ },
+ "CUST-FR-070": {
+  "what": "Just before the order is created, the server re-checks price, stock, limits, delivery and the final amount.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; also try changing a price in the admin console while checkout is open."
+  ]
+ },
+ "CUST-FR-071": {
+  "what": "If a price changes while you are checking out, the new amount is shown and you are asked to confirm before paying.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Change a product price in the admin console while checkout is open, then place the order; you are asked to review."
+  ]
+ },
+ "CUST-FR-072": {
+  "what": "Checkout tells you when your order ships as several packages from different sellers.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Check out items from two sellers and read “Your order ships as N packages”."
+  ]
+ },
+ "CUST-FR-073": {
+  "what": "Going back from checkout keeps what you entered, and prices and stock are checked again when you return.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Fill in the form, go back to the cart, then return; your details are still there."
+  ]
+ },
+ "CUST-FR-074": {
+  "what": "Card and UPI details are entered in Razorpay’s own secure window and never reach ShopEye’s servers.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Available once your Razorpay keys are added in Vercel."
+  ]
+ },
+ "CUST-FR-075": {
+  "what": "After paying you always see a clear result (paid, failed or still confirming), even if Razorpay’s confirmation arrives late.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Available once Razorpay keys are set: pay and watch the order page move from pending to confirmed."
+  ]
+ },
+ "CUST-FR-076": {
+  "what": "Planned: gift card balances checked on the server before use.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on whether to offer gift cards."
+ },
+ "CUST-FR-077": {
+  "what": "Planned: using part of a gift card keeps the remaining balance for later.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on whether to offer gift cards."
+ },
+ "CUST-FR-078": {
+  "what": "Planned: store credit shows its expiry date.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on store credit rules."
+ },
+ "CUST-FR-079": {
+  "what": "Planned: loyalty points show how many you earn and how they convert, with any caps, before you commit.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on a loyalty programme."
+ },
+ "CUST-FR-080": {
+  "what": "Planned: refunds show where the money goes (original payment method, credit) and how much, following fixed rules per payment type.",
+  "try": [
+   {
+    "label": "An order’s refunds",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Refund amounts already show on the order page; destination rules come later."
+  ],
+  "next": "Needs the Finance refund-destination rules (and gift card / credit decisions)."
+ },
+ "CUST-FR-081": {
+  "what": "Discounts can never take an order below zero; the database rejects any negative payable total.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Enforced by a database rule; an admin can try creating an over-sized discount and see it rejected."
+  ]
+ },
+ "CUST-FR-082": {
+  "what": "An order counts as paid only when Razorpay’s signed confirmation is verified on the server; returning to the site alone is not proof.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; live test needs Razorpay keys."
+  ]
+ },
+ "CUST-FR-083": {
+  "what": "If a payment is uncertain, ShopEye checks with Razorpay first before letting you pay again, so you are not charged twice.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Needs Razorpay keys to try live."
+  ]
+ },
+ "CUST-FR-084": {
+  "what": "You can retry payment on the same order several times; only the successful attempt is kept.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Use “Pay now” on an unpaid order after a failed attempt (needs Razorpay keys)."
+  ]
+ },
+ "CUST-FR-085": {
+  "what": "If payment succeeds but confirmation is delayed, the order shows as pending and then confirms, without a second charge.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Needs Razorpay keys to try live."
+  ]
+ },
+ "CUST-FR-086": {
+  "what": "Unpaid orders show whether your items are still held and until what time.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open an unpaid order and read “Your items are held for you until …”."
+  ]
+ },
+ "CUST-FR-087": {
+  "what": "ShopEye never stores card numbers; Razorpay handles them.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Code review: no card fields exist on ShopEye pages."
+  ]
+ },
+ "CUST-FR-088": {
+  "what": "Emails and messages never include card numbers, CVV, UPI PIN or login secrets.",
+  "check": [
+   "Proven by automated tests on the email templates."
+  ]
+ },
+ "CUST-FR-089": {
+  "what": "An order page opens only for the customer who placed it; changing the order ID in the URL shows nothing.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Copy an order URL and open it signed in as a different customer: you get not-found."
+  ]
+ },
+ "CUST-FR-090": {
+  "what": "Refreshing the order success page never creates another order.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Place an order, refresh the confirmation several times, and confirm there is still one order."
+  ]
+ },
+ "CUST-FR-091": {
+  "what": "An order confirmation email is sent once the order is confirmed.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Place an order and check your inbox for the confirmation."
+  ]
+ },
+ "CUST-FR-092": {
+  "what": "Planned: if part of a multi-seller order can’t be confirmed, the success page will list exactly which items are affected and how they will be refunded.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs vendor-side order acceptance (Vendor portal) and the Finance refund flow."
+ },
+ "CUST-FR-093": {
+  "what": "Each order stores its own copy of product title, variant, price, address and return policy at the time of purchase.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Change a product title in the admin console and confirm the old order still shows the original title."
+  ]
+ },
+ "CUST-FR-094": {
+  "what": "Your order history stays readable even if a product is later edited or removed.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Unpublish a product you bought and open the order; it still displays."
+  ]
+ },
+ "CUST-FR-095": {
+  "what": "When items in one order have different outcomes (one cancelled, one shipped), each shows its own status.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Cancel one item in a multi-item order and check each item’s status."
+  ]
+ },
+ "CUST-FR-096": {
+  "what": "The order’s price details separate the original amount from cancelled and refunded amounts.",
+  "try": [
+   {
+    "label": "Price details",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "After a partial cancellation, read “Cancelled items”, “Refunded” and “Net paid after refunds”."
+  ]
+ },
+ "CUST-FR-097": {
+  "what": "Planned: order documents (invoices, credit notes) available for as long as the retention policy requires.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-098": {
+  "what": "Reorder adds today’s version of the items at today’s price, and flags anything unavailable instead of adding it.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Press Reorder on a past order and compare the cart prices with today’s product pages."
+  ]
+ },
+ "CUST-FR-099": {
+  "what": "Orders shipped as separate packages are tracked package by package.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open a multi-seller order and see “Package 1 of 2”, each with its own status."
+  ]
+ },
+ "CUST-FR-100": {
+  "what": "Courier status codes are translated into the same small set of ShopEye statuses everywhere.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Proven by automated tests on the status mapping."
+  ]
+ },
+ "CUST-FR-101": {
+  "what": "If the courier hasn’t updated for a while, tracking says so instead of pretending it is live.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open a shipped order with no courier update for a while and look for “The courier hasn’t updated this package since …”."
+  ]
+ },
+ "CUST-FR-102": {
+  "what": "Delivered packages show the delivery date and time; recipient details only when safe to show.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open a delivered order and check the delivery time."
+  ]
+ },
+ "CUST-FR-103": {
+  "what": "Emails are sent when a package ships and when it is delivered.",
+  "try": [
+   {
+    "label": "Message preferences",
+    "href": "/account#prefs-h"
+   }
+  ],
+  "check": [
+   "Proven by automated tests on the email triggers; also watch your inbox when an order ships."
+  ]
+ },
+ "CUST-FR-104": {
+  "what": "Planned: download and print the GST invoice PDF from the order page.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-105": {
+  "what": "Planned: invoices built from the order’s frozen snapshot, so later profile or address edits never change them.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-106": {
+  "what": "Planned: invoice totals that add up exactly to the items and adjustments billed.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-107": {
+  "what": "Planned: for multi-seller orders, each invoice states which items it covers.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-108": {
+  "what": "Planned: invoice files only downloadable by the order’s customer through private, unguessable links.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-109": {
+  "what": "Planned: optional GSTIN entry, validated before the invoice is issued.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with Finance GST invoicing (phase P3)."
+ },
+ "CUST-FR-110": {
+  "what": "You can cancel individual items (and part of a quantity) before they ship, even within a multi-seller order.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "On an unshipped order press “Cancel item”, choose a quantity and confirm."
+  ]
+ },
+ "CUST-FR-111": {
+  "what": "After a partial cancellation, discounts and refunds are recalculated the same way every time, and the refund impact is shown.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (pro-rata refund on partial cancellation)."
+  ]
+ },
+ "CUST-FR-112": {
+  "what": "Cash-on-delivery orders never show a money refund unless money was actually collected.",
+  "check": [
+   "Cash on delivery is switched off today; covered by a database rule."
+  ]
+ },
+ "CUST-FR-113": {
+  "what": "Cancelling the same item twice can’t create two cancellations or two refunds.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (idempotent cancellation)."
+  ]
+ },
+ "CUST-FR-114": {
+  "what": "After cancelling you get a confirmation (on screen and by email) listing the cancelled items and refund status.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Cancel an item and check the page message and your inbox."
+  ]
+ },
+ "CUST-FR-115": {
+  "what": "You can’t return more units than were delivered and not already returned.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; on a delivered order the quantity picker stops at the returnable amount."
+  ]
+ },
+ "CUST-FR-116": {
+  "what": "The return timeline shows each stage: requested, approved, picked up, received and checked, refunded.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open an order with a return and read the timeline."
+  ]
+ },
+ "CUST-FR-117": {
+  "what": "If a return is rejected you see the reason and an “Ask us to review this” link to support.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "An admin rejects a return; the customer’s order shows the reason and the review link."
+  ]
+ },
+ "CUST-FR-118": {
+  "what": "Photo uploads for returns show progress, let you retry a failed file, and never clear the rest of the form.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Start a return, add photos, and watch Uploaded / Upload failed with a retry."
+  ]
+ },
+ "CUST-FR-119": {
+  "what": "Planned: downloadable return labels and drop-off instructions for self-ship returns. Returns are pickup-only today.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs a courier/returns partner that supports self-ship labels."
+ },
+ "CUST-FR-120": {
+  "what": "You can cancel a return request while it hasn’t been picked up yet.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Request a return, then press “Cancel return”."
+  ]
+ },
+ "CUST-FR-121": {
+  "what": "A partial return only changes the refunded amount for that item; the rest of the order is untouched.",
+  "try": [
+   {
+    "label": "Price details",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Return one of two items and check the price details."
+  ]
+ },
+ "CUST-FR-122": {
+  "what": "Each refund has its own status, separate from the cancellation or return it came from.",
+  "try": [
+   {
+    "label": "Refunds on an order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open an order with a refund and read the Refunds section."
+  ]
+ },
+ "CUST-FR-123": {
+  "what": "Several partial refunds on one order are listed individually and totalled.",
+  "try": [
+   {
+    "label": "Refunds on an order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Cancel two items at different times and see two refund lines."
+  ]
+ },
+ "CUST-FR-124": {
+  "what": "Refunds can never add up to more than was paid.",
+  "check": [
+   "Proven by automated tests (refund cap)."
+  ]
+ },
+ "CUST-FR-125": {
+  "what": "If a refund fails, the order shows a plain next step and a link to support, without technical errors.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Visible when a refund is marked failed by Finance."
+  ]
+ },
+ "CUST-FR-126": {
+  "what": "Emails are sent when a refund starts and when it completes.",
+  "check": [
+   "Proven by automated tests on the refund email triggers."
+  ]
+ },
+ "CUST-FR-127": {
+  "what": "Planned: for orders paid with more than one method, show how the refund is split across them.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs gift card / credit decisions and Finance refund-priority rules."
+ },
+ "CUST-FR-128": {
+  "what": "Only reviews from customers whose order was delivered get the “Verified purchase” marker.",
+  "try": [
+   {
+    "label": "Reviews",
+    "href": "go:product#rev-h"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; check the marker on a review."
+  ]
+ },
+ "CUST-FR-129": {
+  "what": "You can edit or delete your own review.",
+  "try": [
+   {
+    "label": "Your reviews",
+    "href": "/account#al-h"
+   }
+  ],
+  "check": [
+   "Write a review, then edit and delete it."
+  ]
+ },
+ "CUST-FR-130": {
+  "what": "Your own review shows whether it is pending, published or rejected by moderation.",
+  "try": [
+   {
+    "label": "Your reviews",
+    "href": "/account#al-h"
+   },
+   {
+    "label": "Review moderation (admin)",
+    "href": "/admin/reviews"
+   }
+  ],
+  "check": [
+   "Submit a review and see “Pending”; approve it in /admin/reviews and see it published."
+  ]
+ },
+ "CUST-FR-131": {
+  "what": "Reviews can be marked helpful or reported, once per customer, with limits against abuse.",
+  "try": [
+   {
+    "label": "Reviews",
+    "href": "go:product#rev-h"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; press Helpful twice and the vote only counts once."
+  ]
+ },
+ "CUST-FR-132": {
+  "what": "Planned: product questions and answers, hiding customers’ contact details and with a report button.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Product Q&A isn’t built yet; it will reuse the review moderation tools."
+ },
+ "CUST-FR-133": {
+  "what": "Average rating and review count update whenever an approved review changes.",
+  "try": [
+   {
+    "label": "Reviews",
+    "href": "go:product#rev-h"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (rating aggregates)."
+  ]
+ },
+ "CUST-FR-134": {
+  "what": "Essential messages (security, order and refund updates) can’t be switched off; only optional ones can.",
+  "try": [
+   {
+    "label": "Message preferences",
+    "href": "/account#prefs-h"
+   }
+  ],
+  "check": [
+   "Open message preferences: essential messages are listed under “Always on” with no switch."
+  ]
+ },
+ "CUST-FR-135": {
+  "what": "Marketing emails are a separate opt-in setting from order messages.",
+  "try": [
+   {
+    "label": "Message preferences",
+    "href": "/account#prefs-h"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; toggle marketing without affecting order messages."
+  ]
+ },
+ "CUST-FR-136": {
+  "what": "Changing a preference shows “Saved” and only affects future messages.",
+  "try": [
+   {
+    "label": "Message preferences",
+    "href": "/account#prefs-h"
+   }
+  ],
+  "check": [
+   "Toggle a preference and look for the saved confirmation."
+  ]
+ },
+ "CUST-FR-137": {
+  "what": "Links in emails check that you are allowed to see the page and handle deleted or expired content cleanly.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open an order link from an email while signed out; you are asked to sign in first."
+  ]
+ },
+ "CUST-FR-138": {
+  "what": "You can see your help requests with their reference number and status.",
+  "try": [
+   {
+    "label": "Help requests",
+    "href": "/account/tickets"
+   }
+  ],
+  "check": [
+   "Raise a request and find it in Help requests."
+  ]
+ },
+ "CUST-FR-139": {
+  "what": "“Get help with this order” opens the support form already filled with the order details.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   },
+   {
+    "label": "Support form",
+    "href": "/support/new"
+   }
+  ],
+  "check": [
+   "Press “Get help with this order” and check the prefilled order number."
+  ]
+ },
+ "CUST-FR-140": {
+  "what": "Planned: urgent/emergency messaging only for issue types that really have an urgent route.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with the Help Desk portal (escalation categories)."
+ },
+ "CUST-FR-141": {
+  "what": "Uploaded files are checked (type and size) and stored privately; nobody gets a public link to them.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Try uploading a non-image to a return; it is rejected."
+  ]
+ },
+ "CUST-FR-142": {
+  "what": "After sending a support request you see a confirmation with its reference number (and get an email).",
+  "try": [
+   {
+    "label": "Support form",
+    "href": "/support/new"
+   }
+  ],
+  "check": [
+   "Submit the form and note the reference number."
+  ]
+ },
+ "CUST-FR-143": {
+  "what": "A new email address only replaces the old one after you confirm it from both addresses.",
+  "try": [
+   {
+    "label": "Change email",
+    "href": "/account#sec-h"
+   }
+  ],
+  "check": [
+   "Change your email and confirm the old one still works until both links are clicked."
+  ]
+ },
+ "CUST-FR-144": {
+  "what": "Planned: stop customers from removing their last verified sign-in method without adding another.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Only relevant once there is more than one sign-in method (social login decision)."
+ },
+ "CUST-FR-145": {
+  "what": "Changing your name or address never alters names or addresses on past orders.",
+  "try": [
+   {
+    "label": "Profile",
+    "href": "/account"
+   }
+  ],
+  "check": [
+   "Change your name and open an old order; it still shows the original."
+  ]
+ },
+ "CUST-FR-146": {
+  "what": "Planned: an account closure flow that explains what happens, asks you to confirm your identity, and keeps records the law requires.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on account closure and data retention."
+ },
+ "CUST-FR-147": {
+  "what": "You can download a copy of your personal data from the account page.",
+  "try": [
+   {
+    "label": "Your data",
+    "href": "/account#sec-h"
+   }
+  ],
+  "check": [
+   "Press “Download my data” and open the file."
+  ]
+ },
+ "CUST-FR-148": {
+  "what": "Planned: ask for a fresh code before sensitive account changes.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch hardening, together with the account-closure decision."
+ },
+ "CUST-FR-149": {
+  "what": "Planned: a full review of cookies, CSRF, content security and HTTPS. Most of it already exists (secure cookies, same-site checks on payments, a content security policy); the formal review is still to do.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch security hardening pass."
+ },
+ "CUST-FR-150": {
+  "what": "Error messages shown to customers never include technical details, database names or internal errors.",
+  "try": [
+   {
+    "label": "A missing product",
+    "href": "go:missing-product"
+   }
+  ],
+  "check": [
+   "Trigger an error (missing product, bad input) and confirm only a plain message is shown."
+  ]
+ },
+ "CUST-FR-151": {
+  "what": "If your session expires you are sent to sign in and then back to where you were.",
+  "try": [
+   {
+    "label": "My account",
+    "href": "/account"
+   }
+  ],
+  "check": [
+   "Sign out in another tab, then act on the account page; you are sent to sign in and back."
+  ]
+ },
+ "CUST-FR-152": {
+  "what": "Personal details are masked where the full value isn’t needed, such as the phone number on the order page.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Open an order: the mobile number shows as +91 ••••• 1234."
+  ]
+ },
+ "CUST-FR-153": {
+  "what": "Planned: measure and tune Core Web Vitals (load speed, responsiveness) on key pages under real traffic.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch performance pass once real traffic data (Vercel Speed Insights) is available."
+ },
+ "CUST-FR-154": {
+  "what": "Planned: serve images in responsive sizes and modern formats from a CDN. Images already lazy-load today.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Partly visible today: images load as you scroll."
+  ],
+  "next": "Pre-launch performance pass (image optimisation)."
+ },
+ "CUST-FR-155": {
+  "what": "Search and listing results stream in behind a loading skeleton; the header and filters stay usable meanwhile.",
+  "try": [
+   {
+    "label": "Search",
+    "href": "/search"
+   }
+  ],
+  "check": [
+   "Throttle the network in browser dev tools and open search; a skeleton appears first."
+  ]
+ },
+ "CUST-FR-156": {
+  "what": "Calls to Razorpay have time limits and are only retried where retrying can’t double-charge.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Code review of the payment calls; live check needs Razorpay keys."
+  ]
+ },
+ "CUST-FR-157": {
+  "what": "If a service is briefly down, pages show a clear “something went wrong, try again” message instead of a blank or technical error.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Simulate a failure (for example go offline mid-action) and look for the retry message."
+  ]
+ },
+ "CUST-FR-158": {
+  "what": "Payment, order and refund events can be retried or replayed without charging or refunding twice.",
+  "check": [
+   "Proven by automated tests (replayed webhook ignored; duplicate refund callback posts once)."
+  ]
+ },
+ "CUST-FR-159": {
+  "what": "An order is saved in the database before the success screen is shown.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Place an order; the confirmation page loads the saved order by its ID."
+  ]
+ },
+ "CUST-FR-160": {
+  "what": "Planned: a full WCAG 2.2 AA accessibility audit of the customer site.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch accessibility audit."
+ },
+ "CUST-FR-161": {
+  "what": "Every button, link and field can be reached by keyboard and shows a clear focus outline.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   },
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Tab through a page and confirm the focus ring is always visible."
+  ]
+ },
+ "CUST-FR-162": {
+  "what": "Form fields have labels and help text, and errors are linked to their field for screen readers.",
+  "try": [
+   {
+    "label": "Checkout form",
+    "href": "/checkout"
+   },
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
+  ],
+  "check": [
+   "Submit a form with an error and check the message sits under its field."
+  ]
+ },
+ "CUST-FR-163": {
+  "what": "Informative images have text descriptions; decorative icons are hidden from screen readers.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Inspect product images for alt text."
+  ]
+ },
+ "CUST-FR-164": {
+  "what": "Statuses and errors always include words, never colour alone (for example “Out of stock”, not just a red dot).",
+  "try": [
+   {
+    "label": "Search",
+    "href": "/search"
+   },
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "View the page in greyscale; every status is still readable."
+  ]
+ },
+ "CUST-FR-165": {
+  "what": "All pages fit phone, tablet and desktop widths without sideways scrolling.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Narrow the window to 360px and check a few pages for sideways scroll."
+  ]
+ },
+ "CUST-FR-166": {
+  "what": "On phones the checkout total and “Place order” button stay reachable without covering the form.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Open checkout at phone width and scroll; the total and action stay available."
+  ]
+ },
+ "CUST-FR-167": {
+  "what": "Planned: tables such as invoice summaries reflow or scroll neatly on small screens.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Comes with invoices (Finance P3); other tables already scroll inside their panel."
+ },
+ "CUST-FR-168": {
+  "what": "Planned: formal check that every request is HTTPS with no mixed content. The site is already HTTPS-only on Vercel.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
+  ],
+  "check": [
+   "Visit http://shopeye.in and confirm it redirects to https."
+  ],
+  "next": "Add HSTS and a mixed-content check in the pre-launch hardening pass."
+ },
+ "CUST-FR-169": {
+  "what": "Planned: document how sign-in secrets are handled. ShopEye has no passwords today; codes and tokens are handled by Supabase Auth.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Only needed if passwords are introduced; otherwise closed by documentation in the hardening pass."
+ },
+ "CUST-FR-170": {
+  "what": "Planned: review that every input is checked on the server and every output is safely encoded.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch security hardening pass."
+ },
+ "CUST-FR-171": {
+  "what": "Payment actions only accept requests coming from ShopEye’s own pages, blocking cross-site forgery.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Code review; a request from another site is rejected."
+  ]
+ },
+ "CUST-FR-172": {
+  "what": "The server checks ownership for every order, return, refund and profile record.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (customer B cannot read or change customer A’s order or return)."
+  ]
+ },
+ "CUST-FR-173": {
+  "what": "Changing an ID in the URL never shows another customer’s data.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
+  ],
+  "check": [
+   "Proven by automated tests; try editing an order ID in the URL."
+  ]
+ },
+ "CUST-FR-174": {
+  "what": "Planned: make sure logs never contain passwords, codes, payment secrets or unnecessary personal data.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch security hardening pass (log review)."
+ },
+ "CUST-FR-175": {
+  "what": "Uploads go to private storage with safe file names and type checks.",
+  "try": [
+   {
+    "label": "An order",
+    "href": "go:order"
+   }
+  ],
+  "check": [
+   "Upload a return photo, then try opening its storage path while signed out: access is denied."
+  ]
+ },
+ "CUST-FR-176": {
+  "what": "Card data is handled only by Razorpay’s hosted checkout.",
+  "try": [
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
+  ],
+  "check": [
+   "Code review; live check needs Razorpay keys."
+  ]
+ },
+ "CUST-FR-177": {
+  "what": "Sign-in codes, reviews and support requests are rate-limited against spam and abuse.",
+  "try": [
+   {
+    "label": "Support form",
+    "href": "/support/new"
+   }
+  ],
+  "check": [
+   "Proven by automated tests (ticket spam rate-limited)."
+  ]
+ },
+ "CUST-FR-178": {
+  "what": "Planned: a log of account security events (sign-ins, email changes) with times, plus customer alerts for important changes.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Pre-launch hardening, alongside the account security decisions."
+ },
+ "CUST-FR-179": {
+  "what": "Category and product pages each have their own title, description and canonical URL.",
+  "try": [
+   {
+    "label": "A category",
+    "href": "go:category"
+   },
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "View the page source and compare the title and canonical tags across two pages."
+  ]
+ },
+ "CUST-FR-180": {
+  "what": "Planned: add offer and review data to the product search markup, only from real reviews.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Not ready to test yet (basic product markup already exists)."
+  ],
+  "next": "Extend the product JSON-LD with offers and review ratings."
+ },
+ "CUST-FR-181": {
+  "what": "Filtered, sorted and paged listings are marked noindex so search engines don’t index duplicates.",
+  "try": [
+   {
+    "label": "Sorted category",
+    "href": "go:category?sort=price_asc"
+   }
+  ],
+  "check": [
+   "Open a sorted category and view source: it has a noindex robots tag."
+  ]
+ },
+ "CUST-FR-182": {
+  "what": "Product URLs use a permanent ID, so they never change when a title changes.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Rename a product in the admin console; the old link still works."
+  ]
+ },
+ "CUST-FR-183": {
+  "what": "The sitemap lists public pages only; account, cart and checkout are left out.",
+  "try": [
+   {
+    "label": "Sitemap",
+    "href": "/sitemap.xml"
+   }
+  ],
+  "check": [
+   "Open the sitemap and search it for /account or /checkout; they are absent."
+  ]
+ },
+ "CUST-FR-184": {
+  "what": "Private pages (checkout, account, orders) are blocked from search engines.",
+  "try": [
+   {
+    "label": "robots.txt",
+    "href": "/robots.txt"
+   }
+  ],
+  "check": [
+   "Open robots.txt and see the private paths disallowed."
+  ]
+ },
+ "CUST-FR-185": {
+  "what": "Planned: analytics events that never contain passwords, codes, card details or unnecessary personal data.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+ },
+ "CUST-FR-186": {
+  "what": "Planned: purchase analytics sent from the server when an order is confirmed, so refreshes don’t double-count.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+ },
+ "CUST-FR-187": {
+  "what": "Planned: optional analytics and marketing tags load only after the visitor consents.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+ },
+ "CUST-FR-188": {
+  "what": "Planned: analytics identifiers limited to what the privacy design allows.",
+  "check": [
+   "Not ready to test yet."
+  ],
+  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+ }
+}

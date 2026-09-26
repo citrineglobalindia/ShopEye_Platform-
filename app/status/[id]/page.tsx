@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { testedLabel, markRequirement } from '@/lib/status-ui';
+import { testedLabel, markRequirement, tryHref } from '@/lib/status-ui';
 
 const fmt = (d?: string | null) => d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
@@ -22,6 +22,12 @@ export default function RequirementPage() {
   if (err) return <div className="wrap section stack"><div className="msg err">{err}</div><Link href="/status">Back to all requirements</Link></div>;
   if (!d) return <div className="wrap section">Loading {id}…</div>;
   const r = d.row; const t = testedLabel(r.tested, r.qa);
+  const n = r.notes ?? {};
+  // Curated links first, then pages derived from the code that cites this ID; one button per destination
+  const links: { label: string; href: string }[] = [];
+  for (const l of [...(n.try ?? []), ...(r.pages ?? []).filter((p: any) => p.href)]) if (!links.some((x) => x.href === l.href)) links.push(l);
+  const backend = (r.pages ?? []).filter((p: any) => !p.href).map((p: any) => p.label);
+  const builtBy = new Map((r.built ?? []).map((b: any) => [b.file, b.note]));
   return (
     <div className="wrap section stack" style={{ maxWidth: 900 }}>
       <nav className="small" aria-label="Breadcrumb"><Link href="/status">Build status</Link> / <Link href={`/status?portal=${encodeURIComponent(r.portal)}`}>{r.portal}</Link> / {r.id}</nav>
@@ -40,9 +46,28 @@ export default function RequirementPage() {
           {d.next && <Link className="btn ghost sm" href={`/status/${d.next}`}>Next: {d.next}</Link>}
         </div>
       </div>
+      <section className="panel stack" aria-labelledby="fn-h">
+        <h2 id="fn-h" style={{ margin: 0 }}>Functionality</h2>
+        {n.what ? <p style={{ margin: 0 }}>{n.what}</p>
+          : r.built?.length ? <p style={{ margin: 0 }}>{r.built[0].note}.</p>
+          : <p className="muted" style={{ margin: 0 }}>{r.status === 'Done' ? 'Built; see the evidence below for where.' : `Not built yet. It is part of the ${r.portal}${r.portal === 'Customer Website' ? '' : ' portal'}, which comes in a later phase.`}</p>}
+        <div>
+          <div className="small muted">Try it live</div>
+          {links.length ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+              {links.map((l) => <a key={l.href} className="btn sm" href={tryHref(l.href)} target="_blank" rel="noopener">{l.label} ↗</a>)}
+            </div>
+            : <span>{backend.length ? 'Nothing to click: this works behind the scenes.' : 'No live page yet.'}</span>}
+          {backend.length > 0 && <p className="small muted" style={{ margin: '6px 0 0' }}>Also enforced in: {backend.join(', ')}.</p>}
+        </div>
+        {n.check?.length > 0 && <div><div className="small muted">How to check it</div>
+          <ol style={{ margin: '4px 0 0', paddingLeft: 20 }}>{n.check.map((c: string, i: number) => <li key={i}>{c}</li>)}</ol></div>}
+        {n.next && <div className="msg info small" role="note"><strong>Waiting on:</strong> {n.next}</div>}
+      </section>
       <div className="panel stack">
         <h2 style={{ margin: 0 }}>Evidence</h2>
-        <div><div className="small muted">Implemented in</div>{r.files.length ? <ul style={{ margin: 0 }}>{r.files.map((f: string) => <li key={f}><code>{f}</code></li>)}</ul> : <span>No code cites this requirement yet.</span>}</div>
+        <div><div className="small muted">Implemented in</div>{r.files.length ? <ul style={{ margin: 0 }}>{r.files.map((f: string) => <li key={f}><code style={{ overflowWrap: 'anywhere' }}>{f}</code>{builtBy.get(f) ? <span className="small muted"> — {String(builtBy.get(f))}</span> : null}</li>)}</ul>
+          : r.groundwork?.length ? <div><span>No code cites this requirement on its own yet. Groundwork is in place in:</span><ul style={{ margin: 0 }}>{r.groundwork.map((f: string) => <li key={f}><code style={{ overflowWrap: 'anywhere' }}>{f}</code></li>)}</ul></div>
+          : <span>No code cites this requirement yet.</span>}</div>
         <div><div className="small muted">Automated tests that prove it</div>{r.evidence.length ? <ul style={{ margin: 0 }}>{r.evidence.map((e: string) => <li key={e}>{e}</li>)}</ul> : <span>None yet.</span>}</div>
         <div><div className="small muted">Manual QA</div>{r.qa ? <span>{r.qa.result === 'passed' ? 'Passed' : 'Failed'} on {fmt(r.qa.at)}{r.qa.by ? ` by ${r.qa.by}` : ''}{r.qa.note ? `: “${r.qa.note}”` : ''}</span> : <span>Not checked by hand yet.</span>}</div>
         <p className="small muted" style={{ margin: 0 }}>Code status generated {fmt(d.generatedAt)}{d.commit ? ` from commit ${d.commit}` : ''}.</p>

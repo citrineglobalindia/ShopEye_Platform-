@@ -20,3 +20,12 @@ export function QuickMark({ id, qa, onDone }: { id: string; qa: QA; onDone: () =
   return qa ? <button className="btn ghost sm" disabled={busy} onClick={(e) => { e.stopPropagation(); run('cleared'); }}>Undo</button>
             : <button className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); run('passed'); }}>Mark tested</button>;
 }
+
+// "go:product#rev-h" / "go:category?sort=price_asc" -> /status/go resolver; plain paths pass through
+export function tryHref(href: string): string {
+  if (!href.startsWith('go:')) return href;
+  const m = href.slice(3).match(/^([a-z-]+)(?:\?([^#]*))?(?:#(.*))?$/);
+  if (!m) return '/';
+  const p = new URLSearchParams({ to: m[1] }); if (m[2]) p.set('qs', m[2]); if (m[3]) p.set('h', m[3]);
+  return `/status/go?${p}`;
+}
