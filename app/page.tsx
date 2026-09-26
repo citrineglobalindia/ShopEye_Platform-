@@ -2,7 +2,8 @@
 import Link from 'next/link';
 import { HeroLogo } from '@/components/Logo';
 import { ProductGrid, Rail } from '@/components/ProductGrid';
-import { listProducts, listCategories } from '@/lib/catalog';
+import { listProducts, listCategories, FIXTURES } from '@/lib/catalog';
+import { sbPublic } from '@/lib/sb-server';
 import { RecentlyViewed } from '@/components/ShopWidgets';
 export const revalidate = 60;
 
@@ -17,6 +18,9 @@ export default async function Home() {
   const [latest, deals, cats] = await Promise.all([
     listProducts({ sort: 'new', perPage: 12 }), listProducts({ sort: 'discount', off: 20, perPage: 8 }), listCategories()]);
   const top = (cats as any[]).filter((c) => !c.parent_id);
+  // SRS: CUST-FR-026 — only banners inside their start/end dates are returned (enforced by row-level security)
+  const { data: banners } = FIXTURES ? { data: [{ id: 'b', title: 'Festive handloom week', subtitle: 'Up to 30% off sarees and dupattas from independent weavers. Ends Sunday.', link_path: '/search?sort=discount' }] }
+    : await sbPublic().from('promo_banners').select('id,title,subtitle,link_path').order('sort_order').limit(3);
   return (
     <div className="wrap">
       <section className="hero">
@@ -29,6 +33,8 @@ export default async function Home() {
         <HeroLogo />
       </section>
 
+      {(banners ?? []).map((b: any) => (
+        <Link key={b.id} href={b.link_path || '/'} className="promo"><strong>{b.title}</strong>{b.subtitle && <span>{b.subtitle}</span>}<span className="promo-cta" aria-hidden="true">Shop now ›</span></Link>))}
       <ul className="promises" aria-label="Our promises">
         {PROMISES.map(([t, d]) => <li key={t}><strong>{t}</strong><span className="small muted">{d}</span></li>)}
       </ul>

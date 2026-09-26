@@ -433,6 +433,62 @@ begin
   perform test.act_as(null);
 end $$;
 
+
+\echo '== 20. Reviews, alerts and promo banners (as real API roles)'
+do $$ declare pid uuid; vid uuid; bid uuid; begin
+  -- a product cust_a received and cust_b did not
+  select v.product_id, v.id into pid, vid from public.order_items oi join public.orders o on o.id = oi.order_id join public.sub_orders so on so.id = oi.sub_order_id
+    join public.product_variants v on v.id = oi.variant_id where o.customer_id = test.id('cust_a') and so.status = 'delivered' limit 1;
+  perform test.put('rv_product', pid::text); perform test.put('rv_variant', vid::text);
+  insert into public.promo_banners(title, starts_at, ends_at) values ('Diwali handloom week', now() - interval '1 day', now() + interval '6 days'),
+                                                                     ('Expired monsoon sale', now() - interval '20 days', now() - interval '1 day');
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare r jsonb; begin
+  r := public.submit_review(test.get('rv_product')::uuid, 5, 'Lovely weave', 'Soft cotton, colours as shown.');
+  perform test.ok(r->>'status' = 'pending', 'Buyer of a delivered item can review; it waits for moderation (CUST-FR-128/130)');
+  perform test.throws($q$ select public.submit_review(test.get('rv_product')::uuid, 9) $q$, 'RATING_REQUIRED', 'Rating must be 1 to 5');
+  perform test.ok((select count(*) from public.product_reviews where customer_id = test.id('cust_a')) = 1, 'Author sees own pending review and its status (CUST-FR-130)');
+  perform test.ok(public.set_product_alert(test.get('rv_variant')::uuid, 'price_drop', true), 'Customer sets a price-drop alert (CUST-FR-053)');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.throws($q$ select public.submit_review(test.get('rv_product')::uuid, 1, 'Bad', 'Never bought it') $q$, 'REVIEW_NOT_ELIGIBLE', 'Non-buyers cannot review (CUST-FR-128)');
+  perform test.ok((select count(*) from public.product_reviews) = 0, 'Pending reviews are invisible to other customers');
+  perform test.ok((select count(*) from public.promo_banners) = 1 and (select title from public.promo_banners) = 'Diwali handloom week', 'Only in-date promotions are shown; expired ones never appear (CUST-FR-026)');
+end $$;
+reset role;
+do $$ declare rid uuid; begin
+  perform test.act_as(test.id('admin'));
+  select id into rid from public.product_reviews where product_id = test.get('rv_product')::uuid;
+  perform test.throws(format($q$ select public.moderate_review(%L, 'rejected') $q$, rid), 'REASON_REQUIRED', 'Rejecting a review needs a reason');
+  perform public.moderate_review(rid, 'published');
+  perform test.ok((select rating_avg = 5 and rating_count = 1 from public.products where id = test.get('rv_product')::uuid), 'Published review updates product average and count (CUST-FR-133)');
+  perform test.put('rv_review', rid::text);
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.ok((select author_name not like '%@%' and author_name not like '%+91%' from public.product_reviews where id = test.get('rv_review')::uuid), 'Published review shows first name only, no contact details');
+  perform test.ok(public.vote_review(test.get('rv_review')::uuid, 'helpful') = 1, 'Shopper marks a review helpful (CUST-FR-131)');
+  perform test.ok(public.vote_review(test.get('rv_review')::uuid, 'helpful') = 1, 'Voting twice counts once (CUST-FR-131 abuse control)');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform test.throws($q$ select public.vote_review(test.get('rv_review')::uuid, 'helpful') $q$, 'OWN_REVIEW', 'Authors cannot vote on their own review');
+  perform public.submit_review(test.get('rv_product')::uuid, 3, 'Update', 'Faded after washing.');
+  perform test.ok((select status from public.product_reviews where id = test.get('rv_review')::uuid) = 'pending', 'Edited review returns to moderation (CUST-FR-129)');
+end $$;
+reset role;
+do $$ begin
+  perform test.ok((select rating_count = 0 and rating_avg is null from public.products where id = test.get('rv_product')::uuid), 'Average drops the review while it is back in moderation (CUST-FR-133)');
+  update public.product_variants set selling_price = selling_price - 1 where id = test.get('rv_variant')::uuid;
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'price_drop') and not (select active from public.product_alerts where variant_id = test.get('rv_variant')::uuid and kind = 'price_drop'),
+                  'Price drop emails the watcher once and switches the alert off (CUST-FR-053)');
+end $$;
+do $$ begin perform test.act_as(null); end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

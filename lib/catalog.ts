@@ -30,7 +30,7 @@ export async function listProducts(o: ListOpts = {}): Promise<ListResult> {
     return applyFilters(FIX_PRODUCTS.filter((p) => (!o.categoryId || p.category_id === o.categoryId) && (!q || p.title.toLowerCase().includes(q) || p.vendor_name.toLowerCase().includes(q))), o);
   }
   const db = sbPublic();
-  let pq = db.from('products').select('id,published_at').eq('status', 'active');
+  let pq = db.from('products').select('id,published_at,rating_avg,rating_count').eq('status', 'active');
   if (o.categoryId) pq = pq.eq('category_id', o.categoryId);
   if (o.q) {
     const terms = o.q.trim().split(/\s+/).map((w) => w.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean);
@@ -51,7 +51,8 @@ export async function listProducts(o: ListOpts = {}): Promise<ListResult> {
   const img = new Map<string, string>();
   for (const m of media ?? []) if (!img.has(m.product_id)) img.set(m.product_id, m.url);
   const pub = new Map((prods ?? []).map((p: any) => [p.id, p.published_at]));
-  const all = ids.filter((id) => best.has(id)).map((id) => { const b = best.get(id); return { ...b, selling_price: Number(b.selling_price), mrp: Number(b.mrp), image: img.get(id) ?? null, published_at: pub.get(id), in_stock: inStock.get(id) ?? false }; });
+  const rat = new Map((prods ?? []).map((p: any) => [p.id, [p.rating_avg, p.rating_count]]));
+  const all = ids.filter((id) => best.has(id)).map((id) => { const b = best.get(id); return { ...b, selling_price: Number(b.selling_price), mrp: Number(b.mrp), image: img.get(id) ?? null, published_at: pub.get(id), in_stock: inStock.get(id) ?? false, rating_avg: rat.get(id)?.[0] ?? null, rating_count: rat.get(id)?.[1] ?? 0 }; });
   return applyFilters(all, o);
 }
 export async function listCards(o: ListOpts & { limit?: number } = {}): Promise<Card[]> {

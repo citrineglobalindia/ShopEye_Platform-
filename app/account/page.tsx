@@ -15,6 +15,7 @@ export default function Account() {
   const [form, setForm] = useState<any>(null); const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
   const [prefs, setPrefs] = useState({ marketing_email: false, marketing_sms: false, marketing_whatsapp: false }); const [prefMsg, setPrefMsg] = useState(''); const [rv, setRv] = useState(0);
   const [newEmail, setNewEmail] = useState(''); const [emailMsg, setEmailMsg] = useState('');
+  const [alerts, setAlerts] = useState<any[]>([]); const [myRevs, setMyRevs] = useState<any[]>([]);
   async function load() {
     const db = sb(); const { data: { user } } = await db.auth.getUser();
     if (!user) { router.replace('/login?next=/account'); return; }
@@ -24,7 +25,18 @@ export default function Account() {
     setName(p?.full_name ?? ''); setAddrs(a ?? []);
     const { data: pr } = await db.from('customer_preferences').select('marketing_email,marketing_sms,marketing_whatsapp').maybeSingle(); if (pr) setPrefs(pr);
     setRv(recentIds().length);
+    const [{ data: al }, { data: rvw }] = await Promise.all([
+      db.from('product_alerts').select('id,variant_id,kind,active,fired_at,created_at').eq('active', true).order('created_at', { ascending: false }),
+      db.from('product_reviews').select('id,product_id,rating,title,status,moderation_note,updated_at').eq('customer_id', user.id).order('updated_at', { ascending: false })]);
+    const vids = (al ?? []).map((x: any) => x.variant_id);
+    const { data: cv } = vids.length ? await db.from('catalog_variants').select('variant_id,product_id,title,attributes,selling_price').in('variant_id', vids) : { data: [] };
+    const vm = new Map((cv ?? []).map((v: any) => [v.variant_id, v]));
+    setAlerts((al ?? []).map((x: any) => ({ ...x, v: vm.get(x.variant_id) })));
+    const pids = (rvw ?? []).map((x: any) => x.product_id);
+    const { data: pt } = pids.length ? await db.from('products').select('id,title').in('id', pids) : { data: [] };
+    setMyRevs((rvw ?? []).map((x: any) => ({ ...x, product: (pt ?? []).find((p: any) => p.id === x.product_id)?.title })));
   }
+  async function alertOff(a: any) { await sb().from('product_alerts').update({ active: false }).eq('id', a.id); load(); }
   async function savePrefs(next: typeof prefs) {
     setPrefs(next); setPrefMsg('Saving…');
     const { error } = await sb().from('customer_preferences').upsert({ customer_id: user.id, ...next });
@@ -146,6 +158,18 @@ export default function Account() {
         </fieldset>
         {prefMsg && <p className="small muted" role="status" style={{ margin: 0 }}>{prefMsg}</p>}
       </section>
+      {(alerts.length > 0 || myRevs.length > 0) && (
+        <section className="panel stack" aria-labelledby="al-h">
+          <h2 id="al-h" style={{ margin: 0 }}>Alerts and reviews</h2>
+          {alerts.map((a) => (
+            <div key={a.id} className="addr"><div><strong>{a.kind === 'back_in_stock' ? 'Back-in-stock alert' : 'Price-drop alert'}</strong>
+              <div className="small">{a.v ? <Link href={`/p/${a.v.product_id}`}>{a.v.title}{Object.values(a.v.attributes || {}).length ? ` (${Object.values(a.v.attributes).join(' / ')})` : ''}</Link> : 'Product no longer listed'} · by email</div></div>
+              <button className="btn ghost sm" onClick={() => alertOff(a)}>Turn off</button></div>))}
+          {myRevs.map((r) => (
+            <div key={r.id} className="addr"><div><strong>Your review of {r.product ?? 'a product'}</strong> <span className="small">({r.rating}★)</span>
+              <div className="small muted">{({ pending: 'Waiting for moderation', published: 'Published', rejected: 'Not published', removed: 'Removed' } as any)[r.status]}{r.moderation_note ? `: ${r.moderation_note}` : ''}</div></div>
+              <Link className="btn ghost sm" href={`/p/${r.product_id}#rev-h`}>View</Link></div>))}
+        </section>)}
       <section className="panel stack" aria-labelledby="sec-h">
         <h2 id="sec-h" style={{ margin: 0 }}>Privacy and security</h2>
         <form className="addr" onSubmit={changeEmail}>

@@ -6,6 +6,7 @@ import { sb } from '@/lib/sb-browser';
 import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { addToCart } from '@/lib/shop-client';
+import { AlertButton } from '@/components/Alerts';
 import { useEffect } from 'react';
 
 type V = { variant_id: string; sku: string; attributes: Record<string, string>; mrp: number; selling_price: number; discount_pct: number; available: number };
@@ -35,9 +36,14 @@ export default function AddToCart({ variants }: { variants: V[] }) {
       {variants.length > 1 && (
         <div role="group" aria-label="Choose an option" className="variants">
           {variants.map((v) => (
-            <button key={v.variant_id} aria-pressed={v.variant_id === sel.variant_id} disabled={v.available <= 0}
+            <button key={v.variant_id} aria-pressed={v.variant_id === sel.variant_id} className={v.available <= 0 ? 'oos-v' : undefined}
+              aria-label={v.available <= 0 ? `${label(v)}, sold out` : undefined} title={v.available <= 0 ? 'Sold out: select to get an email when it’s back' : undefined}
               onClick={() => { setSel(v); setQty(1); }}>{label(v)}</button>))}
         </div>)}
+      <div className="cta-row">
+        {out ? <AlertButton key={sel.variant_id + 's'} variantId={sel.variant_id} kind="back_in_stock" label="Email me when it’s back" onLabel="We’ll email you when it’s back ✓" />
+             : <AlertButton key={sel.variant_id + 'p'} variantId={sel.variant_id} kind="price_drop" label="Watch price" onLabel="Watching price ✓" />}
+      </div>
       {out && variants.every((v) => v.available <= 0) && <p className="small" style={{ margin: 0 }}>This product is sold out. <a href="#more">See similar products</a>.</p>}
       <p className="small" style={{ margin: 0 }}>{out ? <span className="chip bad">Out of stock</span> : sel.available <= 3 ? <span className="chip warn">Only {sel.available} left</span> : <span className="chip ok">In stock</span>}</p>
       {!out && (<>

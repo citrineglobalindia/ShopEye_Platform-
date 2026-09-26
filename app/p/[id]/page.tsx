@@ -9,13 +9,15 @@ import { Gallery, PincodeCheck } from '@/components/ProductExtras';
 import { WishHeart, TrackView, RecentlyViewed } from '@/components/ShopWidgets';
 import { Rail } from '@/components/ProductGrid';
 import { listProducts } from '@/lib/catalog';
+import { ReviewList, Stars } from '@/components/Reviews';
+import { CompareToggle } from '@/components/Alerts';
 export const revalidate = 30;
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   if (FIXTURES) return FIX_PDP(id);
   const db = sbPublic();
-  const { data: p } = await db.from('products').select('id,title,description,gst_rate,return_window_days,is_returnable,category_id,vendor_id,specifications').eq('id', id).eq('status', 'active').maybeSingle();
+  const { data: p } = await db.from('products').select('id,title,description,gst_rate,return_window_days,is_returnable,category_id,vendor_id,specifications,rating_avg,rating_count').eq('id', id).eq('status', 'active').maybeSingle();
   if (!p) return null;
   const [{ data: vars }, { data: media }, { data: avail }, { data: cat }] = await Promise.all([
     db.from('catalog_variants').select('variant_id,sku,attributes,mrp,selling_price,discount_pct,vendor_name').eq('product_id', id),
@@ -42,6 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const specs = Object.entries(p.specifications ?? {}).filter(([, v]) => v);
   const ld = { '@context': 'https://schema.org', '@type': 'Product', name: p.title, description: p.description ?? undefined,
     image: media.filter((m: any) => !m.url.startsWith('data:')).map((m: any) => m.url), brand: { '@type': 'Brand', name: variants[0].vendor_name },
+    ...(p.rating_count > 0 ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: Number(p.rating_avg), reviewCount: p.rating_count } } : {}),
     offers: { '@type': 'AggregateOffer', priceCurrency: 'INR', lowPrice: low, offerCount: variants.length,
       availability: variants.some((v: any) => v.available > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' } };
   return (
@@ -54,7 +57,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <div>
             <p className="small muted" style={{ margin: 0 }}>Sold by <strong>{variants[0].vendor_name}</strong></p>
             <div className="title-row"><h1 className="pdp-title">{p.title}</h1><WishHeart productId={id} big /></div>
-            <p className="small muted" style={{ margin: 0 }}>No reviews yet</p>
+            <p className="small" style={{ margin: 0 }}>{p.rating_count > 0 ? <a href="#rev-h" className="rating-link"><Stars value={Number(p.rating_avg)} /> {Number(p.rating_avg).toFixed(1)} · {p.rating_count} {p.rating_count === 1 ? 'review' : 'reviews'}</a> : <span className="muted">No reviews yet</span>} · <CompareToggle productId={id} /></p>
           </div>
           <AddToCart variants={variants} />
           <PincodeCheck />
@@ -69,6 +72,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {p.description && <section><h2>About this product</h2><p style={{ whiteSpace: 'pre-line' }}>{p.description}</p></section>}
         {specs.length > 0 && <section><h2>Specifications</h2><dl className="specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl></section>}
       </div>
+      <ReviewList productId={id} avg={p.rating_avg} count={p.rating_count ?? 0} />
       <TrackView id={id} />
       <div id="more">{cat && <Rail title={`More from ${cat.name}`} href={`/c/${cat.slug}`} items={more} />}</div>
       <RecentlyViewed exclude={id} />

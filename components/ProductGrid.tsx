@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { inr } from '@/lib/config';
 import { WishHeart } from '@/components/ShopWidgets';
-export type Card = { product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean };
+export type Card = { product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean; rating_avg?: number | null; rating_count?: number };
 export function ProductCard({ p }: { p: Card }) {
   return (
     <div className={`card${p.in_stock === false ? ' oos' : ''}`}>
@@ -14,6 +14,7 @@ export function ProductCard({ p }: { p: Card }) {
       <div className="b">
         <span className="small muted">{p.vendor_name}</span>
         <span className="card-t">{p.title}</span>
+        {!!p.rating_count && <span className="small card-rating" aria-label={`Rated ${Number(p.rating_avg).toFixed(1)} out of 5 from ${p.rating_count} reviews`}><span aria-hidden="true">★ {Number(p.rating_avg).toFixed(1)} ({p.rating_count})</span></span>}
         <span><span className="price">{inr(p.selling_price)}</span>{p.mrp > p.selling_price && <span className="mrp">{inr(p.mrp)}</span>}</span>
       </div>
       </Link>

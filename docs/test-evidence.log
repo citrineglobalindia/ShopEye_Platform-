@@ -162,6 +162,23 @@ PASS  No welcome email before the address is verified (CUST-FR-014)
 PASS  One welcome email after verification (CUST-FR-014)
 psql:supabase/tests/20_uat_tests.sql:434: WARNING:  ShopEye email not queued (support_tickets_notify): function app.email_shell(text, text, text, text) does not exist
 PASS  A broken email template never blocks the customer action
+== 20. Reviews, alerts and promo banners (as real API roles)
+PASS  Buyer of a delivered item can review; it waits for moderation (CUST-FR-128/130)
+PASS  Rating must be 1 to 5 (rejected: RATING_REQUIRED)
+PASS  Author sees own pending review and its status (CUST-FR-130)
+PASS  Customer sets a price-drop alert (CUST-FR-053)
+PASS  Non-buyers cannot review (CUST-FR-128) (rejected: REVIEW_NOT_ELIGIBLE: only delivered purchases can be reviewed)
+PASS  Pending reviews are invisible to other customers
+PASS  Only in-date promotions are shown; expired ones never appear (CUST-FR-026)
+PASS  Rejecting a review needs a reason (rejected: REASON_REQUIRED)
+PASS  Published review updates product average and count (CUST-FR-133)
+PASS  Published review shows first name only, no contact details
+PASS  Shopper marks a review helpful (CUST-FR-131)
+PASS  Voting twice counts once (CUST-FR-131 abuse control)
+PASS  Authors cannot vote on their own review (rejected: OWN_REVIEW: you can't vote on your own review)
+PASS  Edited review returns to moderation (CUST-FR-129)
+PASS  Average drops the review while it is back in moderation (CUST-FR-133)
+PASS  Price drop emails the watcher once and switches the alert off (CUST-FR-053)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)

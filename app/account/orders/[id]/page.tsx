@@ -10,6 +10,7 @@ import { StatusChip } from '@/components/Status';
 import { Crumbs } from '@/components/Crumbs';
 import { CancelItem, PayNow } from '@/components/OrderActions';
 import { ReturnItem, CancelReturn, Reorder } from '@/components/ReturnActions';
+import { ReviewForm } from '@/components/Reviews';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Order details', robots: { index: false } };
 
@@ -33,6 +34,9 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
     db.from('refunds').select('refund_number,requested_amount,approved_amount,processor_status,approval_status,created_at,completed_at,source_type').eq('order_id', id).order('created_at'),
     db.from('returns').select('id,return_number,order_item_id,qty,status,reason,rejection_reason,created_at').order('created_at', { ascending: false }),
   ]);
+  const vids = [...new Set((items ?? []).map((it: any) => it.variant_id))];
+  const { data: vp } = vids.length ? await db.from('product_variants').select('id,product_id').in('id', vids) : { data: [] };
+  const productOf = new Map((vp ?? []).map((x: any) => [x.id, x.product_id]));
   const shipIds = (ships ?? []).map((s: any) => s.id);
   const { data: events } = shipIds.length ? await db.from('shipment_events').select('shipment_id,mapped_status,location,occurred_at').in('shipment_id', shipIds).order('occurred_at', { ascending: false }) : { data: [] };
   const a = o.ship_address || {};
@@ -88,6 +92,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                       <div className="oi-actions">
                         {cancellable && remaining > 0 && <CancelItem itemId={it.id} max={remaining} />}
                         {canReturn && remaining > 0 && it.product_snapshot?.is_returnable !== false && <ReturnItem itemId={it.id} max={remaining} />}
+                        {['delivered', 'completed'].includes(s.status) && productOf.get(it.variant_id) && it.qty > it.cancelled_qty && <ReviewForm productId={productOf.get(it.variant_id)} title={it.product_snapshot?.title} />}
                       </div>
                       {retFor(it.id).map((r: any) => (
                         <div key={r.id} className="ret">

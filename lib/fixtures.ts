@@ -7,7 +7,7 @@ export const FIX_CATS = [
   { id: 'c5', name: 'Home & Decor', slug: 'home-decor', parent_id: null }, { id: 'c6', name: 'Jewellery', slug: 'jewellery', parent_id: null },
 ];
 const P = (i: number, title: string, cat: string, price: number, mrp: number, vendor: string, a: string, b: string, label: string) =>
-  ({ product_id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, title, category_id: cat, selling_price: price, mrp, discount_pct: Math.round((100 * (mrp - price)) / mrp), vendor_name: vendor, image: tile(a, b, label), in_stock: i !== 4, published_at: `2026-09-${String(26 - i).padStart(2, '0')}` });
+  ({ product_id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, title, category_id: cat, selling_price: price, mrp, discount_pct: Math.round((100 * (mrp - price)) / mrp), vendor_name: vendor, image: tile(a, b, label), in_stock: i !== 4, rating_avg: i % 3 ? 4 + (i % 10) / 10 : null, rating_count: i % 3 ? i * 3 : 0, published_at: `2026-09-${String(26 - i).padStart(2, '0')}` });
 export const FIX_PRODUCTS = [
   P(1, 'Kanchipuram Silk Saree with Zari Border', 'c1', 12499, 16999, 'Mysore Silk House', '#6B1D3A', '#C0395E', 'Silk saree'),
   P(2, 'Handloom Cotton Kurta, Indigo Block Print', 'c2', 999, 1499, 'Citrine Weaves', '#0B3A8C', '#3F7BD8', 'Cotton kurta'),
@@ -25,7 +25,7 @@ export const FIX_PRODUCTS = [
 export const FIX_PDP = (id: string) => {
   const p = FIX_PRODUCTS.find((x) => x.product_id === id); if (!p) return null;
   const cat = FIX_CATS.find((c) => c.id === p.category_id)!;
-  return { p: { id, title: p.title, description: `${p.title}. Made by ${p.vendor_name}.\n\nHand-finished and checked by the ShopEye team before listing. Colours may vary slightly from the photos because every piece is handmade.`, gst_rate: 5, return_window_days: 7, is_returnable: true, category_id: cat.id, vendor_id: 'v', specifications: { Material: 'Handloom cotton', Care: 'Dry clean or gentle hand wash', Origin: 'India' } },
+  return { p: { id, title: p.title, description: `${p.title}. Made by ${p.vendor_name}.\n\nHand-finished and checked by the ShopEye team before listing. Colours may vary slightly from the photos because every piece is handmade.`, gst_rate: 5, return_window_days: 7, is_returnable: true, category_id: cat.id, vendor_id: 'v', specifications: { Material: 'Handloom cotton', Care: 'Dry clean or gentle hand wash', Origin: 'India' }, rating_avg: p.rating_avg, rating_count: p.rating_count },
     cat: { name: cat.name, slug: cat.slug, return_window_days: 7 }, media: [0, 1, 2].map((k) => ({ url: p.image.replace('rgba(255,255,255,.18)', `rgba(255,255,255,${0.12 + k * 0.08})`), alt_text: p.title })),
     variants: ['S', 'M', 'L', 'XL'].map((s, k) => ({ variant_id: `${id}-${s}`, sku: `FX-${s}`, attributes: { size: s }, mrp: p.mrp, selling_price: p.selling_price, discount_pct: p.discount_pct, vendor_name: p.vendor_name, available: k === 3 ? 0 : 6 - k })) };
 };

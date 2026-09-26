@@ -10,7 +10,7 @@ export default function Admin() {
   useEffect(() => { sb().rpc('my_roles').then(({ data }: any) => setOk((data ?? []).some((r: string) => ['super_admin', 'catalog_moderator'].includes(r)))); }, []);
   if (ok === null) return <div className="wrap section">Loading…</div>;
   if (!ok) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
-  return (<div className="wrap section stack"><h1>Admin</h1>
+  return (<div className="wrap section stack"><div className="order-head"><h1 style={{ margin: 0 }}>Admin</h1><span className="cta-row"><a className="btn ghost sm" href="/admin/reviews">Review moderation</a><a className="btn ghost sm" href="/status">Build status</a></span></div>
     <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
       <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
     {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
