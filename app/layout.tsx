@@ -5,8 +5,10 @@ import { Mark } from '@/components/Logo';
 import { sbServer } from '@/lib/sb-server';
 import { listCategories } from '@/lib/catalog';
 
+export const viewport = { themeColor: '#021A53' };
 export const metadata: Metadata = {
-  title: { default: 'Shopeye — shop from independent Indian sellers', template: '%s | Shopeye' },
+  metadataBase: new URL('https://www.shopeye.in'),
+  title: { default: 'ShopEye — shop from independent Indian sellers', template: '%s | ShopEye' },
   description: 'A marketplace of independent Indian sellers. Secure payments, tracked delivery and easy returns.',
 };
 
@@ -28,14 +30,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="small" style={{ position: 'absolute', left: -9999 }}>Skip to content</a>
         <header className="top">
           <div className="wrap">
-            <Link href="/" className="brand" aria-label="Shopeye home"><Mark /> Shopeye</Link>
+            <Link href="/" className="brand" aria-label="ShopEye home"><Mark /></Link>
             <form action="/search" className="search" role="search">
               <input name="q" placeholder="Search kurtas, sarees, handloom…" aria-label="Search products" />
               <button type="submit">Search</button>
             </form>
             <nav className="nav" aria-label="Account">
               {isAdmin && <Link href="/admin">Admin</Link>}
-              <Link href="/seller">{isSeller ? 'Seller hub' : 'Sell on Shopeye'}</Link>
+              <Link href="/seller">{isSeller ? 'Seller hub' : 'Sell on ShopEye'}</Link>
               {user ? <Link href="/account/orders">Orders</Link> : <Link href="/login">Sign in</Link>}
               <Link href="/cart">Cart</Link>
             </nav>
@@ -48,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
         <main id="main">{children}</main>
         <footer className="foot"><div className="wrap">
-          <span>© {new Date().getFullYear()} Shopeye</span>
+          <span>© {new Date().getFullYear()} ShopEye</span>
           <span>Prices include GST. Payments are processed securely by Razorpay.</span>
           {user && <a href="/auth/signout">Sign out</a>}
         </div></footer>

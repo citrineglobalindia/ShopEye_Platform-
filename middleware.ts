@@ -4,6 +4,9 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './lib/config';
 
 // Refreshes the auth session cookie on every request
 export async function middleware(req: NextRequest) {
+  // /Status, /STATUS etc. -> /status (exact-case check avoids a redirect loop)
+  const p = req.nextUrl.pathname;
+  if (p !== '/status' && p.toLowerCase() === '/status') return NextResponse.redirect(new URL('/status', req.url), 308);
   let res = NextResponse.next({ request: req });
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {

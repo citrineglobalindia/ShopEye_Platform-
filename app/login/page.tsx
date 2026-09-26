@@ -40,7 +40,7 @@ function Login() {
           <label>Full name <span className="muted small">(only needed the first time)</span><input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} /></label>
           <label style={{ display: 'flex', gap: 10, alignItems: 'start', fontWeight: 400 }}>
             <input type="checkbox" required checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 'auto', marginTop: 4 }} />
-            <span>I agree to Shopeye’s Terms and Privacy Policy.</span></label>
+            <span>I agree to ShopEye’s Terms and Privacy Policy.</span></label>
           {err && <div className="msg err" role="alert">{err}</div>}
           <button className="btn" disabled={busy}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
         </form>

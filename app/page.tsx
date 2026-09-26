@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Aperture } from '@/components/Logo';
+import { HeroLogo } from '@/components/Logo';
 import { ProductGrid } from '@/components/ProductGrid';
 import { listCards, listCategories } from '@/lib/catalog';
 export const revalidate = 60;
@@ -14,10 +14,10 @@ export default async function Home() {
           <p>Every listing is reviewed before it goes live. Pay securely, track each package, and return within the window shown on the product.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <a className="btn" href="#new">Browse new arrivals</a>
-            <Link className="btn ghost" href="/seller">Sell on Shopeye</Link>
+            <Link className="btn ghost" href="/seller">Sell on ShopEye</Link>
           </div>
         </div>
-        <Aperture />
+        <HeroLogo />
       </section>
       {cats.length > 0 && (
         <section className="section" aria-labelledby="shop-by">

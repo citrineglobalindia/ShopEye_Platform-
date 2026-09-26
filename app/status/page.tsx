@@ -46,7 +46,7 @@ export default function StatusPage() {
     <div className="wrap section stack">
       <div>
         <h1>Build status</h1>
-        <p className="muted">Every requirement from the six Shopeye SRS documents, tracked automatically from the code on each deploy.
+        <p className="muted">Every requirement from the six ShopEye SRS documents, tracked automatically from the code on each deploy.
           Last generated {fmt(d.generatedAt)}{d.commit ? ` from commit ${d.commit}` : ''}. Test evidence from {fmt(d.evidenceAt)}.</p>
       </div>
 
@@ -63,7 +63,7 @@ export default function StatusPage() {
             <tr key={b.p} style={{ cursor: 'pointer' }} onClick={() => setPortal(b.p)}>
               <td><strong>{b.p}</strong></td><td>{b.n.toLocaleString('en-IN')}</td><td>{b.done}</td><td>{b.prog}</td><td>{b.pass}</td>
               <td><div aria-label={`${pct(b.done, b.n)}% done`} style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', background: '#E9EBF3' }}>
-                <span style={{ width: `${pct(b.done, b.n)}%`, background: 'var(--ok)' }} /><span style={{ width: `${pct(b.prog, b.n)}%`, background: 'var(--marigold)' }} /></div>
+                <span style={{ width: `${pct(b.done, b.n)}%`, background: 'var(--ok)' }} /><span style={{ width: `${pct(b.prog, b.n)}%`, background: '#9DBEEA' }} /></div>
                 <span className="small muted">{pct(b.done, b.n)}% done, {pct(b.prog, b.n)}% in progress</span></td>
             </tr>))}</tbody></table>
       </section>

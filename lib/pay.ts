@@ -15,7 +15,7 @@ export async function payForOrder(orderId: string, prefill: { email?: string; co
   await loadScript();
   return new Promise((resolve, reject) => {
     const rzp = new (window as any).Razorpay({
-      key: j.key_id, order_id: j.gateway_order_id, amount: j.amount_paise, currency: 'INR', name: 'Shopeye',
+      key: j.key_id, order_id: j.gateway_order_id, amount: j.amount_paise, currency: 'INR', name: 'ShopEye',
       description: `Order ${j.order_number}`, prefill, theme: { color: '#1C2554' },
       handler: async (resp: any) => {
         const v = await fetch('/api/payments/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(resp) });

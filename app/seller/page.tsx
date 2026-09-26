@@ -18,7 +18,7 @@ export default function SellerHub() {
   useEffect(() => { load(); }, []);
   if (state === 'loading') return <div className="wrap section">Loading…</div>;
   if (state === 'anon') return (<div className="wrap section" style={{ maxWidth: 640 }}>
-    <h1>Sell on Shopeye</h1><p>List your products, receive orders, and get paid on a weekly cycle after the return window closes.</p>
+    <h1>Sell on ShopEye</h1><p>List your products, receive orders, and get paid on a weekly cycle after the return window closes.</p>
     <Link className="btn" href="/login?next=/seller">Sign in to start</Link></div>);
   if (state === 'apply') return <Apply onDone={load} />;
   return <Dashboard vendor={vendor} />;
