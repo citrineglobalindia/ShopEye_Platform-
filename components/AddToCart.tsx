@@ -1,4 +1,5 @@
 'use client';
+// SRS: CUST-FR-041 CUST-FR-042 CUST-FR-043 (variant required, buy now, qty capped by stock and order limit)
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sb } from '@/lib/sb-browser';

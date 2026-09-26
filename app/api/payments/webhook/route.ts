@@ -1,3 +1,4 @@
+// SRS: AF-FR-0666 AF-FR-0667 (signature verification, idempotent webhook processing)
 import { NextResponse } from 'next/server';
 import { sbService } from '@/lib/sb-server';
 import { hmacHex, safeEqual } from '@/lib/razorpay';

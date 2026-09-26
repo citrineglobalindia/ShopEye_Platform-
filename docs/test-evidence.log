@@ -92,8 +92,33 @@ PASS  COD order confirmed with COD-pending payment
 PASS  New ₹1500 threshold applies: ₹49 shipping on ₹999 order
 PASS  COD cancellation creates no monetary refund
 PASS  COD blocked for non-COD pincode (rejected: COD_NOT_AVAILABLE: 110001)
+== 13. Late payment after stock hold expired
+PASS  Expired checkout hold released by scheduled job
+PASS  Late capture re-reserves stock for the paid order
+PASS  No refund flag when stock still available
+== 14. Seller onboarding → listing → moderation → sale → fulfilment (portal RPCs)
+PASS  Seller application is idempotent per user
+PASS  New seller lands in Submitted state
+PASS  New listing goes to moderation, not live
+PASS  Only https image URLs accepted
+PASS  Opening stock posted through ledger
+PASS  Seller cannot approve own listing (rejected: FORBIDDEN: missing permission catalog.product.moderate)
+PASS  Seller cannot list under another vendor (rejected: FORBIDDEN)
+PASS  Rejection needs a meaningful reason (rejected: REASON_REQUIRED)
+PASS  Moderator approves listing
+PASS  Listing stays hidden until the seller is approved
+PASS  Admin approves seller: submitted → under review → approved → active
+PASS  Listing now visible in the catalogue
+PASS  Shopper sees availability without warehouse details
+PASS  Another seller cannot touch this order (rejected: FORBIDDEN)
+PASS  Cannot ship before packing (rejected: INVALID_TRANSITION: sub_order must be ready to ship)
+PASS  Shipping needs carrier and AWB (rejected: CARRIER_AND_AWB_REQUIRED)
+PASS  Seller ships: stock leaves warehouse (4→3)
+PASS  Delivery recorded; return window opens
+PASS  Admin vendor list returns full records
+PASS  Customers cannot list vendor records (rejected: FORBIDDEN: missing permission vendor.approve)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
-PASS  Anonymous shopper sees only 2 active products (drafts hidden)
+PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
 PASS  Customer B cannot read Customer A's order by ID
 PASS  Customer sees only own address book
@@ -105,7 +130,7 @@ PASS  Vendor 2 cannot see Vendor 1 sub-orders
 PASS  Vendor cannot create products for another vendor (rejected: new row violates row-level security policy for table "products")
 PASS  Vendor cannot publish without moderation (rejected: new row violates row-level security policy for table "products")
 == 11. Books balance
-PASS  Trial balance: total debits 16679.42 = total credits 16679.42
+PASS  Trial balance: total debits 19968.38 = total credits 19968.38
 ALL TESTS PASSED
 == 12. Concurrency: 10 simultaneous checkouts for the last unit
 orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0

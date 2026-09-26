@@ -1,3 +1,4 @@
+// SRS: CUST-FR-082 CUST-FR-083 CUST-FR-085 AF-FR-0079 (server-verified capture, reconcile before re-pay, pending state, no duplicate capture)
 import { NextResponse } from 'next/server';
 import { sbService } from '@/lib/sb-server';
 import { rzp, rzpConfig, hmacHex, safeEqual } from '@/lib/razorpay';

@@ -1,3 +1,4 @@
+// SRS: CUST-FR-048 CUST-FR-049 (return policy shown before purchase; no fabricated ratings)
 import { notFound } from 'next/navigation';
 import { sbPublic } from '@/lib/sb-server';
 import AddToCart from '@/components/AddToCart';

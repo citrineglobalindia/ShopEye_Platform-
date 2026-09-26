@@ -1,3 +1,4 @@
+// SRS: CUST-FR-033 (user query rendered safely)
 import { ProductGrid } from '@/components/ProductGrid';
 import { listCards } from '@/lib/catalog';
 export const metadata = { title: 'Search', robots: { index: false } };

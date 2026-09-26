@@ -1,4 +1,5 @@
 'use client';
+// SRS: CUST-FR-010 CUST-FR-011 CUST-FR-017 CUST-FR-021 (minimal signup data, consent version recorded, no account-existence disclosure, single-use expiring OTP)
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sb } from '@/lib/sb-browser';

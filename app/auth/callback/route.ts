@@ -1,3 +1,4 @@
+// SRS: CUST-FR-016 CUST-FR-024 (return to intended action after sign-in; open-redirect protected)
 import { NextResponse } from 'next/server';
 import { sbServer } from '@/lib/sb-server';
 // Handles the email link (PKCE code or token hash) and returns to the intended page

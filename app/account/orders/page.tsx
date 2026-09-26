@@ -1,3 +1,4 @@
+// SRS: CUST-FR-094 (order history readable from snapshots)
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { sbServer } from '@/lib/sb-server';

@@ -1,4 +1,5 @@
 'use client';
+// SRS: VS-FR-096 VS-FR-099 (onboarding submitted/under review, activation on approval)
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';

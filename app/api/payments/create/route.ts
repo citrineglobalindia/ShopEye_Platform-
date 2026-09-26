@@ -1,3 +1,4 @@
+// SRS: CUST-FR-074 CUST-FR-087 (hosted Razorpay checkout; no card data on Shopeye servers)
 import { NextResponse } from 'next/server';
 import { sbServer, sbService } from '@/lib/sb-server';
 import { rzp, rzpConfig } from '@/lib/razorpay';

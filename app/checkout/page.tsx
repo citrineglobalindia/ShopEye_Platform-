@@ -1,4 +1,5 @@
 'use client';
+// SRS: CUST-FR-066 CUST-FR-069 (serviceability re-checked when the order is placed; idempotent place order)
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';

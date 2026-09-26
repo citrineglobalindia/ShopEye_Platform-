@@ -1,3 +1,4 @@
+// SRS: CUST-FR-150 (customer-safe errors, no internal detail)
 // Map database rule codes to plain customer-facing messages (CUST §30, SRS: no internal detail leaks)
 const MAP: [RegExp, string][] = [
   [/INSUFFICIENT_STOCK/, 'One of the items just sold out. Remove it or lower the quantity to continue.'],

@@ -1,0 +1,159 @@
+{
+  "_note": "Passing test name (substring) -> SRS requirement IDs that the test proves. Only exact behavioural matches are listed.",
+  "Draft product cannot self-activate": [
+    "VS-FR-887"
+  ],
+  "Direct stock balance edit blocked": [
+    "SM-FR-0173",
+    "SM-FR-0155"
+  ],
+  "Subtotal recomputed server-side": [
+    "CUST-FR-060",
+    "CUST-FR-070"
+  ],
+  "Grand total 7647.30 reconciles": [
+    "CUST-FR-060"
+  ],
+  "Customer cannot edit order totals": [
+    "CUST-FR-060"
+  ],
+  "Commission 10% frozen on line": [
+    "AF-FR-0253"
+  ],
+  "Old order keeps its frozen 10% commission": [
+    "AF-FR-0253",
+    "AF-FR-0258"
+  ],
+  "Overlapping rule with same scope/priority rejected": [
+    "AF-FR-0255"
+  ],
+  "Stock reserved at checkout": [
+    "VS-FR-299",
+    "SM-FR-0285"
+  ],
+  "Replay did not reserve stock twice": [
+    "CUST-FR-069"
+  ],
+  "Cancelled unit released from reservation": [
+    "SM-FR-0623",
+    "VS-FR-299"
+  ],
+  "Captured webhook processed": [
+    "CUST-FR-082"
+  ],
+  "Replayed webhook event ignored": [
+    "AF-FR-0667",
+    "CUST-FR-158"
+  ],
+  "Second capture event for same payment": [
+    "AF-FR-0079",
+    "AF-FR-0684"
+  ],
+  "Exactly one accounting posting for the order": [
+    "AF-FR-0079",
+    "AF-FR-0684"
+  ],
+  "Order journal balanced": [
+    "AF-FR-0422"
+  ],
+  "Refund journal balanced": [
+    "AF-FR-0422"
+  ],
+  "Trial balance": [
+    "AF-FR-0422"
+  ],
+  "Amount mismatch flagged": [
+    "AF-FR-0083"
+  ],
+  "Webhook with failed signature ignored": [
+    "AF-FR-0666"
+  ],
+  "Sensitive fields stripped from stored webhook payload": [
+    "AF-FR-0689"
+  ],
+  "Customer B cannot cancel Customer A's item": [
+    "CUST-FR-172",
+    "CUST-FR-173"
+  ],
+  "Another customer cannot raise the return": [
+    "CUST-FR-172"
+  ],
+  "Customer B cannot read Customer A's order by ID": [
+    "CUST-FR-172",
+    "CUST-FR-173"
+  ],
+  "Failed refund stays visible for retry": [
+    "AF-FR-0172"
+  ],
+  "Refund retry then duplicate success callback posts once": [
+    "AF-FR-0169",
+    "AF-FR-0172",
+    "CUST-FR-158"
+  ],
+  "Unapproved refund cannot be executed": [
+    "AF-FR-0170"
+  ],
+  "Maker cannot approve own refund": [
+    "AF-FR-0171",
+    "AF-FR-0566"
+  ],
+  "Posting into closed period denied": [
+    "AF-FR-0423",
+    "AF-FR-0526"
+  ],
+  "Reversal creates linked counter-entry": [
+    "AF-FR-0216",
+    "AF-FR-0425",
+    "AF-FR-0697"
+  ],
+  "Posted journal lines frozen": [
+    "AF-FR-0711"
+  ],
+  "Duplicate carrier event ignored": [
+    "VS-FR-893"
+  ],
+  "Out-of-order carrier event": [
+    "VS-FR-893",
+    "CUST-FR-100"
+  ],
+  "Only vendor 2 eligible": [
+    "AF-FR-0236",
+    "AF-FR-0269"
+  ],
+  "Active hold of 500 withheld from payout": [
+    "AF-FR-0315",
+    "SA-FR-426"
+  ],
+  "Preparer without approve right cannot approve batch": [
+    "AF-FR-0290",
+    "AF-FR-0291"
+  ],
+  "Checker approves settlement batch": [
+    "AF-FR-0290"
+  ],
+  "Payout execution needs execute permission": [
+    "AF-FR-0585"
+  ],
+  "Failed line keeps batch open for retry": [
+    "AF-FR-0293"
+  ],
+  "Customer has no access to finance schema": [
+    "AF-FR-0583"
+  ],
+  "Customer cannot call finance functions": [
+    "AF-FR-0583"
+  ],
+  "New seller lands in Submitted state": [
+    "VS-FR-096"
+  ],
+  "Admin approves seller": [
+    "VS-FR-099"
+  ],
+  "Exactly one winner, no oversell under race": [
+    "SM-FR-0158",
+    "SM-FR-0155"
+  ],
+  "Double-click Place Order returns same order": [
+    "CUST-FR-069"
+  ]
+}

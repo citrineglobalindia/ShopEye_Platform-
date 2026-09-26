@@ -1,4 +1,5 @@
 'use client';
+// SRS: CUST-FR-056 CUST-FR-061 CUST-FR-062 (cart persists per account, blocks unavailable items, per-item removal)
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
