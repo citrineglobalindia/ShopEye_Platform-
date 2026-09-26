@@ -1,4 +1,4 @@
-// SRS: CUST-FR-025 (responsive home, lazy-loaded images)
+// SRS: CUST-FR-025 CUST-FR-028 CUST-FR-163 (responsive home, lazy-loaded images; keyboard reachable; informative images have alt text, decorative icons are aria-hidden)
 import Link from 'next/link';
 import { HeroLogo } from '@/components/Logo';
 import { ProductGrid, Rail } from '@/components/ProductGrid';

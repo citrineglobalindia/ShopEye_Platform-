@@ -1,11 +1,12 @@
-// SRS: CUST-FR-082 CUST-FR-083 CUST-FR-085 AF-FR-0079 (server-verified capture, reconcile before re-pay, pending state, no duplicate capture)
+// SRS: CUST-FR-082 CUST-FR-083 CUST-FR-084 CUST-FR-085 AF-FR-0079 (multiple attempts, only the captured one counts; server-verified capture, reconcile before re-pay, pending state, no duplicate capture)
 import { NextResponse } from 'next/server';
 import { sbService } from '@/lib/sb-server';
-import { rzp, rzpConfig, hmacHex, safeEqual } from '@/lib/razorpay';
+import { rzp, rzpConfig, hmacHex, safeEqual, sameSite } from '@/lib/razorpay';
 
 // Called after Checkout success. Verifies the signature, then confirms the
 // capture with Razorpay's API before posting — idempotent with the webhook.
 export async function POST(req: Request) {
+  if (!sameSite(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const cfg = rzpConfig(); const svc = sbService();
   if (!cfg || !svc) return NextResponse.json({ error: 'not configured' }, { status: 503 });
   const b = await req.json().catch(() => ({}));

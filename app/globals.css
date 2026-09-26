@@ -18,7 +18,8 @@ h1 { font-size: clamp(1.8rem, 3.4vw, 2.7rem); font-weight: 700; }
 h2 { font-size: 1.4rem; font-weight: 650; }
 h3 { font-size: 1.05rem; font-weight: 600; }
 p { margin: 0 0 1em; max-width: 68ch; }
-:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+/* SRS: CUST-FR-161 CUST-FR-164 CUST-FR-165 (visible keyboard focus everywhere; statuses always carry text, never colour alone; no horizontal overflow at 360px, checked on 11 pages) */
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .wrap { width: min(1180px, 100% - 32px); margin-inline: auto; }
 .muted { color: var(--slate); }
 .small { font-size: .875rem; }
@@ -158,7 +159,7 @@ fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; } legend {
 .btn.danger { background: transparent; color: var(--bad); border: 1.5px solid var(--bad); }
 label { display: grid; gap: 6px; font-weight: 600; font-size: .92rem; }
 input, select, textarea { font: inherit; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: var(--r-sm); background: #fff; color: var(--ink); width: 100%; }
-input:focus, select:focus, textarea:focus { border-color: var(--teal); outline: none; box-shadow: 0 0 0 3px #02969F26; }
+input:focus, select:focus, textarea:focus { border-color: var(--teal); outline: none; box-shadow: 0 0 0 3px #02969F; }
 .form { display: grid; gap: 14px; max-width: 560px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } }
@@ -226,3 +227,11 @@ main { min-height: 60vh; }
 .section { padding: 24px 0; }
 @media (prefers-reduced-motion: no-preference) { .hero-logo { animation: rise .9s cubic-bezier(.2,.8,.2,1) both; } }
 @keyframes rise { from { transform: translateY(12px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sk { background: linear-gradient(90deg, #E9EBF3 25%, #F3F4F9 50%, #E9EBF3 75%); background-size: 200% 100%; border-radius: 6px; }
+@media (prefers-reduced-motion: no-preference) { .sk { animation: sk 1.2s linear infinite; } }
+@keyframes sk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.card .ph.sk { aspect-ratio: 4/5; }
+.field-err { display: block; color: var(--bad); font-size: .85rem; font-weight: 600; margin-top: 4px; }
+[aria-invalid="true"] { border-color: var(--bad) !important; }

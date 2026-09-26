@@ -1,4 +1,4 @@
-// SRS: CUST-FR-047 CUST-FR-048 CUST-FR-049 CUST-FR-050 (alternatives when unavailable; return policy before purchase; no fabricated ratings; product structured data and canonical URL)
+// SRS: CUST-FR-182 CUST-FR-029 CUST-FR-045 CUST-FR-047 CUST-FR-048 CUST-FR-049 CUST-FR-050 (product URLs use the permanent product ID, so they never change; unknown or removed products show a clean not-found page; variant switch updates photos, price and stock; alternatives when unavailable; return policy before purchase; no fabricated ratings; product structured data and canonical URL)
 import { notFound } from 'next/navigation';
 import { sbPublic } from '@/lib/sb-server';
 import { FIXTURES } from '@/lib/catalog';
@@ -19,7 +19,7 @@ async function load(id: string) {
   if (!p) return null;
   const [{ data: vars }, { data: media }, { data: avail }, { data: cat }] = await Promise.all([
     db.from('catalog_variants').select('variant_id,sku,attributes,mrp,selling_price,discount_pct,vendor_name').eq('product_id', id),
-    db.from('product_media').select('url,alt_text').eq('product_id', id).order('sort_order'),
+    db.from('product_media').select('url,alt_text,variant_id').eq('product_id', id).order('sort_order'),
     db.rpc('variant_availability', { p_product: id }),
     db.from('categories').select('name,slug,return_window_days').eq('id', p.category_id).maybeSingle(),
   ]);

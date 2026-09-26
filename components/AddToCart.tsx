@@ -6,6 +6,7 @@ import { sb } from '@/lib/sb-browser';
 import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { addToCart } from '@/lib/shop-client';
+import { useEffect } from 'react';
 
 type V = { variant_id: string; sku: string; attributes: Record<string, string>; mrp: number; selling_price: number; discount_pct: number; available: number };
 const label = (v: V) => Object.values(v.attributes || {}).join(' / ') || v.sku;
@@ -14,6 +15,7 @@ export default function AddToCart({ variants }: { variants: V[] }) {
   const router = useRouter();
   const first = variants.find((v) => v.available > 0) ?? variants[0];
   const [sel, setSel] = useState<V>(first);
+  useEffect(() => { if (sel) window.dispatchEvent(new CustomEvent('shopeye:variant', { detail: sel.variant_id })); }, [sel?.variant_id]);
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null);

@@ -1,9 +1,10 @@
-// SRS: CUST-FR-031 CUST-FR-035 CUST-FR-036 CUST-FR-037 (paged results with stable URLs; filters and sort in the URL; mobile filter drawer with Apply and Clear; removable filter chips)
+// SRS: CUST-FR-031 CUST-FR-035 CUST-FR-036 CUST-FR-037 CUST-FR-038 (sort/filter keep scroll position; paged results with stable URLs; filters and sort in the URL; mobile filter drawer with Apply and Clear; removable filter chips)
 import Link from 'next/link';
 import { ProductGrid } from '@/components/ProductGrid';
 import type { ListResult } from '@/lib/catalog';
 import { inr } from '@/lib/config';
 import { FilterBox } from '@/components/FilterBox';
+import { SortSelect, FilterForm } from '@/components/ListingControls';
 
 const SORTS: [string, string][] = [['', 'Relevance'], ['new', 'Newest first'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low'], ['discount', 'Biggest discount']];
 const OFFS = [10, 20, 30, 40];
@@ -20,7 +21,7 @@ export function Listing({ base, params, result, empty }: { base: string; params:
     <div className="listing">
       <aside className="filters">
         <FilterBox label={`Filters${chips.length ? ` (${chips.length})` : ''}`}>
-          <form action={base} className="stack" style={{ gap: 14 }}>
+          <FilterForm base={base}>
             {keep.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
             {params.sort && <input type="hidden" name="sort" value={params.sort} />}
             <fieldset><legend>Price (₹)</legend>
@@ -32,23 +33,19 @@ export function Listing({ base, params, result, empty }: { base: string; params:
               {OFFS.map((o) => <label key={o} className="radio"><input type="radio" name="off" value={o} defaultChecked={params.off === String(o)} /> {o}% or more</label>)}
               <label className="radio"><input type="radio" name="off" value="" defaultChecked={!params.off} /> Any</label>
             </fieldset>
-            <div className="cta-row"><button className="btn dark sm">Apply filters</button><Link className="btn ghost sm" href={base + qs({ q: params.q, sort: params.sort }, {})}>Clear</Link></div>
-          </form>
+            <div className="cta-row"><button className="btn dark sm">Apply filters</button><Link className="btn ghost sm" scroll={false} href={base + qs({ q: params.q, sort: params.sort }, {})}>Clear</Link></div>
+          </FilterForm>
         </FilterBox>
       </aside>
       <div className="stack" style={{ gap: 14 }}>
         <div className="list-bar">
           <span className="small muted" aria-live="polite">{result.total.toLocaleString('en-IN')} {result.total === 1 ? 'product' : 'products'}</span>
-          <form action={base} className="sort-form">
-            {Object.entries(params).filter(([k, v]) => k !== 'sort' && k !== 'page' && v).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
-            <label className="small">Sort by <select name="sort" defaultValue={params.sort ?? ''}>{SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-            <button className="btn ghost sm">Sort</button>
-          </form>
+          <div className="sort-form"><SortSelect base={base} params={params} options={SORTS} /></div>
         </div>
         {chips.length > 0 && (
           <div className="chips" aria-label="Active filters">
-            {chips.map(([k, l]) => <Link key={k} className="chip-x" href={base + qs(params, { [k]: undefined, page: undefined })} aria-label={`Remove filter ${l}`}>{l} <span aria-hidden="true">×</span></Link>)}
-            <Link className="small" href={base + qs({ q: params.q }, {})}>Clear all</Link>
+            {chips.map(([k, l]) => <Link key={k} scroll={false} className="chip-x" href={base + qs(params, { [k]: undefined, page: undefined })} aria-label={`Remove filter ${l}`}>{l} <span aria-hidden="true">×</span></Link>)}
+            <Link className="small" scroll={false} href={base + qs({ q: params.q }, {})}>Clear all</Link>
           </div>)}
         <ProductGrid items={result.items} empty={empty} />
         {result.pages > 1 && (

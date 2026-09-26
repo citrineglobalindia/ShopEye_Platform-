@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import { sb } from '@/lib/sb-browser';
 
-export function Gallery({ media, title }: { media: { url: string; alt_text?: string }[]; title: string }) {
-  const [i, setI] = useState(0);
+export function Gallery({ media: all, title }: { media: { url: string; alt_text?: string; variant_id?: string | null }[]; title: string }) {
+  const [i, setI] = useState(0); const [variant, setVariant] = useState<string | null>(null);
+  useEffect(() => { const on = (e: any) => { setVariant(e.detail); setI(0); }; window.addEventListener('shopeye:variant', on); return () => window.removeEventListener('shopeye:variant', on); }, []);
+  // photos for the chosen variant first, then photos shared by all variants
+  const own = all.filter((m) => variant && m.variant_id === variant);
+  const media = own.length ? [...own, ...all.filter((m) => !m.variant_id)] : all.filter((m) => !m.variant_id || !all.some((x) => !x.variant_id)).length ? all.filter((m) => !m.variant_id) : all;
   if (!media.length) return <div className="gallery-main empty-photo">Photos coming soon</div>;
   return (
     <div className="gallery">

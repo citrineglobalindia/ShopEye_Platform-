@@ -1,10 +1,11 @@
-// SRS: CUST-FR-074 CUST-FR-087 (hosted Razorpay checkout; no card data on ShopEye servers)
+// SRS: CUST-FR-074 CUST-FR-087 CUST-FR-176 (hosted Razorpay checkout; no card data on ShopEye servers)
 import { NextResponse } from 'next/server';
 import { sbServer, sbService } from '@/lib/sb-server';
-import { rzp, rzpConfig } from '@/lib/razorpay';
+import { rzp, rzpConfig, sameSite } from '@/lib/razorpay';
 
 // Creates (or reuses) the Razorpay order for a ShopEye order the caller owns.
 export async function POST(req: Request) {
+  if (!sameSite(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const cfg = rzpConfig(); const svc = sbService();
   if (!cfg || !svc) return NextResponse.json({ error: 'Online payment is being set up. Choose cash on delivery or try again later.' }, { status: 503 });
   const { order_id } = await req.json().catch(() => ({}));

@@ -1,5 +1,5 @@
 'use client';
-// SRS: CUST-FR-010 CUST-FR-011 CUST-FR-017 CUST-FR-021 CUST-FR-008 (sign up from the account page or mid-checkout via ?next; minimal signup data, consent version recorded, no account-existence disclosure, single-use expiring OTP)
+// SRS: CUST-FR-005 CUST-FR-007 CUST-FR-012 CUST-FR-018 CUST-FR-010 CUST-FR-011 CUST-FR-017 CUST-FR-021 CUST-FR-008 (return to the interrupted page via ?next; one account per verified email (Supabase Auth unique identity); code sending and verification rate-limited and throttled by Supabase Auth rate limits; sign up from the account page or mid-checkout via ?next; minimal signup data, consent version recorded, no account-existence disclosure, single-use expiring OTP)
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sb } from '@/lib/sb-browser';
@@ -20,14 +20,14 @@ function Login() {
                  data: name ? { full_name: name.trim(), terms_version: '2026-09', privacy_version: '2026-09' } : undefined },
     });
     setBusy(false);
-    if (error) { setErr(/rate|seconds/i.test(error.message) ? 'Please wait a minute before requesting another email.' : 'We couldn’t send the email. Check the address and try again.'); return; }
+    if (error) { setErr(/rate|seconds|security purposes/i.test(error.message) ? 'Please wait a minute before requesting another code.' : /invalid|format/i.test(error.message) ? 'That email address doesn’t look right. Check it and try again.' : 'We couldn’t send the email right now. Please try again in a minute.'); return; }
     setStep('code'); setInfo(`We sent a sign-in code to ${email}. Enter it below, or tap the link in the email on this device.`);
   }
   async function verify(e: React.FormEvent) {
     e.preventDefault(); setErr(''); setBusy(true);
     const { error } = await sb().auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
     setBusy(false);
-    if (error) { setErr('That code is wrong or has expired. Request a new one.'); return; }
+    if (error) { setErr(/rate|many/i.test(error.message) ? 'Too many attempts. Wait a few minutes, then request a new code.' : 'That code is wrong or has expired. Request a new one.'); return; }
     router.replace(next); router.refresh();
   }
   return (

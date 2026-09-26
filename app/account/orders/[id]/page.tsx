@@ -1,5 +1,5 @@
-// SRS: CUST-FR-075 CUST-FR-086 CUST-FR-089 CUST-FR-090 CUST-FR-093 CUST-FR-094 CUST-FR-095 CUST-FR-096 CUST-FR-099 CUST-FR-101 CUST-FR-102 CUST-FR-110 CUST-FR-114 CUST-FR-116 CUST-FR-117 CUST-FR-122 CUST-FR-123 CUST-FR-125 CUST-FR-139
-// (pending payment shows hold time; owner-only order page reachable by refresh without new order; snapshots; item-level status;
+// SRS: CUST-FR-121 CUST-FR-137 CUST-FR-152 CUST-FR-075 CUST-FR-086 CUST-FR-089 CUST-FR-090 CUST-FR-093 CUST-FR-094 CUST-FR-095 CUST-FR-096 CUST-FR-099 CUST-FR-101 CUST-FR-102 CUST-FR-110 CUST-FR-114 CUST-FR-116 CUST-FR-117 CUST-FR-122 CUST-FR-123 CUST-FR-125 CUST-FR-139
+// (partial returns reflected in the money summary; links from emails require sign-in and handle missing orders; phone number masked; pending payment shows hold time; owner-only order page reachable by refresh without new order; snapshots; item-level status;
 //  refunded/cancelled amounts separate; split shipment timelines with stale-update notice and delivery date; item cancellation with refund tracking;
 //  return timeline and rejection reason with help path; each refund listed and summed; failed refund next steps; contextual help link)
 import { notFound, redirect } from 'next/navigation';
@@ -124,7 +124,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
             {(refundedTotal > 0 || refundPending > 0) && <div className="small"><strong>Net paid after refunds</strong><strong>{inr(Number(o.grand_total) - refundedTotal)}</strong></div>}
             <p className="small muted" style={{ margin: 0 }}>{o.payment_method === 'cod' ? 'Cash on delivery' : 'Paid online via Razorpay'}</p>
           </div>
-          <div className="panel small"><h3>Delivering to</h3><p style={{ margin: 0 }}>{a.recipient}<br />{a.line1}, {a.line2}<br />{a.city} {a.pincode}<br />{a.mobile}</p></div>
+          <div className="panel small"><h3>Delivering to</h3><p style={{ margin: 0 }}>{a.recipient}<br />{a.line1}, {a.line2}<br />{a.city} {a.pincode}<br />{a.mobile ? `+91 ••••• ${String(a.mobile).slice(-4)}` : ''}</p></div>
           <div className="panel stack small">
             <Reorder lines={(items ?? []).map((it: any) => ({ variant_id: it.variant_id, qty: it.qty, title: it.product_snapshot?.title }))} />
             <Link className="btn ghost sm" href={`/support/new?order=${o.id}&category=order`}>Get help with this order</Link>

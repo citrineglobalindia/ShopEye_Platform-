@@ -1,5 +1,5 @@
 'use client';
-// SRS: CUST-FR-020 CUST-FR-051 CUST-FR-134 CUST-FR-135 CUST-FR-136 CUST-FR-064 CUST-FR-065 CUST-FR-067 CUST-FR-145 (sign out other devices; clear recently viewed; essential messages can't be switched off; marketing separate and opt-in; saved state shown; add/edit/delete/select addresses; deletion archives so past orders keep their snapshot; profile edits never change past orders)
+// SRS: CUST-FR-143 CUST-FR-147 CUST-FR-151 CUST-FR-020 CUST-FR-051 CUST-FR-134 CUST-FR-135 CUST-FR-136 CUST-FR-064 CUST-FR-065 CUST-FR-067 CUST-FR-145 (new email only replaces the old one after both are confirmed; download personal data; expired session returns to login and back here; sign out other devices; clear recently viewed; essential messages can't be switched off; marketing separate and opt-in; saved state shown; add/edit/delete/select addresses; deletion archives so past orders keep their snapshot; profile edits never change past orders)
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ export default function Account() {
   const [user, setUser] = useState<any>(null); const [name, setName] = useState(''); const [addrs, setAddrs] = useState<any[]>([]);
   const [form, setForm] = useState<any>(null); const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
   const [prefs, setPrefs] = useState({ marketing_email: false, marketing_sms: false, marketing_whatsapp: false }); const [prefMsg, setPrefMsg] = useState(''); const [rv, setRv] = useState(0);
+  const [newEmail, setNewEmail] = useState(''); const [emailMsg, setEmailMsg] = useState('');
   async function load() {
     const db = sb(); const { data: { user } } = await db.auth.getUser();
     if (!user) { router.replace('/login?next=/account'); return; }
@@ -28,6 +29,33 @@ export default function Account() {
     setPrefs(next); setPrefMsg('Saving…');
     const { error } = await sb().from('customer_preferences').upsert({ customer_id: user.id, ...next });
     setPrefMsg(error ? 'Could not save. Try again.' : `Saved ${new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}. Applies to messages from now on.`);
+  }
+  async function changeEmail(e: React.FormEvent) {
+    e.preventDefault(); setEmailMsg('');
+    const v = newEmail.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { setEmailMsg('Enter a valid email address.'); return; }
+    if (v === (user.email || '').toLowerCase()) { setEmailMsg('That’s already your email.'); return; }
+    // Supabase "secure email change": a confirmation goes to BOTH addresses; the old one stays active until both are confirmed
+    const { error } = await sb().auth.updateUser({ email: v }, { emailRedirectTo: `${location.origin}/auth/callback?next=/account` });
+    setEmailMsg(error ? (/rate|seconds/i.test(error.message) ? 'Please wait a minute and try again.' : /already|registered/i.test(error.message) ? 'That email is used by another account.' : 'Could not start the change. Try again.')
+                      : `Check both ${user.email} and ${v} and confirm in each. Until then, keep signing in with ${user.email}.`);
+    if (!error) setNewEmail('');
+  }
+  async function downloadData() {
+    const db = sb();
+    const [p, a, o, oi, t, pr, w] = await Promise.all([
+      db.from('profiles').select('full_name,email,mobile,created_at').eq('id', user.id).maybeSingle(),
+      db.from('customer_addresses').select('recipient,mobile,line1,line2,landmark,city,state_code,pincode,address_type,is_default,created_at,archived_at').eq('customer_id', user.id),
+      db.from('orders').select('order_number,status,payment_status,payment_method,subtotal,discount_total,shipping_total,grand_total,placed_at,ship_address'),
+      db.from('order_items').select('order_id,product_snapshot,qty,unit_price,line_total,cancelled_qty,return_requested_qty'),
+      db.from('support_tickets').select('ticket_number,category,subject,message,status,created_at'),
+      db.from('customer_preferences').select('marketing_email,marketing_sms,marketing_whatsapp,updated_at').maybeSingle(),
+      db.from('wishlist_items').select('product_id,added_at')]);
+    const data = { exported_at: new Date().toISOString(), account: { ...p.data, sign_in_email: user.email }, addresses: a.data, orders: o.data, order_items: oi.data,
+      help_requests: t.data, communication_preferences: pr.data, wishlist: w.data, note: 'Payment card details are never stored by ShopEye. For deletion or correction requests, contact support.' };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    Object.assign(document.createElement('a'), { href: url, download: `shopeye-my-data-${new Date().toISOString().slice(0, 10)}.json` }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
   async function signOutOthers() {
     const { error } = await sb().auth.signOut({ scope: 'others' });
@@ -120,6 +148,13 @@ export default function Account() {
       </section>
       <section className="panel stack" aria-labelledby="sec-h">
         <h2 id="sec-h" style={{ margin: 0 }}>Privacy and security</h2>
+        <form className="addr" onSubmit={changeEmail}>
+          <div style={{ flex: 1, minWidth: 220 }}><strong>Sign-in email</strong><div className="small muted">Now: {user.email}</div>
+            <label className="small" style={{ marginTop: 6 }}>New email<input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} autoComplete="email" /></label>
+            {emailMsg && <p className="small" role="status" style={{ margin: '6px 0 0' }}>{emailMsg}</p>}</div>
+          <button className="btn ghost sm" style={{ alignSelf: 'end' }}>Change email</button>
+        </form>
+        <div className="addr"><div><strong>Your data</strong><div className="small muted">Download your profile, addresses, orders, help requests and preferences as a file.</div></div><button className="btn ghost sm" onClick={downloadData}>Download my data</button></div>
         <div className="addr"><div><strong>Signed in on other devices?</strong><div className="small muted">Signs you out everywhere except this device.</div></div><button className="btn ghost sm" onClick={signOutOthers}>Sign out other devices</button></div>
         <div className="addr"><div><strong>Recently viewed</strong><div className="small muted">{rv ? `${rv} products remembered on this device.` : 'Nothing remembered on this device.'}</div></div>{rv > 0 && <button className="btn ghost sm" onClick={() => { clearRecent(); setRv(0); }}>Clear</button>}</div>
       </section>

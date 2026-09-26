@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
 import { inr, shipFor, SHIP_FREE_AT } from '@/lib/config';
 import { guestCart, setGuestCart, cartChanged } from '@/lib/shop-client';
+import { Crumbs } from '@/components/Crumbs';
 
 type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
 export default function Cart() {
@@ -74,6 +75,7 @@ export default function Cart() {
   return (
     <div className="wrap section split">
       <div className="stack">
+        <Crumbs items={[['Home', '/'], ['Cart']]} />
         <h1 style={{ margin: 0 }}>Your cart</h1>
         {!user && <div className="msg info">You’re not signed in. Your cart is saved on this device; <Link href="/login?next=/cart">sign in</Link> to keep it with your account.</div>}
         {blocked && <div className="msg err" role="alert">Some items need attention before checkout.</div>}

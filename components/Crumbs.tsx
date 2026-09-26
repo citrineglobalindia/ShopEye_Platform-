@@ -1,4 +1,4 @@
-// Breadcrumb trail (used on category, product and help pages)
+// SRS: CUST-FR-006 (breadcrumbs on every customer page except home, sign-in and checkout, where they would reduce clarity)
 import Link from 'next/link';
 export function Crumbs({ items }: { items: [string, string?][] }) {
   return (
