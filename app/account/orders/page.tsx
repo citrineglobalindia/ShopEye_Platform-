@@ -1,0 +1,24 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { sbServer } from '@/lib/sb-server';
+import { inr } from '@/lib/config';
+import { StatusChip } from '@/components/Status';
+export const metadata = { title: 'My orders', robots: { index: false } };
+export const dynamic = 'force-dynamic';
+
+export default async function Orders() {
+  const db = await sbServer(); const { data: { user } } = await db.auth.getUser();
+  if (!user) redirect('/login?next=/account/orders');
+  const { data: orders } = await db.from('orders').select('id,order_number,placed_at,status,payment_status,grand_total').eq('customer_id', user.id).order('placed_at', { ascending: false }).limit(50);
+  return (<div className="wrap section stack">
+    <h1>My orders</h1>
+    {!orders?.length ? <div className="panel"><p>You haven’t placed an order yet.</p><Link className="btn" href="/">Start shopping</Link></div> : (
+      <div className="panel tablewrap"><table>
+        <thead><tr><th>Order</th><th>Placed</th><th>Status</th><th>Payment</th><th>Total</th></tr></thead>
+        <tbody>{orders.map((o: any) => (<tr key={o.id}>
+          <td><Link href={`/account/orders/${o.id}`}><strong>{o.order_number}</strong></Link></td>
+          <td>{new Date(o.placed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+          <td><StatusChip s={o.status} /></td><td><StatusChip s={o.payment_status} /></td><td>{inr(o.grand_total)}</td></tr>))}</tbody>
+      </table></div>)}
+  </div>);
+}

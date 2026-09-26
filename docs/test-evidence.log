@@ -1,0 +1,112 @@
+== 1. Status models & direct-write guards
+PASS  Vendor active→draft rejected by server (VS-FR-887) (rejected: INVALID_TRANSITION: vendor cannot move from active to draft)
+PASS  Draft product cannot self-activate without review (rejected: INVALID_TRANSITION: product cannot move from draft to active)
+PASS  Rejected product must be resubmitted, not activated (VS-FR-888) (rejected: INVALID_TRANSITION: product cannot move from rejected to active)
+PASS  Direct stock balance edit blocked; ledger-only (rejected: DIRECT_STOCK_WRITE_FORBIDDEN: use app.post_stock_movement())
+PASS  Selling price above MRP rejected (rejected: new row for relation "product_variants" violates check constraint "product_variants_check")
+PASS  Variant cannot be attached to another vendor's product (rejected: VARIANT_VENDOR_MISMATCH)
+== 2. Checkout: server pricing, coupon allocation, idempotency (UAT-007/010/012)
+PASS  Subtotal recomputed server-side = 8497.00
+PASS  FESTIVE10: 10% of eligible = 849.70
+PASS  Free shipping per vendor package above threshold
+PASS  Grand total 7647.30 reconciles (subtotal - discount + shipping)
+PASS  One master order split into 2 vendor sub-orders
+PASS  Coupon allocation across lines sums exactly to order discount
+PASS  Discount funding split platform/vendor sums to line discount (AF-FR-0474)
+PASS  Commission 10% frozen on line (584.91)
+PASS  Stock reserved at checkout (2 units)
+PASS  Double-click Place Order returns same order, no duplicate (UAT-012)
+PASS  Replay did not reserve stock twice
+PASS  Coupon per-customer usage limit enforced (rejected: COUPON_USAGE_LIMIT)
+PASS  Quantity above per-order limit blocked (CUST-FR-043) (rejected: QTY_LIMIT_EXCEEDED: KRT-M max 10)
+PASS  Cannot check out to another customer's address (rejected: ADDRESS_NOT_FOUND)
+== 3. Payment webhooks: capture, duplicates, mismatch (UAT-25, AF-FR-0079/0083)
+PASS  Captured webhook processed
+PASS  Order confirmed only by server-verified capture (CUST-FR-082)
+PASS  Sensitive fields stripped from stored webhook payload
+PASS  Replayed webhook event ignored (UAT-25)
+PASS  Second capture event for same payment does not double-post
+PASS  Exactly one accounting posting for the order
+PASS  Order journal balanced (Dr 8974.53 = Cr 8974.53)
+PASS  Vendor 1 net earning 1685.91 = 1898.10 sale - 212.19 commission+GST (got 1685.91)
+PASS  Amount mismatch flagged, order not confirmed
+PASS  Mismatched payment leaves order pending
+PASS  Webhook with failed signature ignored
+PASS  Captured payment amount immutable (AF-FR-0077) (rejected: IMMUTABLE_PAYMENT_FIELD)
+== 4. Cancellation & refunds (UAT-015/018, UAT-06/07/23)
+PASS  Partial cancel refunds pro-rata of discounted line: 899.10 (CUST-FR-111)
+PASS  Repeated cancel request is idempotent — one refund (CUST-FR-113)
+PASS  Cancelled unit released from reservation
+PASS  Order shows Partially Cancelled
+PASS  Refund under threshold needs no checker
+PASS  Customer B cannot cancel Customer A's item (UAT-021) (rejected: FORBIDDEN)
+PASS  Failed refund stays visible for retry (UAT-07)
+PASS  Refund retry then duplicate success callback posts once
+PASS  Refund journal balanced (Dr 1055.15 = Cr 1055.15)
+PASS  Payment shows Partially Refunded
+PASS  Refund ≥ 1000 routed to checker (AF-FR-0170)
+PASS  Accountant (preparer) lacks refund approval right (AF-FR-0586) (rejected: FORBIDDEN: missing permission refund.approve)
+PASS  Unapproved refund cannot be executed (rejected: REFUND_NOT_APPROVED: pending)
+PASS  Maker cannot approve own refund even with approve right (UAT-23) (rejected: SELF_APPROVAL_FORBIDDEN: maker cannot approve own item)
+PASS  Independent checker approves
+PASS  Refund above refundable balance blocked (CUST-FR-124) (rejected: REFUND_EXCEEDS_BALANCE: requested 99999.00 refundable 4048.20)
+== 5. Ledger immutability, balanced journals, closed periods (UAT-17/22/28/30)
+PASS  Stock ledger is append-only (SM-FR-0173) (rejected: IMMUTABLE_RECORD: UPDATE on public.stock_ledger is not permitted; post a reversal/correcti)
+PASS  Vendor ledger is append-only (AF-FR-0234) (rejected: IMMUTABLE_RECORD: DELETE on finance.vendor_ledger is not permitted; post a reversal/correc)
+PASS  Audit log cannot be deleted (AF-FR-0603) (rejected: IMMUTABLE_RECORD: DELETE on app.audit_log is not permitted; post a reversal/correction ins)
+PASS  Posted journal lines frozen (rejected: IMMUTABLE_RECORD: journal is posted; post a reversing journal)
+PASS  Unbalanced journal cannot post (UAT-17) (rejected: UNBALANCED_JOURNAL: debit 100.00 credit 90.00 lines 2)
+PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-17 is in a closed period)
+PASS  Reversal creates linked counter-entry, original preserved (UAT-30)
+PASS  Audit log captures before/after for vendor activation (UAT-28)
+== 6. Fulfilment, delivery, returns (UAT-013/016, VS-FR-892)
+PASS  Cannot ship before pack/ready-to-ship (VS-FR-891) (rejected: INVALID_TRANSITION: sub_order cannot move from confirmed to shipped)
+PASS  Dispatch consumes on-hand 10→9 and releases reservation
+PASS  No simple cancellation after carrier handover (VS-FR-892) (rejected: NOT_CANCELLABLE: sub-order is shipped)
+PASS  Duplicate carrier event ignored
+PASS  Delivery opens 7-day category return window
+PASS  Split shipment: order Partially Delivered (UAT-013)
+PASS  Return qty > delivered-not-cancelled blocked (CUST-FR-115) (rejected: RETURN_QTY_EXCEEDS_DELIVERED)
+PASS  Damage claim requires photo evidence (rejected: EVIDENCE_REQUIRED)
+PASS  Return request idempotent
+PASS  Another customer cannot raise the return (rejected: FORBIDDEN)
+PASS  Out-of-order carrier event (older than last) ignored
+== 7. Settlements, holds, maker-checker payouts (UAT-09/10/11)
+PASS  Only vendor 2 eligible; vendor 1 excluded (open return / window)
+PASS  Eligible = 6174.05 sale - 690.19 commission+GST = 5483.86
+PASS  Active hold of 500 withheld from payout (UAT-11)
+PASS  Preparer without approve right cannot approve batch (rejected: FORBIDDEN: missing permission payout.approve)
+PASS  Payout execution needs execute permission (rejected: FORBIDDEN: missing permission payout.execute)
+PASS  Checker approves settlement batch
+PASS  Failed line keeps batch open for retry (UAT-10)
+PASS  Paid status needs bank UTR (rejected: UTR_REQUIRED)
+PASS  Duplicate payout callback does not pay twice (AF-FR-0292)
+PASS  Batch completed
+PASS  Already-settled sub-order never enters another batch
+== 8. Commission snapshot & rule governance (UAT-12)
+PASS  New vendor rule (20%) applies to new order: 1299.80
+PASS  Old order keeps its frozen 10% commission
+PASS  Overlapping rule with same scope/priority rejected (rejected: conflicting key value violates exclusion constraint "commission_rules_coalesce_coalesce1_p)
+== 9. COD rules (CUST-FR-112)
+PASS  COD order confirmed with COD-pending payment
+PASS  New ₹1500 threshold applies: ₹49 shipping on ₹999 order
+PASS  COD cancellation creates no monetary refund
+PASS  COD blocked for non-COD pincode (rejected: COD_NOT_AVAILABLE: 110001)
+== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
+PASS  Anonymous shopper sees only 2 active products (drafts hidden)
+PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
+PASS  Customer B cannot read Customer A's order by ID
+PASS  Customer sees only own address book
+PASS  Customer has no access to finance schema (rejected: permission denied for schema finance)
+PASS  Customer cannot call finance functions (rejected: permission denied for schema finance)
+PASS  Customer cannot edit order totals (rejected: permission denied for table orders)
+PASS  Vendor 2 sees only its own sub-orders
+PASS  Vendor 2 cannot see Vendor 1 sub-orders
+PASS  Vendor cannot create products for another vendor (rejected: new row violates row-level security policy for table "products")
+PASS  Vendor cannot publish without moderation (rejected: new row violates row-level security policy for table "products")
+== 11. Books balance
+PASS  Trial balance: total debits 16679.42 = total credits 16679.42
+ALL TESTS PASSED
+== 12. Concurrency: 10 simultaneous checkouts for the last unit
+orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0
+PASS  Exactly one winner, no oversell under race
