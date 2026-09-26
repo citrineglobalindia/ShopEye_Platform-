@@ -117,6 +117,16 @@ PASS  Seller ships: stock leaves warehouse (4→3)
 PASS  Delivery recorded; return window opens
 PASS  Admin vendor list returns full records
 PASS  Customers cannot list vendor records (rejected: FORBIDDEN: missing permission vendor.approve)
+== 15. QA sign-off on SRS requirements (/status)
+PASS  Customers cannot mark requirements tested (rejected: FORBIDDEN: missing permission srs.signoff)
+PASS  Admin marks a requirement tested
+PASS  Marking failed needs a note (rejected: NOTE_REQUIRED: say what failed)
+PASS  Unknown requirement ID rejected (rejected: INVALID_REQUIREMENT_ID)
+PASS  Latest sign-off replaces the current result
+PASS  Every sign-off kept in history
+PASS  Sign-off history cannot be deleted (rejected: IMMUTABLE_RECORD: DELETE on public.requirement_signoff_log is not permitted; post a revers)
+PASS  Public sees result but not note or tester
+PASS  Public cannot read sign-off history
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)

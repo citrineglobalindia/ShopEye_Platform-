@@ -311,6 +311,24 @@ begin
   perform test.throws($q$ select public.admin_list_vendors() $q$, 'FORBIDDEN', 'Customers cannot list vendor records');
 end $$;
 
+
+\echo '== 15. QA sign-off on SRS requirements (/status)'
+do $$ begin
+  perform test.act_as(test.id('cust_a'));
+  perform test.throws($q$ select public.mark_requirement('CUST-FR-001', 'passed') $q$, 'FORBIDDEN', 'Customers cannot mark requirements tested');
+  perform test.act_as(test.id('admin'));
+  perform test.ok(public.mark_requirement('CUST-FR-001', 'passed', 'Header verified on desktop and mobile') = 'passed', 'Admin marks a requirement tested');
+  perform test.throws($q$ select public.mark_requirement('CUST-FR-001', 'failed') $q$, 'NOTE_REQUIRED', 'Marking failed needs a note');
+  perform test.throws($q$ select public.mark_requirement('BAD-1', 'passed') $q$, 'INVALID_REQUIREMENT_ID', 'Unknown requirement ID rejected');
+  perform public.mark_requirement('CUST-FR-001', 'failed', 'Cart count badge missing');
+  perform test.ok((select result from public.requirement_signoffs where req_id = 'CUST-FR-001') = 'failed', 'Latest sign-off replaces the current result');
+  perform test.ok((select count(*) from public.requirement_signoff_history('CUST-FR-001')) = 2, 'Every sign-off kept in history');
+  perform test.throws($q$ delete from public.requirement_signoff_log $q$, 'IMMUTABLE_RECORD', 'Sign-off history cannot be deleted');
+  perform test.act_as(test.id('cust_b'));
+  perform test.ok((select note is null and tested_by_name is null from public.requirement_signoff_list() where req_id = 'CUST-FR-001'), 'Public sees result but not note or tester');
+  perform test.ok((select count(*) from public.requirement_signoff_history('CUST-FR-001')) = 0, 'Public cannot read sign-off history');
+end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;
