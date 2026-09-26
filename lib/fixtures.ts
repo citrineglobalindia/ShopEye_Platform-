@@ -7,7 +7,7 @@ export const FIX_CATS = [
   { id: 'c5', name: 'Home & Decor', slug: 'home-decor', parent_id: null }, { id: 'c6', name: 'Jewellery', slug: 'jewellery', parent_id: null },
 ];
 const P = (i: number, title: string, cat: string, price: number, mrp: number, vendor: string, a: string, b: string, label: string) =>
-  ({ product_id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, title, category_id: cat, selling_price: price, mrp, discount_pct: Math.round((100 * (mrp - price)) / mrp), vendor_name: vendor, image: tile(a, b, label), published_at: `2026-09-${String(26 - i).padStart(2, '0')}` });
+  ({ product_id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, title, category_id: cat, selling_price: price, mrp, discount_pct: Math.round((100 * (mrp - price)) / mrp), vendor_name: vendor, image: tile(a, b, label), in_stock: i !== 4, published_at: `2026-09-${String(26 - i).padStart(2, '0')}` });
 export const FIX_PRODUCTS = [
   P(1, 'Kanchipuram Silk Saree with Zari Border', 'c1', 12499, 16999, 'Mysore Silk House', '#6B1D3A', '#C0395E', 'Silk saree'),
   P(2, 'Handloom Cotton Kurta, Indigo Block Print', 'c2', 999, 1499, 'Citrine Weaves', '#0B3A8C', '#3F7BD8', 'Cotton kurta'),

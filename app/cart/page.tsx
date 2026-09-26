@@ -1,61 +1,101 @@
 'use client';
-// SRS: CUST-FR-056 CUST-FR-061 CUST-FR-062 (cart persists per account, blocks unavailable items, per-item removal)
+// SRS: CUST-FR-055 CUST-FR-056 CUST-FR-059 CUST-FR-061 CUST-FR-062 (save for later excluded from totals; account cart persists; totals recalc on change; unavailable items block checkout; per-item removal)
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
-import { inr } from '@/lib/config';
+import { inr, shipFor, SHIP_FREE_AT } from '@/lib/config';
+import { guestCart, setGuestCart, cartChanged } from '@/lib/shop-client';
 
+type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
 export default function Cart() {
-  const [items, setItems] = useState<any[] | null>(null); const [signedIn, setSignedIn] = useState(true);
+  const [lines, setLines] = useState<Line[] | null>(null); const [user, setUser] = useState<any>(undefined); const [cartId, setCartId] = useState<string | null>(null);
   async function load() {
-    const db = sb(); const { data: { user } } = await db.auth.getUser();
-    if (!user) { setSignedIn(false); setItems([]); return; }
-    const { data: cart } = await db.from('carts').select('id').eq('customer_id', user.id).eq('status', 'active').maybeSingle();
-    if (!cart) { setItems([]); return; }
-    const { data: ci } = await db.from('cart_items').select('id,qty,price_at_add,variant_id').eq('cart_id', cart.id).eq('saved_for_later', false).order('added_at');
-    const ids = (ci ?? []).map((c: any) => c.variant_id);
-    const { data: cv } = ids.length ? await db.from('catalog_variants').select('variant_id,product_id,title,attributes,selling_price,mrp,vendor_name').in('variant_id', ids) : { data: [] };
-    const m = new Map((cv ?? []).map((v: any) => [v.variant_id, v]));
-    setItems((ci ?? []).map((c: any) => ({ ...c, v: m.get(c.variant_id) })));
+    const db = sb(); const { data: { user } } = await db.auth.getUser(); setUser(user);
+    let raw: Line[] = [];
+    if (!user) raw = guestCart().map((l) => ({ key: l.variant_id, qty: l.qty, price_at_add: l.price, variant_id: l.variant_id, saved: false }));
+    else {
+      const { data: cart } = await db.from('carts').select('id').eq('customer_id', user.id).eq('status', 'active').maybeSingle();
+      setCartId(cart?.id ?? null);
+      if (cart) { const { data } = await db.from('cart_items').select('id,qty,price_at_add,variant_id,saved_for_later').eq('cart_id', cart.id).order('added_at');
+        raw = (data ?? []).map((c: any) => ({ key: c.id, qty: c.qty, price_at_add: Number(c.price_at_add), variant_id: c.variant_id, saved: c.saved_for_later })); }
+    }
+    const ids = [...new Set(raw.map((l) => l.variant_id))];
+    const { data: cv } = ids.length ? await db.from('catalog_variants').select('variant_id,product_id,title,attributes,selling_price,mrp,vendor_name,vendor_id,max_qty_per_order').in('variant_id', ids) : { data: [] };
+    const pids = [...new Set((cv ?? []).map((v: any) => v.product_id))];
+    const stocks = new Map<string, number>(); const imgs = new Map<string, string>();
+    await Promise.all(pids.map(async (pid) => { const { data } = await db.rpc('variant_availability', { p_product: pid }); (data ?? []).forEach((a: any) => stocks.set(a.variant_id, a.available)); }));
+    if (pids.length) { const { data: m } = await db.from('product_media').select('product_id,url,sort_order').in('product_id', pids).order('sort_order'); (m ?? []).forEach((x: any) => { if (!imgs.has(x.product_id)) imgs.set(x.product_id, x.url); }); }
+    const vm = new Map((cv ?? []).map((v: any) => [v.variant_id, { ...v, image: imgs.get(v.product_id) }]));
+    setLines(raw.map((l) => ({ ...l, v: vm.get(l.variant_id), stock: stocks.get(l.variant_id) ?? 0 })));
   }
   useEffect(() => { load(); }, []);
-  async function setQty(id: string, qty: number) { await sb().from('cart_items').update({ qty }).eq('id', id); load(); }
-  async function remove(id: string) { await sb().from('cart_items').delete().eq('id', id); load(); }
-
-  if (items === null) return <div className="wrap section">Loading your cart…</div>;
-  if (!signedIn) return <div className="wrap section"><h1>Your cart</h1><p>Sign in to see your cart.</p><Link className="btn" href="/login?next=/cart">Sign in</Link></div>;
-  if (!items.length) return <div className="wrap section"><h1>Your cart is empty</h1><Link className="btn" href="/">Start shopping</Link></div>;
-  const live = items.filter((i) => i.v);
-  const sub = live.reduce((s, i) => s + Number(i.v.selling_price) * i.qty, 0);
-  const groups = Object.entries(live.reduce((g: any, i) => ((g[i.v.vendor_name] ||= []).push(i), g), {}));
+  async function setQty(l: Line, qty: number) {
+    if (!user) setGuestCart(guestCart().map((g) => g.variant_id === l.variant_id ? { ...g, qty } : g));
+    else { await sb().from('cart_items').update({ qty }).eq('id', l.key); cartChanged(); }
+    load();
+  }
+  async function remove(l: Line) {
+    if (!user) setGuestCart(guestCart().filter((g) => g.variant_id !== l.variant_id));
+    else { await sb().from('cart_items').delete().eq('id', l.key); cartChanged(); }
+    load();
+  }
+  async function toggleSaved(l: Line) {
+    const db = sb();
+    const clash = lines!.find((x) => x.variant_id === l.variant_id && x.saved !== l.saved);
+    if (clash) { await db.from('cart_items').update({ qty: Math.min(clash.qty + l.qty, 10) }).eq('id', clash.key); await db.from('cart_items').delete().eq('id', l.key); }
+    else await db.from('cart_items').update({ saved_for_later: !l.saved }).eq('id', l.key);
+    cartChanged(); load();
+  }
+  if (lines === null) return <div className="wrap section">Loading your cart…</div>;
+  const active = lines.filter((l) => !l.saved), saved = lines.filter((l) => l.saved);
+  if (!active.length && !saved.length) return <div className="wrap section stack"><h1>Your cart is empty</h1><p className="muted">Add something you like; it stays here while you shop.</p><div className="cta-row"><Link className="btn" href="/">Start shopping</Link><Link className="btn ghost" href="/wishlist">View wishlist</Link></div></div>;
+  const ok = (l: Line) => l.v && l.stock! >= l.qty;
+  const live = active.filter((l) => l.v);
+  const groups = Object.values(live.reduce((g: any, l) => ((g[l.v.vendor_name] ||= { vendor: l.v.vendor_name, lines: [] }).lines.push(l), g), {})) as { vendor: string; lines: Line[] }[];
+  const items = live.reduce((s, l) => s + Number(l.v.selling_price) * l.qty, 0);
+  const ship = groups.reduce((s, g) => s + shipFor(g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0)), 0);
+  const blocked = active.some((l) => !ok(l));
+  const row = (l: Line) => (
+    <div key={l.key} className="cart-line">
+      <Link href={l.v ? `/p/${l.v.product_id}` : '#'} className="cart-img">{l.v?.image ? <img src={l.v.image} alt="" /> : <span />}</Link>
+      <div className="cart-body">
+        {l.v ? <Link href={`/p/${l.v.product_id}`}><strong>{l.v.title}</strong></Link> : <strong className="muted">This item is no longer available</strong>}
+        {l.v && <div className="small muted">{Object.values(l.v.attributes || {}).join(' / ')}</div>}
+        {l.v && Number(l.price_at_add) > 0 && Number(l.price_at_add) !== Number(l.v.selling_price) && <div className="small chip warn">Price changed from {inr(l.price_at_add)} to {inr(l.v.selling_price)}</div>}
+        {l.v && l.stock! < l.qty && <div className="small chip bad">{l.stock ? `Only ${l.stock} left: lower the quantity` : 'Out of stock'}</div>}
+        <div className="cart-actions">
+          {l.v && !l.saved && <select aria-label="Quantity" value={l.qty} onChange={(e) => setQty(l, Number(e.target.value))}>{Array.from({ length: Math.min(10, l.v.max_qty_per_order || 10) }, (_, n) => n + 1).map((n) => <option key={n}>{n}</option>)}</select>}
+          {user && l.v && <button className="linklike" onClick={() => toggleSaved(l)}>{l.saved ? 'Move to cart' : 'Save for later'}</button>}
+          <button className="linklike danger-t" onClick={() => remove(l)}>Remove</button>
+        </div>
+      </div>
+      {l.v && <strong className="cart-price">{inr(Number(l.v.selling_price) * l.qty)}</strong>}
+    </div>);
   return (
     <div className="wrap section split">
       <div className="stack">
-        <h1>Your cart</h1>
-        {items.some((i) => !i.v) && <div className="msg err">Some items are no longer available. Remove them to check out.</div>}
-        {groups.map(([vendor, list]: any) => (
-          <div key={vendor} className="panel stack">
-            <h3 style={{ margin: 0 }}>Package from {vendor}</h3>
-            {list.map((i: any) => (
-              <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                <div><Link href={`/p/${i.v.product_id}`}><strong>{i.v.title}</strong></Link>
-                  <div className="small muted">{Object.values(i.v.attributes || {}).join(' / ')}</div>
-                  {Number(i.price_at_add) > 0 && Number(i.price_at_add) !== Number(i.v.selling_price) && <div className="small chip warn">Price changed from {inr(i.price_at_add)}</div>}</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <select aria-label="Quantity" value={i.qty} onChange={(e) => setQty(i.id, Number(e.target.value))} style={{ width: 70 }}>
-                    {Array.from({ length: 10 }, (_, n) => n + 1).map((n) => <option key={n}>{n}</option>)}</select>
-                  <strong>{inr(Number(i.v.selling_price) * i.qty)}</strong>
-                  <button className="btn danger sm" onClick={() => remove(i.id)}>Remove</button>
-                </div>
-              </div>))}
-          </div>))}
-        {items.filter((i) => !i.v).map((i) => <div key={i.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between' }}><span className="muted">Unavailable item</span><button className="btn danger sm" onClick={() => remove(i.id)}>Remove</button></div>)}
+        <h1 style={{ margin: 0 }}>Your cart</h1>
+        {!user && <div className="msg info">You’re not signed in. Your cart is saved on this device; <Link href="/login?next=/cart">sign in</Link> to keep it with your account.</div>}
+        {blocked && <div className="msg err" role="alert">Some items need attention before checkout.</div>}
+        {groups.map((g, i) => {
+          const pkg = g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0); const need = SHIP_FREE_AT - pkg;
+          return (
+            <section key={g.vendor} className="panel stack" aria-label={`Package ${i + 1} from ${g.vendor}`}>
+              <div className="pkg-head"><h3 style={{ margin: 0 }}>Package {i + 1} · from {g.vendor}</h3><span className="small">{shipFor(pkg) ? `Shipping ${inr(shipFor(pkg))}` : 'Free shipping'}</span></div>
+              {need > 0 ? <div className="ship-bar"><div style={{ width: `${Math.min(100, (pkg / SHIP_FREE_AT) * 100)}%` }} /><span className="small">Add {inr(need)} more from {g.vendor} for free shipping on this package (before any coupon)</span></div>
+                        : <div className="small ok-t">This package ships free</div>}
+              {g.lines.map(row)}
+            </section>);
+        })}
+        {active.filter((l) => !l.v).map(row)}
+        {saved.length > 0 && <section className="panel stack"><h3 style={{ margin: 0 }}>Saved for later ({saved.length})</h3><p className="small muted" style={{ margin: 0 }}>Not included in your total.</p>{saved.map(row)}</section>}
       </div>
-      <aside className="panel sum">
-        <div><span>Items ({live.reduce((s, i) => s + i.qty, 0)})</span><span>{inr(sub)}</span></div>
-        <div className="muted small"><span>Shipping, coupons and final total are confirmed at checkout.</span></div>
-        <Link className="btn" href="/checkout" aria-disabled={items.some((i) => !i.v)}>Continue to checkout</Link>
+      <aside className="panel sum sticky-sum">
+        <div><span>Items ({live.reduce((s, l) => s + l.qty, 0)})</span><span>{inr(items)}</span></div>
+        <div><span>Shipping ({groups.length} {groups.length === 1 ? 'package' : 'packages'})</span><span>{ship ? inr(ship) : 'Free'}</span></div>
+        <div className="tot"><span>Estimated total</span><span>{inr(items + ship)}</span></div>
+        <p className="small muted" style={{ margin: 0 }}>Coupons are applied at checkout. Prices include GST.</p>
+        {blocked || !live.length ? <button className="btn" disabled>Continue to checkout</button> : <Link className="btn" href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Continue to checkout' : 'Sign in to check out'}</Link>}
       </aside>
-    </div>
-  );
+    </div>);
 }

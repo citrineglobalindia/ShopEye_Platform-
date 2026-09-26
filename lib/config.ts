@@ -13,3 +13,6 @@ export const STATES: [string, string][] = [
   ['NL','Nagaland'],['OR','Odisha'],['PY','Puducherry'],['PB','Punjab'],['RJ','Rajasthan'],['SK','Sikkim'],['TN','Tamil Nadu'],
   ['TG','Telangana'],['TR','Tripura'],['UP','Uttar Pradesh'],['UT','Uttarakhand'],['WB','West Bengal'],
 ];
+// Mirrors app.settings shipping.flat_fee_per_vendor / free_threshold_per_vendor (the server recalculates at order time)
+export const SHIP_FLAT = 49, SHIP_FREE_AT = 499;
+export const shipFor = (packageTotal: number) => (packageTotal >= SHIP_FREE_AT ? 0 : SHIP_FLAT);

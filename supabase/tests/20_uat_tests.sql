@@ -340,6 +340,56 @@ do $$ begin
 end $$;
 reset role;
 
+
+\echo '== 17. Customer features: wishlist, preferences, support, return cancellation (as real API role)'
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare t jsonb; oid uuid;
+begin
+  insert into public.wishlist_items(customer_id, product_id) select test.id('cust_a'), id from public.products where status = 'active' limit 1;
+  perform test.ok((select count(*) from public.wishlist_items) = 1, 'Customer saves a product to wishlist');
+  perform test.throws(format($q$ insert into public.wishlist_items(customer_id, product_id) select %L, id from public.products limit 1 $q$, test.id('cust_b')), 'row-level security', 'Cannot write into another customer''s wishlist');
+  insert into public.customer_preferences(customer_id, marketing_email) values (test.id('cust_a'), true);
+  perform test.ok((select marketing_email and not marketing_sms from public.customer_preferences), 'Marketing preferences saved separately, opt-in only (CUST-FR-135)');
+  oid := test.get('order1')::uuid;
+  t := public.create_support_ticket('order', 'Where is my parcel?', 'My package has not moved for three days.', oid);
+  perform test.ok(t->>'ticket_number' like 'TKT-%', 'Support ticket gets a reference number (CUST-FR-142)');
+  perform test.throws($q$ select public.create_support_ticket('order', 'Too short', 'short', null) $q$, 'check', 'Ticket needs a real message');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ declare n int;
+begin
+  perform test.ok((select count(*) from public.wishlist_items) = 0 and (select count(*) from public.customer_preferences) = 0 and (select count(*) from public.support_tickets) = 0,
+                  'Another customer sees none of it');
+  perform test.throws(format($q$ select public.create_support_ticket('order', 'Not my order', 'Trying to attach another customer order.', %L) $q$, test.get('order1')), 'FORBIDDEN', 'Cannot attach another customer''s order to a ticket');
+  for n in 1..5 loop perform public.create_support_ticket('other', 'Question number ' || n, 'I have a general question about delivery.'); end loop;
+  perform test.throws($q$ select public.create_support_ticket('other', 'Sixth question', 'One more question in the same hour.') $q$, 'RATE_LIMITED', 'Ticket spam rate-limited (CUST-FR-177)');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare rid uuid; v_it uuid; n int;
+begin
+  select oi.id into v_it from public.order_items oi join public.sub_orders so on so.id = oi.sub_order_id
+   where so.status = 'delivered' and so.return_window_ends_at > now() and oi.qty > oi.cancelled_qty + oi.return_requested_qty limit 1;
+  rid := public.request_return(v_it, 1, 'refund', 'size_issue', 'rtn-cancel-test', 'Too small');
+  select return_requested_qty into n from public.order_items where id = v_it;
+  perform test.ok(public.cancel_return(rid) = 'cancelled', 'Customer cancels a pending return (CUST-FR-120)');
+  perform test.ok((select return_requested_qty from public.order_items where id = v_it) = n - 1, 'Cancelled return frees the item for a new request');
+  perform test.throws(format($q$ select public.cancel_return(%L) $q$, rid), 'RETURN_NOT_CANCELLABLE', 'Cannot cancel twice');
+end $$;
+reset role;
+do $$ begin perform test.act_as(null); end $$;
+
+
+\echo '== 18. Listing stock flags (CUST-FR-027/039)'
+set role anon;
+do $$ declare n int; o int;
+begin
+  select count(*), count(*) filter (where not in_stock) into n, o from public.product_stock(array(select id from public.products where status = 'active'));
+  perform test.ok(n > 0, 'Anonymous shoppers get stock flags for active products');
+  perform test.ok((select count(*) from public.product_stock(array(select id from public.products where status <> 'active'))) = 0, 'Drafts and rejected products never appear in stock flags');
+end $$;
+reset role;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

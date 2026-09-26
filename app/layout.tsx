@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { GuestCartMerge } from '@/components/ShopWidgets';
 import { sbServer } from '@/lib/sb-server';
 import { listCategories, FIXTURES } from '@/lib/catalog';
 
@@ -35,6 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="skip">Skip to content</a>
         <Header user={user ? { email: user.email, name } : null} cartCount={cartCount} cats={cats as any}
           isSeller={roles.some((r) => r === 'vendor_owner' || r === 'vendor_staff')} isAdmin={roles.includes('super_admin') || roles.includes('catalog_moderator')} />
+        <GuestCartMerge signedIn={!!user} />
         <main id="main">{children}</main>
         <Footer signedIn={!!user} />
       </body>

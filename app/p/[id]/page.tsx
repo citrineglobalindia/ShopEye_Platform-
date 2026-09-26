@@ -1,4 +1,4 @@
-// SRS: CUST-FR-048 CUST-FR-049 CUST-FR-050 (return policy before purchase; no fabricated ratings; product structured data and canonical URL)
+// SRS: CUST-FR-047 CUST-FR-048 CUST-FR-049 CUST-FR-050 (alternatives when unavailable; return policy before purchase; no fabricated ratings; product structured data and canonical URL)
 import { notFound } from 'next/navigation';
 import { sbPublic } from '@/lib/sb-server';
 import { FIXTURES } from '@/lib/catalog';
@@ -6,6 +6,9 @@ import { FIX_PDP } from '@/lib/fixtures';
 import { Crumbs } from '@/components/Crumbs';
 import AddToCart from '@/components/AddToCart';
 import { Gallery, PincodeCheck } from '@/components/ProductExtras';
+import { WishHeart, TrackView, RecentlyViewed } from '@/components/ShopWidgets';
+import { Rail } from '@/components/ProductGrid';
+import { listProducts } from '@/lib/catalog';
 export const revalidate = 30;
 
 async function load(id: string) {
@@ -35,6 +38,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const { p, media, variants, cat } = d as any;
   const days = p.return_window_days ?? cat?.return_window_days ?? 7;
   const low = Math.min(...variants.map((v: any) => v.selling_price));
+  const more = cat ? (await listProducts({ categoryId: p.category_id, perPage: 9 })).items.filter((x) => x.product_id !== id).slice(0, 8) : [];
   const specs = Object.entries(p.specifications ?? {}).filter(([, v]) => v);
   const ld = { '@context': 'https://schema.org', '@type': 'Product', name: p.title, description: p.description ?? undefined,
     image: media.filter((m: any) => !m.url.startsWith('data:')).map((m: any) => m.url), brand: { '@type': 'Brand', name: variants[0].vendor_name },
@@ -49,7 +53,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <div className="stack">
           <div>
             <p className="small muted" style={{ margin: 0 }}>Sold by <strong>{variants[0].vendor_name}</strong></p>
-            <h1 className="pdp-title">{p.title}</h1>
+            <div className="title-row"><h1 className="pdp-title">{p.title}</h1><WishHeart productId={id} big /></div>
             <p className="small muted" style={{ margin: 0 }}>No reviews yet</p>
           </div>
           <AddToCart variants={variants} />
@@ -65,6 +69,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {p.description && <section><h2>About this product</h2><p style={{ whiteSpace: 'pre-line' }}>{p.description}</p></section>}
         {specs.length > 0 && <section><h2>Specifications</h2><dl className="specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl></section>}
       </div>
+      <TrackView id={id} />
+      <div id="more">{cat && <Rail title={`More from ${cat.name}`} href={`/c/${cat.slug}`} items={more} />}</div>
+      <RecentlyViewed exclude={id} />
     </div>
   );
 }

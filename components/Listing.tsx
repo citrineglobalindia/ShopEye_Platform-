@@ -1,8 +1,9 @@
-// SRS: CUST-FR-031 CUST-FR-035 CUST-FR-037 (paged results with stable URLs; filters and sort in the URL; removable filter chips)
+// SRS: CUST-FR-031 CUST-FR-035 CUST-FR-036 CUST-FR-037 (paged results with stable URLs; filters and sort in the URL; mobile filter drawer with Apply and Clear; removable filter chips)
 import Link from 'next/link';
 import { ProductGrid } from '@/components/ProductGrid';
 import type { ListResult } from '@/lib/catalog';
 import { inr } from '@/lib/config';
+import { FilterBox } from '@/components/FilterBox';
 
 const SORTS: [string, string][] = [['', 'Relevance'], ['new', 'Newest first'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low'], ['discount', 'Biggest discount']];
 const OFFS = [10, 20, 30, 40];
@@ -18,8 +19,7 @@ export function Listing({ base, params, result, empty }: { base: string; params:
   return (
     <div className="listing">
       <aside className="filters">
-        <details open className="filter-box">
-          <summary><strong>Filters</strong></summary>
+        <FilterBox label={`Filters${chips.length ? ` (${chips.length})` : ''}`}>
           <form action={base} className="stack" style={{ gap: 14 }}>
             {keep.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
             {params.sort && <input type="hidden" name="sort" value={params.sort} />}
@@ -32,9 +32,9 @@ export function Listing({ base, params, result, empty }: { base: string; params:
               {OFFS.map((o) => <label key={o} className="radio"><input type="radio" name="off" value={o} defaultChecked={params.off === String(o)} /> {o}% or more</label>)}
               <label className="radio"><input type="radio" name="off" value="" defaultChecked={!params.off} /> Any</label>
             </fieldset>
-            <button className="btn dark sm">Apply filters</button>
+            <div className="cta-row"><button className="btn dark sm">Apply filters</button><Link className="btn ghost sm" href={base + qs({ q: params.q, sort: params.sort }, {})}>Clear</Link></div>
           </form>
-        </details>
+        </FilterBox>
       </aside>
       <div className="stack" style={{ gap: 14 }}>
         <div className="list-bar">

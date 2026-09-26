@@ -1,10 +1,10 @@
 'use client';
-// SRS: CUST-FR-066 CUST-FR-069 (serviceability re-checked when the order is placed; idempotent place order)
+// SRS: CUST-FR-066 CUST-FR-069 CUST-FR-071 CUST-FR-072 CUST-FR-166 (serviceability re-checked at order; idempotent place order; price changes shown and confirmed; separate packages identified; total and action stay reachable on phones)
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
-import { inr, STATES } from '@/lib/config';
+import { inr, STATES, shipFor } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { payForOrder } from '@/lib/pay';
 
@@ -15,7 +15,7 @@ export default function Checkout() {
   const [user, setUser] = useState<any>(null); const [cart, setCart] = useState<any>(null); const [lines, setLines] = useState<any[]>([]);
   const [addrs, setAddrs] = useState<any[]>([]); const [addrId, setAddrId] = useState(''); const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>(blank); const [method, setMethod] = useState('upi'); const [coupon, setCoupon] = useState('');
-  const [busy, setBusy] = useState(false); const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState(''); const [ack, setAck] = useState(false);
 
   async function load() {
     const db = sb(); const { data: { user } } = await db.auth.getUser();
@@ -23,9 +23,9 @@ export default function Checkout() {
     setUser(user);
     const { data: c } = await db.from('carts').select('id').eq('customer_id', user.id).eq('status', 'active').maybeSingle(); setCart(c);
     if (c) {
-      const { data: ci } = await db.from('cart_items').select('qty,variant_id').eq('cart_id', c.id).eq('saved_for_later', false);
+      const { data: ci } = await db.from('cart_items').select('id,qty,variant_id,price_at_add').eq('cart_id', c.id).eq('saved_for_later', false);
       const ids = (ci ?? []).map((x: any) => x.variant_id);
-      const { data: cv } = ids.length ? await db.from('catalog_variants').select('variant_id,title,selling_price,vendor_name').in('variant_id', ids) : { data: [] };
+      const { data: cv } = ids.length ? await db.from('catalog_variants').select('variant_id,title,selling_price,vendor_name,attributes').in('variant_id', ids) : { data: [] };
       const m = new Map((cv ?? []).map((v: any) => [v.variant_id, v]));
       setLines((ci ?? []).map((x: any) => ({ ...x, v: m.get(x.variant_id) })));
     }
@@ -47,6 +47,8 @@ export default function Checkout() {
   async function place() {
     setBusy(true); setErr('');
     try {
+      // Accepting changed prices updates the cart so the same change isn't flagged again
+      for (const l of changed) await sb().from('cart_items').update({ price_at_add: l.v.selling_price }).eq('id', l.id);
       // one idempotency key per cart attempt: a double click or retry returns the same order (CUST-FR-069)
       const k = `idem:${cart.id}`; const idem = sessionStorage.getItem(k) || crypto.randomUUID(); sessionStorage.setItem(k, idem);
       const { data, error } = await sb().rpc('place_order', { p_cart: cart.id, p_address: addrId, p_payment_method: method, p_idempotency_key: idem, p_coupon: coupon || null });
@@ -64,6 +66,9 @@ export default function Checkout() {
   if (!user) return <div className="wrap section">Loading checkout…</div>;
   if (!cart || !lines.length) return <div className="wrap section"><h1>Nothing to check out</h1><Link className="btn" href="/">Continue shopping</Link></div>;
   const sub = lines.reduce((s, l) => s + (l.v ? Number(l.v.selling_price) * l.qty : 0), 0);
+  const changed = lines.filter((l) => l.v && Number(l.price_at_add) > 0 && Number(l.price_at_add) !== Number(l.v.selling_price));
+  const pkgs = Object.values(lines.filter((l) => l.v).reduce((g: any, l) => ((g[l.v.vendor_name] ||= { vendor: l.v.vendor_name, lines: [] }).lines.push(l), g), {})) as any[];
+  const ship = pkgs.reduce((s, g) => s + shipFor(g.lines.reduce((t: number, l: any) => t + Number(l.v.selling_price) * l.qty, 0)), 0);
   const f = (k: string) => ({ value: form[k], onChange: (e: any) => setForm({ ...form, [k]: e.target.value }) });
   return (
     <div className="wrap section split">
@@ -97,13 +102,26 @@ export default function Checkout() {
           <label>Coupon code (optional)<input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} maxLength={30} /></label>
         </section>
       </div>
-      <aside className="panel sum">
+      <aside className="panel sum sticky-sum">
         <h2 style={{ margin: 0 }}>Order summary</h2>
-        {lines.map((l) => <div key={l.variant_id} className="small"><span>{l.v?.title ?? 'Unavailable'} × {l.qty}</span><span>{l.v ? inr(Number(l.v.selling_price) * l.qty) : '—'}</span></div>)}
-        <div className="tot"><span>Items total</span><span>{inr(sub)}</span></div>
-        <p className="small muted" style={{ margin: 0 }}>Shipping (₹49 per seller package under ₹499) and any coupon are applied when you place the order. Prices include GST.</p>
+        {pkgs.length > 1 && <p className="small" style={{ margin: 0 }}>Your order ships as <strong>{pkgs.length} separate packages</strong>, one from each seller, each with its own tracking.</p>}
+        {pkgs.map((g, i) => (
+          <div key={g.vendor} className="pkg-sum">
+            <div className="small muted">Package {i + 1} from {g.vendor}</div>
+            {g.lines.map((l: any) => <div key={l.variant_id} className="small"><span>{l.v.title}{Object.values(l.v.attributes || {}).length ? ` (${Object.values(l.v.attributes).join(' / ')})` : ''} × {l.qty}</span><span>{inr(Number(l.v.selling_price) * l.qty)}</span></div>)}
+          </div>))}
+        <div><span>Items</span><span>{inr(sub)}</span></div>
+        <div><span>Shipping</span><span>{ship ? inr(ship) : 'Free'}</span></div>
+        <div className="tot"><span>Total</span><span>{inr(sub + ship)}</span></div>
+        <p className="small muted" style={{ margin: 0 }}>Any coupon is applied when you place the order, and the final total is confirmed before payment. Prices include GST.</p>
+        {changed.length > 0 && (
+          <div className="msg err" role="alert">
+            <strong>Prices changed since you added {changed.length === 1 ? 'this item' : 'these items'}:</strong>
+            <ul style={{ margin: '6px 0' }}>{changed.map((l) => <li key={l.variant_id}>{l.v.title}: {inr(l.price_at_add)} → {inr(l.v.selling_price)}</li>)}</ul>
+            <label style={{ display: 'flex', gap: 8, fontWeight: 600 }}><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} style={{ width: 'auto' }} /> I’ve reviewed the new prices</label>
+          </div>)}
         {err && <div className="msg err" role="alert">{err}</div>}
-        <button className="btn" disabled={busy || !addrId || adding} onClick={place}>{busy ? 'Placing order…' : method === 'cod' ? 'Place order' : 'Place order and pay'}</button>
+        <button className="btn" disabled={busy || !addrId || adding || (changed.length > 0 && !ack)} onClick={place}>{busy ? 'Placing order…' : method === 'cod' ? 'Place order' : 'Place order and pay'}</button>
       </aside>
     </div>
   );

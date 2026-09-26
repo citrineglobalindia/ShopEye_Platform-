@@ -1,6 +1,7 @@
-// SRS: CUST-FR-002 CUST-FR-003 CUST-FR-004 (cart count badge; sign-in vs account menu; mobile drawer keeps search and cart reachable)
+// SRS: CUST-FR-001 CUST-FR-002 CUST-FR-003 CUST-FR-004 (logo, categories, search, account, wishlist, cart with live count; mobile drawer keeps search and cart reachable)
 import Link from 'next/link';
 import { Mark } from '@/components/Logo';
+import { CartLink } from '@/components/ShopWidgets';
 
 type Cat = { id: string; name: string; slug: string; parent_id: string | null };
 export function Header({ user, cartCount, isSeller, isAdmin, cats }: { user: { email?: string; name?: string } | null; cartCount: number; isSeller: boolean; isAdmin: boolean; cats: Cat[] }) {
@@ -15,7 +16,7 @@ export function Header({ user, cartCount, isSeller, isAdmin, cats }: { user: { e
             <strong className="small muted">Shop by category</strong>
             {top.map((c) => <Link key={c.id} href={`/c/${c.slug}`}>{c.name}</Link>)}
             <hr />
-            {user ? <><Link href="/account">My account</Link><Link href="/account/orders">My orders</Link></> : <Link href="/login">Sign in or create account</Link>}
+            {user ? <><Link href="/account">My account</Link><Link href="/account/orders">My orders</Link><Link href="/wishlist">Wishlist</Link><Link href="/account/tickets">My help requests</Link></> : <><Link href="/login">Sign in or create account</Link><Link href="/wishlist">Wishlist</Link></>}
             <Link href="/seller">{isSeller ? 'Seller hub' : 'Sell on ShopEye'}</Link>
             {isAdmin && <Link href="/admin">Admin</Link>}
             <Link href="/help">Help centre</Link>
@@ -30,10 +31,8 @@ export function Header({ user, cartCount, isSeller, isAdmin, cats }: { user: { e
           {isAdmin && <Link href="/admin" className="hide-sm">Admin</Link>}
           <Link href="/seller" className="hide-sm">{isSeller ? 'Seller hub' : 'Sell'}</Link>
           {user ? <Link href="/account" className="hide-sm">Hi, {first}</Link> : <Link href="/login" className="hide-sm">Sign in</Link>}
-          <Link href="/cart" className="cart-link" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
-            <span>Cart</span>{cartCount > 0 && <b className="badge">{cartCount > 99 ? '99+' : cartCount}</b>}
-          </Link>
+          <Link href="/wishlist" className="hide-sm">Wishlist</Link>
+          <CartLink serverCount={cartCount} signedIn={!!user} />
         </nav>
       </div>
       {top.length > 0 && (

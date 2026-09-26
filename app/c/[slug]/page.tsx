@@ -4,9 +4,11 @@ import { Listing, parseList, type Params } from '@/components/Listing';
 import { Crumbs } from '@/components/Crumbs';
 import { listProducts, getCategory } from '@/lib/catalog';
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const c = await getCategory((await params).slug);
-  return c ? { title: c.name, description: `Shop ${c.name} from independent Indian sellers on ShopEye.`, alternates: { canonical: `/c/${c.slug}` } } : { title: 'Category' };
+// SRS: CUST-FR-179 CUST-FR-181 (unique title/description and canonical; filtered, sorted and paged variants are noindex)
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Params> }) {
+  const c = await getCategory((await params).slug); const sp = await searchParams;
+  const filtered = Object.values(sp).some(Boolean);
+  return c ? { title: c.name, description: `Shop ${c.name} from independent Indian sellers on ShopEye. Every listing reviewed before it goes live.`, alternates: { canonical: `/c/${c.slug}` }, robots: filtered ? { index: false, follow: true } : undefined } : { title: 'Category' };
 }
 export default async function CategoryPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Params> }) {
   const { slug } = await params; const sp = await searchParams;

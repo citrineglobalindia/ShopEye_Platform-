@@ -1,19 +1,24 @@
+// SRS: CUST-FR-027 CUST-FR-039 (cards use current price and stock; unavailable products clearly labelled)
 import Link from 'next/link';
 import { inr } from '@/lib/config';
-export type Card = { product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null };
+import { WishHeart } from '@/components/ShopWidgets';
+export type Card = { product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean };
 export function ProductCard({ p }: { p: Card }) {
   return (
-    <Link href={`/p/${p.product_id}`} className="card">
+    <div className={`card${p.in_stock === false ? ' oos' : ''}`}>
+      <Link href={`/p/${p.product_id}`} className="card-link">
       <div className="ph">
         {p.image ? <img src={p.image} alt={p.title} loading="lazy" /> : <span className="small">Photo coming soon</span>}
-        {p.discount_pct >= 5 && <span className="off-badge">{p.discount_pct}% off</span>}
+        {p.in_stock === false ? <span className="oos-badge">Out of stock</span> : p.discount_pct >= 5 && <span className="off-badge">{p.discount_pct}% off</span>}
       </div>
       <div className="b">
         <span className="small muted">{p.vendor_name}</span>
         <span className="card-t">{p.title}</span>
         <span><span className="price">{inr(p.selling_price)}</span>{p.mrp > p.selling_price && <span className="mrp">{inr(p.mrp)}</span>}</span>
       </div>
-    </Link>
+      </Link>
+      <WishHeart productId={p.product_id} />
+    </div>
   );
 }
 export function ProductGrid({ items, empty }: { items: Card[]; empty?: React.ReactNode }) {

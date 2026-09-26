@@ -132,6 +132,21 @@ PASS  Listed pincode: deliverable with COD (CUST-FR-046)
 PASS  Listed pincode without COD reports no COD
 PASS  Malformed pincode rejected
 PASS  Unlisted pincode not serviceable when all-India is off
+== 17. Customer features: wishlist, preferences, support, return cancellation (as real API role)
+PASS  Customer saves a product to wishlist
+PASS  Cannot write into another customer's wishlist (rejected: new row violates row-level security policy for table "wishlist_items")
+PASS  Marketing preferences saved separately, opt-in only (CUST-FR-135)
+PASS  Support ticket gets a reference number (CUST-FR-142)
+PASS  Ticket needs a real message (rejected: new row for relation "support_tickets" violates check constraint "support_tickets_message_)
+PASS  Another customer sees none of it
+PASS  Cannot attach another customer's order to a ticket (rejected: FORBIDDEN)
+PASS  Ticket spam rate-limited (CUST-FR-177) (rejected: RATE_LIMITED: too many tickets, try again later)
+PASS  Customer cancels a pending return (CUST-FR-120)
+PASS  Cancelled return frees the item for a new request
+PASS  Cannot cancel twice (rejected: RETURN_NOT_CANCELLABLE: return is cancelled)
+== 18. Listing stock flags (CUST-FR-027/039)
+PASS  Anonymous shoppers get stock flags for active products
+PASS  Drafts and rejected products never appear in stock flags
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)

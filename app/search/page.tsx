@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { Listing, parseList, type Params } from '@/components/Listing';
 import { listProducts, listCategories } from '@/lib/catalog';
+import { Crumbs } from '@/components/Crumbs';
 export const metadata = { title: 'Search', robots: { index: false } };
 
 export default async function Search({ searchParams }: { searchParams: Promise<Params> }) {
@@ -9,6 +10,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<P
   const [result, cats] = await Promise.all([listProducts({ q: q || undefined, ...parseList(sp) }), listCategories()]);
   return (
     <div className="wrap section stack">
+      <Crumbs items={[['Home', '/'], ['Search']]} />
       <h1 style={{ margin: 0 }}>{q ? <>Results for “{q}”</> : 'All products'}</h1>
       <Listing base="/search" params={sp} result={result} empty={<>
         <h3>No matches{q ? <> for “{q}”</> : ''}</h3>

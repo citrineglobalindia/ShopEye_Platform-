@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { HeroLogo } from '@/components/Logo';
 import { ProductGrid, Rail } from '@/components/ProductGrid';
 import { listProducts, listCategories } from '@/lib/catalog';
+import { RecentlyViewed } from '@/components/ShopWidgets';
 export const revalidate = 60;
 
 const PROMISES = [
@@ -39,6 +40,8 @@ export default async function Home() {
         </section>)}
 
       <Rail title="Biggest savings right now" href="/search?q=&sort=discount" items={deals.items} />
+
+      <RecentlyViewed />
 
       <section className="section" id="new" aria-labelledby="new-h">
         <div className="rail-head"><h2 id="new-h">New arrivals</h2>{latest.total > 12 && <Link href="/search?sort=new">See all</Link>}</div>

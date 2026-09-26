@@ -5,23 +5,10 @@ import { useRouter } from 'next/navigation';
 import { sb } from '@/lib/sb-browser';
 import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
+import { addToCart } from '@/lib/shop-client';
 
 type V = { variant_id: string; sku: string; attributes: Record<string, string>; mrp: number; selling_price: number; discount_pct: number; available: number };
 const label = (v: V) => Object.values(v.attributes || {}).join(' / ') || v.sku;
-
-export async function addToCart(variantId: string, qty: number, price: number) {
-  const db = sb();
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) return 'login';
-  let { data: cart } = await db.from('carts').select('id').eq('customer_id', user.id).eq('status', 'active').maybeSingle();
-  if (!cart) { const r = await db.from('carts').insert({ customer_id: user.id }).select('id').single(); if (r.error) throw r.error; cart = r.data; }
-  const { data: existing } = await db.from('cart_items').select('id,qty').eq('cart_id', cart.id).eq('variant_id', variantId).eq('saved_for_later', false).maybeSingle();
-  const r = existing
-    ? await db.from('cart_items').update({ qty: existing.qty + qty }).eq('id', existing.id)
-    : await db.from('cart_items').insert({ cart_id: cart.id, variant_id: variantId, qty, price_at_add: price });
-  if (r.error) throw r.error;
-  return 'ok';
-}
 
 export default function AddToCart({ variants }: { variants: V[] }) {
   const router = useRouter();
@@ -35,8 +22,7 @@ export default function AddToCart({ variants }: { variants: V[] }) {
   async function go(buyNow: boolean) {
     setBusy(true); setMsg(null);
     try {
-      const r = await addToCart(sel.variant_id, qty, sel.selling_price);
-      if (r === 'login') { router.push(`/login?next=${encodeURIComponent(location.pathname)}`); return; }
+      await addToCart(sel.variant_id, qty, sel.selling_price);
       if (buyNow) router.push('/checkout'); else setMsg({ t: 'ok', m: 'Added to your cart.' });
     } catch (e) { setMsg({ t: 'err', m: friendly(e) }); } finally { setBusy(false); }
   }
@@ -50,6 +36,7 @@ export default function AddToCart({ variants }: { variants: V[] }) {
             <button key={v.variant_id} aria-pressed={v.variant_id === sel.variant_id} disabled={v.available <= 0}
               onClick={() => { setSel(v); setQty(1); }}>{label(v)}</button>))}
         </div>)}
+      {out && variants.every((v) => v.available <= 0) && <p className="small" style={{ margin: 0 }}>This product is sold out. <a href="#more">See similar products</a>.</p>}
       <p className="small" style={{ margin: 0 }}>{out ? <span className="chip bad">Out of stock</span> : sel.available <= 3 ? <span className="chip warn">Only {sel.available} left</span> : <span className="chip ok">In stock</span>}</p>
       {!out && (<>
         <label style={{ maxWidth: 120 }}>Quantity

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { sbServer } from '@/lib/sb-server';
 import { inr } from '@/lib/config';
 import { StatusChip } from '@/components/Status';
+import { Crumbs } from '@/components/Crumbs';
 export const metadata = { title: 'My orders', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export default async function Orders() {
   if (!user) redirect('/login?next=/account/orders');
   const { data: orders } = await db.from('orders').select('id,order_number,placed_at,status,payment_status,grand_total').eq('customer_id', user.id).order('placed_at', { ascending: false }).limit(50);
   return (<div className="wrap section stack">
+    <Crumbs items={[['Home', '/'], ['My account', '/account'], ['My orders']]} />
     <h1>My orders</h1>
     {!orders?.length ? <div className="panel"><p>You haven’t placed an order yet.</p><Link className="btn" href="/">Start shopping</Link></div> : (
       <div className="panel tablewrap"><table>
