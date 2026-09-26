@@ -1,3 +1,4 @@
+psql:supabase/migrations/20260926000019_email_outbox.sql:211: NOTICE:  trigger "on_auth_user_verified" for relation "auth.users" does not exist, skipping
 == 1. Status models & direct-write guards
 PASS  Vendor active→draft rejected by server (VS-FR-887) (rejected: INVALID_TRANSITION: vendor cannot move from active to draft)
 PASS  Draft product cannot self-activate without review (rejected: INVALID_TRANSITION: product cannot move from draft to active)
@@ -147,6 +148,20 @@ PASS  Cannot cancel twice (rejected: RETURN_NOT_CANCELLABLE: return is cancelled
 == 18. Listing stock flags (CUST-FR-027/039)
 PASS  Anonymous shoppers get stock flags for active products
 PASS  Drafts and rejected products never appear in stock flags
+== 19. Transactional emails (Brevo outbox)
+PASS  Order confirmation queued exactly once despite replayed payment events (CUST-FR-091)
+PASS  Confirmation links to the order and contains no payment secrets (CUST-FR-088)
+PASS  Shipped email includes courier tracking number (CUST-FR-103)
+PASS  Delivered email queued (CUST-FR-103)
+PASS  Cancellation email carries the refund reference (CUST-FR-114)
+PASS  Refund-sent email queued (CUST-FR-126)
+PASS  Help request acknowledgement with reference (CUST-FR-142)
+PASS  Product names and notes are HTML-escaped in emails
+PASS  Phone-only accounts skipped for email without error
+PASS  No welcome email before the address is verified (CUST-FR-014)
+PASS  One welcome email after verification (CUST-FR-014)
+psql:supabase/tests/20_uat_tests.sql:434: WARNING:  ShopEye email not queued (support_tickets_notify): function app.email_shell(text, text, text, text) does not exist
+PASS  A broken email template never blocks the customer action
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)

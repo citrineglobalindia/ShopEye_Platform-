@@ -390,6 +390,49 @@ begin
 end $$;
 reset role;
 
+
+\echo '== 19. Transactional emails (Brevo outbox)'
+do $$ declare o1 uuid := test.get('order1')::uuid; u uuid := gen_random_uuid(); n int;
+begin
+  perform test.ok((select count(*) from app.notification_outbox where dedupe_key = 'order_confirmed:' || o1) = 1,
+                  'Order confirmation queued exactly once despite replayed payment events (CUST-FR-091)');
+  perform test.ok((select html like '%View your order%' and html !~ '[0-9]{12,}'
+                     and not exists (select 1 from public.payments p where p.order_id = o1 and (strpos(html, p.gateway_payment_id) > 0 or strpos(html, p.gateway_order_id) > 0))
+                     from app.notification_outbox where dedupe_key = 'order_confirmed:' || o1),
+                  'Confirmation links to the order and contains no payment secrets (CUST-FR-088)');
+  perform test.ok(exists (select 1 from app.notification_outbox o join public.shipments s on o.html like '%' || s.awb || '%' where o.kind = 'shipped'),
+                  'Shipped email includes courier tracking number (CUST-FR-103)');
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'delivered'), 'Delivered email queued (CUST-FR-103)');
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'cancelled' and html like '%RFD-%'), 'Cancellation email carries the refund reference (CUST-FR-114)');
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'refund_done'), 'Refund-sent email queued (CUST-FR-126)');
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'ticket' and html like '%TKT-%'), 'Help request acknowledgement with reference (CUST-FR-142)');
+  perform test.ok(app.esc('<script>alert(1)</script>') = '&lt;script&gt;alert(1)&lt;/script&gt;', 'Product names and notes are HTML-escaped in emails');
+  insert into auth.users(id, phone) values (u, '919900077777');
+  insert into public.profiles(id, full_name, mobile) values (u, 'Phone Only', '+919900077777');
+  select count(*) into n from app.notification_outbox;
+  perform app.enqueue_email('test', u, 'test:' || u, 's', 't', '<p>x</p>');
+  perform test.ok((select count(*) from app.notification_outbox) = n, 'Phone-only accounts skipped for email without error');
+  u := gen_random_uuid();
+  insert into auth.users(id, email) values (u, 'unverified@test.local');
+  insert into public.profiles(id, full_name, email) values (u, 'Asha Verified', 'unverified@test.local');   -- created by the signup trigger on Supabase
+  perform test.ok(not exists (select 1 from app.notification_outbox o join public.profiles p on p.id = o.customer_id where p.email = 'unverified@test.local'), 'No welcome email before the address is verified (CUST-FR-014)');
+  update auth.users set email_confirmed_at = now() where email = 'unverified@test.local';
+  update auth.users set email_confirmed_at = now() where email = 'unverified@test.local';
+  perform test.ok((select count(*) from app.notification_outbox o join public.profiles p on p.id = o.customer_id where p.email = 'unverified@test.local' and o.kind = 'welcome') = 1, 'One welcome email after verification (CUST-FR-014)');
+end $$;
+
+
+do $$ declare t jsonb;
+begin
+  -- sabotage the template, then confirm a help request still succeeds (email failure never blocks the action)
+  alter function app.email_shell(text, text, text, text) rename to email_shell_bak;
+  perform test.act_as(test.id('cust_a'));
+  t := public.create_support_ticket('other', 'Email outage test', 'Checking the request still goes through.');
+  perform test.ok(t->>'ticket_number' like 'TKT-%', 'A broken email template never blocks the customer action');
+  alter function app.email_shell_bak(text, text, text, text) rename to email_shell;
+  perform test.act_as(null);
+end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;
