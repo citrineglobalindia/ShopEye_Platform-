@@ -13,6 +13,8 @@ export async function POST(req: Request) {
   let evt: any; try { evt = JSON.parse(raw); } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }); }
   const p = evt?.payload?.payment?.entity;
   if (!p?.order_id) return NextResponse.json({ status: 'ignored' });
+  // The Razorpay account may also serve another website: only payments ShopEye created (tagged at order creation) are ours
+  if (!p?.notes?.shopeye_order_id) return NextResponse.json({ status: 'ignored', reason: 'not a ShopEye payment' });
   const eventId = req.headers.get('x-razorpay-event-id') || `${evt.event}:${p.id}`;
   const { data, error } = await svc.rpc('svc_process_payment_event', {
     p_event_id: eventId, p_event_type: evt.event, p_gateway_order_id: p.order_id, p_gateway_payment_id: p.id,
