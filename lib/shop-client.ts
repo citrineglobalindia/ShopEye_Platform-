@@ -2,18 +2,8 @@
 // SRS: CUST-FR-009 CUST-FR-024 CUST-FR-051 CUST-FR-054 CUST-FR-057 (guest cart kept in the browser and merged at sign-in; recently viewed is clearable; wishlist-to-cart re-validates stock and price)
 import { sb } from '@/lib/sb-browser';
 
-type GuestLine = { variant_id: string; qty: number; price: number };
-const GK = 'shopeye.guestcart.v1', RK = 'shopeye.recent.v1', TTL = 30 * 864e5;   // guest cart kept 30 days
-const read = <T,>(k: string, d: T): T => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v ?? d; } catch { return d; } };
-const write = (k: string, v: any) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-export const cartChanged = () => window.dispatchEvent(new Event('shopeye:cart'));
-
-export function guestCart(): GuestLine[] {
-  const g = read<{ at: number; lines: GuestLine[] }>(GK, { at: 0, lines: [] });
-  if (!g.at || Date.now() - g.at > TTL) return [];
-  return g.lines;
-}
-export function setGuestCart(lines: GuestLine[]) { write(GK, { at: Date.now(), lines: lines.filter((l) => l.qty > 0) }); cartChanged(); }
+import { guestCart, setGuestCart, cartChanged, recentIds } from '@/lib/local-store';
+export { guestCart, setGuestCart, cartChanged, recentIds, trackView, clearRecent } from '@/lib/local-store';
 
 export async function addToCart(variantId: string, qty: number, price: number): Promise<'ok'> {
   const db = sb(); const { data: { user } } = await db.auth.getUser();
@@ -39,9 +29,15 @@ export async function mergeGuestCart() {
 }
 
 // Wishlist (signed-in only; server-side, owner-only by row-level security)
-export async function wishlistIds(): Promise<Set<string>> {
-  const db = sb(); const { data: { user } } = await db.auth.getUser(); if (!user) return new Set();
-  const { data } = await db.from('wishlist_items').select('product_id'); return new Set((data ?? []).map((r: any) => r.product_id));
+// One shared lookup per page for every heart on it, refreshed when the wishlist changes (was one auth + query per product card)
+let wishCache: Promise<Set<string>> | null = null;
+if (typeof window !== 'undefined') window.addEventListener('shopeye:wishlist', () => { wishCache = null; });
+export function wishlistIds(): Promise<Set<string>> {
+  wishCache ??= (async () => {
+    const db = sb(); const { data: { session } } = await db.auth.getSession(); if (!session) return new Set<string>();
+    const { data } = await db.from('wishlist_items').select('product_id'); return new Set((data ?? []).map((r: any) => r.product_id));
+  })();
+  return wishCache;
 }
 export async function toggleWishlist(productId: string, on: boolean): Promise<'ok' | 'login'> {
   const db = sb(); const { data: { user } } = await db.auth.getUser(); if (!user) return 'login';
@@ -50,10 +46,7 @@ export async function toggleWishlist(productId: string, on: boolean): Promise<'o
   if (r.error) throw r.error; window.dispatchEvent(new Event('shopeye:wishlist')); return 'ok';
 }
 
-// Recently viewed: kept on this device only, last 12, clearable
-export const recentIds = (): string[] => read<string[]>(RK, []);
-export function trackView(id: string) { write(RK, [id, ...recentIds().filter((x) => x !== id)].slice(0, 12)); }
-export function clearRecent() { write(RK, []); window.dispatchEvent(new Event('shopeye:recent')); }
+// Recently viewed lives in lib/local-store (device only, last 12, clearable)
 
 // SRS: CUST-FR-063 (free-shipping progress only from the live rule the server charges by; hidden if it can't be read)
 let shipCache: Promise<import('./config').ShipRules> | null = null;

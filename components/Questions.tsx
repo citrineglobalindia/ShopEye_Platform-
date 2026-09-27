@@ -2,8 +2,9 @@
 // SRS: CUST-FR-132 (product questions and answers: first name only, phone numbers, emails and chat links refused, report with reason)
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { sb } from '@/lib/sb-browser';
+import { sbLazy } from '@/lib/sb-lazy';
 import { friendly } from '@/lib/errors';
+import { whenIdle } from '@/lib/local-store';
 
 const when = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 export function Questions({ productId }: { productId: string }) {
@@ -11,30 +12,30 @@ export function Questions({ productId }: { productId: string }) {
   const [text, setText] = useState(''); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
   const router = useRouter(); const path = usePathname();
   async function load() {
-    const db = sb(); const { data: { user } } = await db.auth.getUser(); setMe(user?.id ?? null);
+    const db = await sbLazy(); const { data: { session } } = await db.auth.getSession(); setMe(session?.user.id ?? null);
     const { data: q } = await db.from('product_questions').select('id,customer_id,body,status,moderation_note,author_name,created_at')
       .eq('product_id', productId).neq('status', 'removed').order('created_at', { ascending: false }).limit(30);
     const ids = (q ?? []).map((x: any) => x.id);
     const { data: a } = ids.length ? await db.from('product_answers').select('id,question_id,answerer_kind,body,created_at').in('question_id', ids).order('created_at') : { data: [] };
     setQs((q ?? []).map((x: any) => ({ ...x, answers: (a ?? []).filter((y: any) => y.question_id === x.id) })));
   }
-  useEffect(() => { load(); }, [productId]);
+  useEffect(() => { whenIdle(load); }, [productId]);
   async function ask(e: React.FormEvent) {
     e.preventDefault(); setErr(''); setMsg('');
     if (!me) { router.push(`/login?next=${encodeURIComponent(path + '#qa-h')}`); return; }
-    setBusy(true); const { error } = await sb().rpc('ask_question', { p_product: productId, p_body: text }); setBusy(false);
+    setBusy(true); const { error } = await (await sbLazy()).rpc('ask_question', { p_product: productId, p_body: text }); setBusy(false);
     if (error) { setErr(friendly(error)); return; }
     setText(''); setMsg('Thanks. Your question will appear here once our team has checked it, and we’ll email you when it’s answered.'); load();
   }
   async function report(kind: 'question' | 'answer', id: string) {
     if (!me) { router.push(`/login?next=${encodeURIComponent(path + '#qa-h')}`); return; }
     const reason = prompt('What’s wrong with it? (for example: offensive, spam, not about this product)'); if (!reason) return;
-    const { error } = await sb().rpc('report_qa', { p_kind: kind, p_id: id, p_reason: reason });
+    const { error } = await (await sbLazy()).rpc('report_qa', { p_kind: kind, p_id: id, p_reason: reason });
     setMsg(error ? friendly(error) : 'Thanks. Our team will take a look.');
   }
   async function remove(id: string) {
     if (!confirm('Delete your question?')) return;
-    const { error } = await sb().rpc('delete_my_question', { p_question: id }); if (error) setErr(friendly(error)); else load();
+    const { error } = await (await sbLazy()).rpc('delete_my_question', { p_question: id }); if (error) setErr(friendly(error)); else load();
   }
   const shown = qs.filter((q) => q.status === 'published' || q.customer_id === me);
   return (

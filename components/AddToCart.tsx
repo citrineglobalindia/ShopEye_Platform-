@@ -2,10 +2,10 @@
 // SRS: CUST-FR-041 CUST-FR-042 CUST-FR-043 (variant required, buy now, qty capped by stock and order limit)
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { sb } from '@/lib/sb-browser';
+import { sbLazy } from '@/lib/sb-lazy';
 import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
-import { addToCart } from '@/lib/shop-client';
+
 import { AlertButton } from '@/components/Alerts';
 import { useEffect } from 'react';
 import { track } from '@/lib/analytics';
@@ -26,6 +26,7 @@ export default function AddToCart({ variants }: { variants: V[] }) {
   async function go(buyNow: boolean) {
     setBusy(true); setMsg(null);
     try {
+      const { addToCart } = await import('@/lib/shop-client');   // network code loads on the first tap, not with the page
       await addToCart(sel.variant_id, qty, sel.selling_price);
       track('add_to_cart', { currency: 'INR', value: sel.selling_price * qty, items: [{ item_id: sel.sku ?? sel.variant_id, price: sel.selling_price, quantity: qty }] });
       if (buyNow) router.push('/checkout'); else setMsg({ t: 'ok', m: 'Added to your cart.' });

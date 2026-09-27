@@ -1897,7 +1897,7 @@
   ]
  },
  "CUST-FR-153": {
-  "what": "Planned: consistently strong Core Web Vitals under real traffic. Layout shift on listings is fixed (0.26 to 0), pages load their main content in about 1–1.4 s in a phone lab test, and real-visit vitals are reported to analytics with consent.",
+  "what": "Planned: consistently strong Core Web Vitals under real traffic. Done so far: layout shift on listings fixed (0.26 to 0); JavaScript loaded up front cut by about a third (home 183 to 115 kB, product page 196 to 128 kB) by loading the database client only when needed; one shared wishlist lookup per page instead of one per product card; main content appears in about 0.6–1.4 s in a phone lab test; real-visit vitals are reported to analytics with consent.",
   "try": [
    {
     "label": "Home page",
@@ -1907,7 +1907,7 @@
   "check": [
    "Run scripts/web-vitals-check.py against a production build."
   ],
-  "next": "Trim JavaScript that runs on page load on the home and product pages (lab blocking time is 200–420 ms, target under 200 ms), then confirm with real-visit data once traffic arrives."
+  "next": "Lab blocking time is still 160–430 ms on a 4x-slowed phone (target under 200 ms), mostly React itself hydrating the page. Confirm with real-visit data once traffic arrives, then decide whether the home and product pages need more server-only rendering."
  },
  "CUST-FR-154": {
   "what": "Product photos hosted by ShopEye are served by Vercel’s image CDN in responsive sizes and AVIF/WebP. The main product photo loads first with high priority; everything below the fold loads lazily.",

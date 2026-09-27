@@ -2,15 +2,16 @@
 // SRS: CUST-FR-040 CUST-FR-052 CUST-FR-053 (compare products; back-in-stock alert names the variant and channel; price-drop alert with opt-out)
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { sb } from '@/lib/sb-browser';
+import { sbLazy } from '@/lib/sb-lazy';
+import { hasSession, whenIdle } from '@/lib/local-store';
 
 export function AlertButton({ variantId, kind, label, onLabel }: { variantId: string; kind: 'back_in_stock' | 'price_drop'; label: string; onLabel: string }) {
   const [on, setOn] = useState(false); const [busy, setBusy] = useState(false); const router = useRouter(); const path = usePathname();
-  useEffect(() => { (async () => { const db = sb(); const { data: { user } } = await db.auth.getUser(); if (!user) { setOn(false); return; }
-    const { data } = await db.from('product_alerts').select('active').eq('variant_id', variantId).eq('kind', kind).maybeSingle(); setOn(!!data?.active); })(); }, [variantId, kind]);
+  useEffect(() => { if (!hasSession()) { setOn(false); return; } whenIdle(async () => { const db = await sbLazy(); const { data: { session } } = await db.auth.getSession(); const user = session?.user; if (!user) { setOn(false); return; }
+    const { data } = await db.from('product_alerts').select('active').eq('variant_id', variantId).eq('kind', kind).maybeSingle(); setOn(!!data?.active); }); }, [variantId, kind]);
   async function toggle() {
-    const { data: { user } } = await sb().auth.getUser(); if (!user) { router.push(`/login?next=${encodeURIComponent(path)}`); return; }
-    setBusy(true); const { error } = await sb().rpc('set_product_alert', { p_variant: variantId, p_kind: kind, p_on: !on }); setBusy(false);
+    const { data: { user } } = await (await sbLazy()).auth.getUser(); if (!user) { router.push(`/login?next=${encodeURIComponent(path)}`); return; }
+    setBusy(true); const { error } = await (await sbLazy()).rpc('set_product_alert', { p_variant: variantId, p_kind: kind, p_on: !on }); setBusy(false);
     if (!error) setOn(!on);
   }
   return <button type="button" className={`btn ${on ? 'dark' : 'ghost'} sm`} aria-pressed={on} disabled={busy} onClick={toggle}>{on ? onLabel : label}</button>;

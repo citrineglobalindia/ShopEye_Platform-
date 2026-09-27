@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { sb } from '@/lib/sb-browser';
-import { guestCart, mergeGuestCart, wishlistIds, toggleWishlist, recentIds, trackView, clearRecent } from '@/lib/shop-client';
+// Page speed: header, hearts and recently-viewed load the Supabase client only when there is something to fetch, after the page has painted
+import { guestCart, recentIds, trackView, clearRecent, hasSession, whenIdle } from '@/lib/local-store';
+const shop = () => import('@/lib/shop-client');
 import { inr } from '@/lib/config';
 import { Pic } from '@/components/Pic';
 
@@ -25,16 +26,18 @@ export function CartLink({ serverCount, signedIn }: { serverCount: number; signe
 // Runs once after sign-in: merge the guest cart into the account cart
 export function GuestCartMerge({ signedIn }: { signedIn: boolean }) {
   const router = useRouter();
-  useEffect(() => { if (signedIn && guestCart().length) mergeGuestCart().then((n) => n && router.refresh()); }, [signedIn]);
+  useEffect(() => { if (signedIn && guestCart().length) shop().then((m) => m.mergeGuestCart()).then((n) => n && router.refresh()); }, [signedIn]);
   return null;
 }
 export function WishHeart({ productId, big }: { productId: string; big?: boolean }) {
   const [on, setOn] = useState(false); const [busy, setBusy] = useState(false); const router = useRouter(); const path = usePathname();
-  useEffect(() => { const load = () => wishlistIds().then((s) => setOn(s.has(productId))); load();
+  useEffect(() => {
+    const load = () => { if (hasSession()) shop().then((m) => m.wishlistIds()).then((s) => setOn(s.has(productId))); else setOn(false); };
+    whenIdle(load);
     window.addEventListener('shopeye:wishlist', load); return () => window.removeEventListener('shopeye:wishlist', load); }, [productId]);
   async function click(e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation(); setBusy(true);
-    try { const r = await toggleWishlist(productId, !on); if (r === 'login') router.push(`/login?next=${encodeURIComponent(path)}`); else setOn(!on); }
+    try { const r = await (await shop()).toggleWishlist(productId, !on); if (r === 'login') router.push(`/login?next=${encodeURIComponent(path)}`); else setOn(!on); }
     catch { alert('Could not update your wishlist. Try again.'); } finally { setBusy(false); }
   }
   return (
@@ -49,7 +52,7 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
   const [items, setItems] = useState<any[]>([]);
   async function load() {
     const ids = recentIds().filter((x) => x !== exclude); if (!ids.length) { setItems([]); return; }
-    const db = sb();
+    const { sb } = await import('@/lib/sb-browser'); const db = sb();
     const [{ data: v }, { data: m }] = await Promise.all([
       db.from('catalog_variants').select('product_id,title,selling_price,vendor_name').in('product_id', ids),
       db.from('product_media').select('product_id,url,sort_order').in('product_id', ids).order('sort_order')]);
@@ -57,7 +60,7 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
     const img = new Map<string, string>(); for (const x of m ?? []) if (!img.has(x.product_id)) img.set(x.product_id, x.url);
     setItems(ids.filter((i) => best.has(i)).map((i) => ({ ...best.get(i), image: img.get(i) })));
   }
-  useEffect(() => { load(); window.addEventListener('shopeye:recent', load); return () => window.removeEventListener('shopeye:recent', load); }, [exclude]);
+  useEffect(() => { whenIdle(load); window.addEventListener('shopeye:recent', load); return () => window.removeEventListener('shopeye:recent', load); }, [exclude]);
   if (!items.length) return null;
   return (
     <section className="section" aria-labelledby="rv-h">

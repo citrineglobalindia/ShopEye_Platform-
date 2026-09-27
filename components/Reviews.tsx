@@ -2,8 +2,9 @@
 // SRS: CUST-FR-049 CUST-FR-128 CUST-FR-129 CUST-FR-130 CUST-FR-131 (no fabricated ratings; verified-purchase marker; write/edit/delete own review with moderation status; helpful and report with abuse controls)
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { sb } from '@/lib/sb-browser';
+import { sbLazy } from '@/lib/sb-lazy';
 import { friendly } from '@/lib/errors';
+import { whenIdle } from '@/lib/local-store';
 
 export function Stars({ value, size = 16, label }: { value: number; size?: number; label?: string }) {
   return (
@@ -16,17 +17,17 @@ export function ReviewList({ productId, avg, count }: { productId: string; avg: 
   const [items, setItems] = useState<any[]>([]); const [me, setMe] = useState<string | null>(null); const [msg, setMsg] = useState('');
   const router = useRouter(); const path = usePathname();
   async function load() {
-    const db = sb(); const { data: { user } } = await db.auth.getUser(); setMe(user?.id ?? null);
+    const db = await sbLazy(); const { data: { session } } = await db.auth.getSession(); setMe(session?.user.id ?? null);   // local session only: display, RLS does the checking
     const { data } = await db.from('product_reviews').select('id,customer_id,rating,title,body,status,helpful_count,author_name,created_at,updated_at')
       .eq('product_id', productId).order('helpful_count', { ascending: false }).order('created_at', { ascending: false }).limit(20);
     setItems(data ?? []);
   }
-  useEffect(() => { load(); }, [productId]);
+  useEffect(() => { whenIdle(load); }, [productId]);
   async function vote(id: string, kind: 'helpful' | 'report') {
     if (!me) { router.push(`/login?next=${encodeURIComponent(path)}`); return; }
     let reason: string | null = null;
     if (kind === 'report') { reason = prompt('What’s wrong with this review? (for example: offensive, not about the product, spam)'); if (!reason) return; }
-    const { error } = await sb().rpc('vote_review', { p_review: id, p_kind: kind, p_reason: reason });
+    const { error } = await (await sbLazy()).rpc('vote_review', { p_review: id, p_kind: kind, p_reason: reason });
     setMsg(error ? friendly(error) : kind === 'report' ? 'Thanks. Our team will look at this review.' : 'Thanks for your feedback.'); load();
   }
   const mine = items.find((r) => r.customer_id === me);
@@ -51,19 +52,19 @@ export function ReviewList({ productId, avg, count }: { productId: string; avg: 
 export function ReviewForm({ productId, title }: { productId: string; title: string }) {
   const router = useRouter(); const [open, setOpen] = useState(false); const [existing, setExisting] = useState<any>(null);
   const [rating, setRating] = useState(0); const [t, setT] = useState(''); const [body, setBody] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState('');
-  useEffect(() => { (async () => { const db = sb(); const { data: { user } } = await db.auth.getUser(); if (!user) return;
+  useEffect(() => { (async () => { const db = await sbLazy(); const { data: { user } } = await db.auth.getUser(); if (!user) return;
     const { data } = await db.from('product_reviews').select('id,rating,title,body,status,moderation_note').eq('product_id', productId).eq('customer_id', user.id).maybeSingle();
     if (data) { setExisting(data); setRating(data.rating); setT(data.title ?? ''); setBody(data.body ?? ''); } })(); }, [productId]);
   async function save() {
     if (!rating) { setErr('Choose a star rating.'); return; }
     setBusy(true); setErr('');
-    const { data, error } = await sb().rpc('submit_review', { p_product: productId, p_rating: rating, p_title: t, p_body: body }); setBusy(false);
+    const { data, error } = await (await sbLazy()).rpc('submit_review', { p_product: productId, p_rating: rating, p_title: t, p_body: body }); setBusy(false);
     if (error) { setErr(friendly(error)); return; }
     setExisting({ ...(existing ?? {}), id: data.id, rating, title: t, body, status: data.status }); setOpen(false); router.refresh();
   }
   async function remove() {
     if (!existing || !confirm('Delete your review? This can’t be undone.')) return;
-    const { error } = await sb().rpc('delete_my_review', { p_review: existing.id }); if (error) { setErr(friendly(error)); return; }
+    const { error } = await (await sbLazy()).rpc('delete_my_review', { p_review: existing.id }); if (error) { setErr(friendly(error)); return; }
     setExisting(null); setRating(0); setT(''); setBody('');
   }
   const status = existing && ({ pending: 'Waiting for moderation', published: 'Published', rejected: 'Not published', removed: 'Removed' } as any)[existing.status];

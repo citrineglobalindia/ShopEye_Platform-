@@ -1,7 +1,7 @@
 'use client';
 // SRS: CUST-FR-046 (delivery check by pincode without login)
 import { useEffect, useState } from 'react';
-import { sb } from '@/lib/sb-browser';
+import { sbLazy } from '@/lib/sb-lazy';
 import { Pic } from '@/components/Pic';
 
 export function Gallery({ media: all, title }: { media: { url: string; alt_text?: string; variant_id?: string | null }[]; title: string }) {
@@ -26,7 +26,7 @@ export function PincodeCheck() {
   useEffect(() => { const s = localStorage.getItem('shopeye.pin'); if (s) { setPin(s); check(s); } }, []);
   async function check(v = pin) {
     if (!/^[1-9]\d{5}$/.test(v)) { setR({ valid: false }); return; }
-    setBusy(true); const { data } = await sb().rpc('check_pincode', { p_pincode: v }); setBusy(false); setR(data);
+    setBusy(true); const { data } = await (await sbLazy()).rpc('check_pincode', { p_pincode: v }); setBusy(false); setR(data);
     try { localStorage.setItem('shopeye.pin', v); } catch {}
   }
   const eta = (d: number) => new Date(Date.now() + d * 864e5).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
