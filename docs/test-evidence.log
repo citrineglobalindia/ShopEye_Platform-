@@ -1,4 +1,5 @@
 psql:supabase/migrations/20260926000019_email_outbox.sql:211: NOTICE:  trigger "on_auth_user_verified" for relation "auth.users" does not exist, skipping
+psql:supabase/migrations/20260926000022_qa_security_shipping.sql:224: NOTICE:  trigger "on_auth_user_security" for relation "auth.users" does not exist, skipping
 == 1. Status models & direct-write guards
 PASS  Vendor active→draft rejected by server (VS-FR-887) (rejected: INVALID_TRANSITION: vendor cannot move from active to draft)
 PASS  Draft product cannot self-activate without review (rejected: INVALID_TRANSITION: product cannot move from draft to active)
@@ -57,7 +58,7 @@ PASS  Vendor ledger is append-only (AF-FR-0234) (rejected: IMMUTABLE_RECORD: DEL
 PASS  Audit log cannot be deleted (AF-FR-0603) (rejected: IMMUTABLE_RECORD: DELETE on app.audit_log is not permitted; post a reversal/correction ins)
 PASS  Posted journal lines frozen (rejected: IMMUTABLE_RECORD: journal is posted; post a reversing journal)
 PASS  Unbalanced journal cannot post (UAT-17) (rejected: UNBALANCED_JOURNAL: debit 100.00 credit 90.00 lines 2)
-PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-17 is in a closed period)
+PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-18 is in a closed period)
 PASS  Reversal creates linked counter-entry, original preserved (UAT-30)
 PASS  Audit log captures before/after for vendor activation (UAT-28)
 == 6. Fulfilment, delivery, returns (UAT-013/016, VS-FR-892)
@@ -179,6 +180,40 @@ PASS  Authors cannot vote on their own review (rejected: OWN_REVIEW: you can't v
 PASS  Edited review returns to moderation (CUST-FR-129)
 PASS  Average drops the review while it is back in moderation (CUST-FR-133)
 PASS  Price drop emails the watcher once and switches the alert off (CUST-FR-053)
+== 21. Product questions and answers (as real API roles, CUST-FR-132)
+PASS  Customer asks a product question; it waits for moderation (CUST-FR-132)
+PASS  Questions with a phone number are refused (CUST-FR-132 no contact details) (rejected: CONTACT_DETAILS_NOT_ALLOWED: remove phone numbers, emails and chat links)
+PASS  Questions with an email address are refused (CUST-FR-132 no contact details) (rejected: CONTACT_DETAILS_NOT_ALLOWED: remove phone numbers, emails and chat links)
+PASS  Too-short questions are refused (rejected: QUESTION_LENGTH: ask in 10 to 500 characters)
+PASS  Pending questions are invisible to other shoppers
+PASS  Shoppers cannot moderate questions (rejected: FORBIDDEN: missing permission review.moderate)
+PASS  A different seller cannot answer another seller's product question (rejected: FORBIDDEN: only the seller or ShopEye can answer)
+PASS  Seller answers cannot share contact details either (rejected: CONTACT_DETAILS_NOT_ALLOWED: answers can't share phone numbers, emails or chat links)
+PASS  The product's own seller answers a published question
+PASS  Anyone can read published questions and their answers
+PASS  Question shows first name and initial only, no contact details
+PASS  Who typed an answer stays internal (rejected: permission denied for table product_answers)
+PASS  Reports are private (rejected: permission denied for table qa_reports)
+PASS  The asker is emailed when their question is answered
+PASS  You cannot report your own question (rejected: OWN_CONTENT: you can't report your own post)
+PASS  A report needs a reason (rejected: REASON_REQUIRED)
+PASS  Shoppers can report an answer; reporting twice counts once (CUST-FR-132 report)
+== 22. Account security activity and notices (CUST-FR-178)
+PASS  Each sign-in is recorded with its time
+PASS  After an email change, order and account emails go to the new address
+PASS  Email change is recorded with masked old and new addresses
+PASS  Both the old and the new address are told about an email change
+PASS  The browser cannot fake sign-in events (rejected: UNKNOWN_KIND)
+PASS  Customers see their own security activity only
+PASS  Another customer sees none of it
+PASS  Security events cannot be written directly (rejected: permission denied for table security_events)
+PASS  Signing out other devices sends a security notice
+PASS  Money taken with no order is accepted as urgent (CUST-FR-140)
+PASS  Urgent is refused for situations without an urgent escalation (CUST-FR-140) (rejected: URGENT_NOT_SUPPORTED)
+PASS  Ordinary requests stay normal priority
+PASS  Customers cannot change ticket status (rejected: FORBIDDEN: missing permission ticket.handle)
+PASS  Support team picks up the urgent request first
+PASS  Cart reads the live shipping rule the server charges by, including a changed threshold (CUST-FR-063)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
@@ -203,8 +238,35 @@ PASS  Every note belongs to a real SRS requirement ID
 PASS  Every note says what the functionality does and how to check it
 PASS  Every "Try it" link in the notes points at a page that exists
 PASS  Every page derived from the code points at a page that exists
-PASS  Unfinished requirements are labelled Planned and say what they wait on (41)
-PASS  Finished requirements are not described as planned (147)
+PASS  Unfinished requirements are labelled Planned and say what they wait on (30)
+PASS  Finished requirements are not described as planned (158)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text
+== 14. Accessibility: WCAG 2.2 AA automated audit (axe-core 4.10, demo catalogue)
+PASS  WCAG 2.2 AA (axe) no violations on / at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /search?q=saree at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /c/sarees at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /p/00000000-0000-4000-8000-000000000001 at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /cart at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /login at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /help at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /returns-policy at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /compare at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /seller at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /status at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /status/CUST-FR-132 at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on /p/00000000-0000-0000-0000-000000000000 at 1280px
+PASS  WCAG 2.2 AA (axe) no violations on / at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /search?q=saree at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /c/sarees at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /p/00000000-0000-4000-8000-000000000001 at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /cart at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /login at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /help at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /returns-policy at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /compare at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /seller at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /status at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /status/CUST-FR-132 at 375px
+PASS  WCAG 2.2 AA (axe) no violations on /p/00000000-0000-0000-0000-000000000000 at 375px

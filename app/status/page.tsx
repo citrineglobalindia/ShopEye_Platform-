@@ -59,13 +59,13 @@ export default function StatusPage() {
           <div key={l as string} className="panel"><div className="small muted">{l}</div><div style={{ font: '700 1.8rem var(--display)' }}>{Number(n).toLocaleString('en-IN')}</div><div className="small muted">{p}</div></div>))}
       </div>
 
-      <section className="panel tablewrap" aria-labelledby="by-portal">
+      <section className="panel tablewrap" aria-labelledby="by-portal" tabIndex={0}>
         <h2 id="by-portal">By portal</h2>
         <table><thead><tr><th>Portal</th><th>Requirements</th><th>Done</th><th>In progress</th><th>Tested</th><th style={{ width: '30%' }}>Progress</th></tr></thead>
           <tbody>{byPortal.map((b) => (
             <tr key={b.p} style={{ cursor: 'pointer' }} onClick={() => setPortal(b.p)}>
               <td><strong>{b.p}</strong></td><td>{b.n.toLocaleString('en-IN')}</td><td>{b.done}</td><td>{b.prog}</td><td>{b.pass}</td>
-              <td><div aria-label={`${pct(b.done, b.n)}% done`} style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', background: '#E9EBF3' }}>
+              <td><div role="img" aria-label={`${pct(b.done, b.n)}% done`} style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', background: '#E9EBF3' }}>
                 <span style={{ width: `${pct(b.done, b.n)}%`, background: 'var(--ok)' }} /><span style={{ width: `${pct(b.prog, b.n)}%`, background: '#9DBEEA' }} /></div>
                 <span className="small muted">{pct(b.done, b.n)}% done, {pct(b.prog, b.n)}% in progress</span></td>
             </tr>))}</tbody></table>

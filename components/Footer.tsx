@@ -10,7 +10,7 @@ export function Footer({ signedIn }: { signedIn: boolean }) {
       </div>
       <div className="wrap foot-base small">
         <span>© {new Date().getFullYear()} ShopEye. Prices include GST.</span>
-        <span>Payments secured by Razorpay{signedIn && <> · <a href="/auth/signout">Sign out</a></>}</span>
+        <span>Payments secured by Razorpay{signedIn && <> · <form action="/auth/signout" method="post" style={{ display: 'inline' }}><button className="linklike foot-signout">Sign out</button></form></>}</span>
       </div>
     </footer>
   );

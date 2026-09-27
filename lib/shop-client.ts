@@ -54,3 +54,14 @@ export async function toggleWishlist(productId: string, on: boolean): Promise<'o
 export const recentIds = (): string[] => read<string[]>(RK, []);
 export function trackView(id: string) { write(RK, [id, ...recentIds().filter((x) => x !== id)].slice(0, 12)); }
 export function clearRecent() { write(RK, []); window.dispatchEvent(new Event('shopeye:recent')); }
+
+// SRS: CUST-FR-063 (free-shipping progress only from the live rule the server charges by; hidden if it can't be read)
+let shipCache: Promise<import('./config').ShipRules> | null = null;
+export function shippingRules() {
+  shipCache ??= (async () => {
+    const { data, error } = await sb().rpc('shipping_rules');
+    if (error || !data) { shipCache = null; return { ...(await import('./config')).SHIP_DEFAULT }; }
+    return { flat: Number(data.flat_fee_per_vendor), free: Number(data.free_threshold_per_vendor), live: true };
+  })();
+  return shipCache;
+}

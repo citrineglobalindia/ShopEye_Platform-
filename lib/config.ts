@@ -15,4 +15,9 @@ export const STATES: [string, string][] = [
 ];
 // Mirrors app.settings shipping.flat_fee_per_vendor / free_threshold_per_vendor (the server recalculates at order time)
 export const SHIP_FLAT = 49, SHIP_FREE_AT = 499;
-export const shipFor = (packageTotal: number) => (packageTotal >= SHIP_FREE_AT ? 0 : SHIP_FLAT);
+export type ShipRules = { flat: number; free: number; live: boolean };
+export const SHIP_DEFAULT: ShipRules = { flat: SHIP_FLAT, free: SHIP_FREE_AT, live: false };
+export const shipFor = (packageTotal: number, r: ShipRules = SHIP_DEFAULT) => (packageTotal >= r.free ? 0 : r.flat);
+
+// SRS: CUST-FR-149 (session cookies are Secure on the live site and SameSite=Lax, so they never travel over plain HTTP or with cross-site form posts)
+export const AUTH_COOKIE = { secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/' };

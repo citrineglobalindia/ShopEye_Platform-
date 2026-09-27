@@ -1,7 +1,7 @@
 /* Shopeye — indigo-dye ink, marigold for action, cool paper. */
 :root {
   --ink: #021A53; --ink-2: #0B3A8C; --slate: #5E6682; --line: #DADDE8;
-  --paper: #F5F6FA; --surface: #FFFFFF; --marigold: #00D07B; --marigold-ink: #021A53; --teal: #02969F;
+  --paper: #F5F6FA; --surface: #FFFFFF; --marigold: #00D07B; --marigold-ink: #021A53; --teal: #02969F; --teal-text: #017780; /* teal for text: 4.9:1 on paper, WCAG AA (brand teal is 3.3:1) */
   --ok: #1F7A4D; --warn: #9A5B00; --bad: #B3261E;
   --r-sm: 6px; --r-md: 12px;
   --display: 'Bricolage Grotesque', system-ui, sans-serif;
@@ -18,6 +18,7 @@ h1 { font-size: clamp(1.8rem, 3.4vw, 2.7rem); font-weight: 700; }
 h2 { font-size: 1.4rem; font-weight: 650; }
 h3 { font-size: 1.05rem; font-weight: 600; }
 p { margin: 0 0 1em; max-width: 68ch; }
+/* SRS: CUST-FR-160 (automated WCAG 2.2 AA audit with axe-core: no violations on 13 customer pages at desktop and phone width; see scripts/a11y-audit.py) */
 /* SRS: CUST-FR-161 CUST-FR-164 CUST-FR-165 (visible keyboard focus everywhere; statuses always carry text, never colour alone; no horizontal overflow at 360px, checked on 11 pages) */
 :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 .wrap { width: min(1180px, 100% - 32px); margin-inline: auto; }
@@ -60,7 +61,7 @@ p { margin: 0 0 1em; max-width: 68ch; }
 
 /* hero: the brand logo is the one bold element */
 .hero { display: grid; grid-template-columns: 1.25fr .75fr; gap: 40px; align-items: center; padding: 56px 0 32px; }
-.kicker { font-weight: 700; color: var(--teal); margin-bottom: 12px; }
+.kicker { font-weight: 700; color: var(--teal-text); margin-bottom: 12px; }
 .lede { font-size: 1.12rem; color: var(--ink-2); }
 .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .hero-logo { justify-self: center; width: min(320px, 70vw); height: auto; mix-blend-mode: multiply; }
@@ -70,7 +71,7 @@ p { margin: 0 0 1em; max-width: 68ch; }
 @media (max-width: 860px) { .promises { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 480px) { .promises { grid-template-columns: 1fr; } }
 .rail-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.rail-head a { font-weight: 700; color: var(--teal); }
+.rail-head a { font-weight: 700; color: var(--teal-text); }
 .cat-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
 .cat-tile { display: flex; justify-content: space-between; align-items: center; padding: 18px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); text-decoration: none; font: 600 1.05rem var(--display); }
 .cat-tile:hover { border-color: var(--ink); } .cat-tile .arrow { color: var(--teal); font-size: 1.4rem; }
@@ -210,6 +211,7 @@ th { font-weight: 700; color: var(--slate); font-size: .85rem; }
 /* footer */
 .foot { margin-top: 64px; background: var(--ink); color: #D6DBEA; font-size: .94rem; }
 .foot a { color: #fff; text-decoration: none; } .foot a:hover { text-decoration: underline; }
+.foot .foot-signout { color: #fff; font: inherit; text-decoration: none; } .foot .foot-signout:hover { text-decoration: underline; }
 .foot p, .foot .small { color: #C9D0E4; }
 .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 28px; padding: 40px 0 28px; }
 .foot-grid nav { display: grid; gap: 8px; align-content: start; } .foot-grid strong { color: #fff; }

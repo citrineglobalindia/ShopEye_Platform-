@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
-import { inr, shipFor, SHIP_FREE_AT } from '@/lib/config';
-import { guestCart, setGuestCart, cartChanged } from '@/lib/shop-client';
+import { inr, shipFor, SHIP_DEFAULT, type ShipRules } from '@/lib/config';
+import { guestCart, setGuestCart, cartChanged, shippingRules } from '@/lib/shop-client';
 import { Crumbs } from '@/components/Crumbs';
 
 type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
 export default function Cart() {
+  const [rules, setRules] = useState<ShipRules>(SHIP_DEFAULT);
+  useEffect(() => { shippingRules().then(setRules); }, []);
   const [lines, setLines] = useState<Line[] | null>(null); const [user, setUser] = useState<any>(undefined); const [cartId, setCartId] = useState<string | null>(null);
   async function load() {
     const db = sb(); const { data: { user } } = await db.auth.getUser(); setUser(user);
@@ -54,7 +56,7 @@ export default function Cart() {
   const live = active.filter((l) => l.v);
   const groups = Object.values(live.reduce((g: any, l) => ((g[l.v.vendor_name] ||= { vendor: l.v.vendor_name, lines: [] }).lines.push(l), g), {})) as { vendor: string; lines: Line[] }[];
   const items = live.reduce((s, l) => s + Number(l.v.selling_price) * l.qty, 0);
-  const ship = groups.reduce((s, g) => s + shipFor(g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0)), 0);
+  const ship = groups.reduce((s, g) => s + shipFor(g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0), rules), 0);
   const blocked = active.some((l) => !ok(l));
   const row = (l: Line) => (
     <div key={l.key} className="cart-line">
@@ -80,11 +82,11 @@ export default function Cart() {
         {!user && <div className="msg info">You’re not signed in. Your cart is saved on this device; <Link href="/login?next=/cart">sign in</Link> to keep it with your account.</div>}
         {blocked && <div className="msg err" role="alert">Some items need attention before checkout.</div>}
         {groups.map((g, i) => {
-          const pkg = g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0); const need = SHIP_FREE_AT - pkg;
+          const pkg = g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0); const need = rules.free - pkg;
           return (
             <section key={g.vendor} className="panel stack" aria-label={`Package ${i + 1} from ${g.vendor}`}>
-              <div className="pkg-head"><h3 style={{ margin: 0 }}>Package {i + 1} · from {g.vendor}</h3><span className="small">{shipFor(pkg) ? `Shipping ${inr(shipFor(pkg))}` : 'Free shipping'}</span></div>
-              {need > 0 ? <div className="ship-bar"><div style={{ width: `${Math.min(100, (pkg / SHIP_FREE_AT) * 100)}%` }} /><span className="small">Add {inr(need)} more from {g.vendor} for free shipping on this package (before any coupon)</span></div>
+              <div className="pkg-head"><h3 style={{ margin: 0 }}>Package {i + 1} · from {g.vendor}</h3><span className="small">{shipFor(pkg, rules) ? `Shipping ${inr(shipFor(pkg, rules))}` : 'Free shipping'}</span></div>
+              {!rules.live ? null : need > 0 ? <div className="ship-bar"><div style={{ width: `${Math.min(100, (pkg / rules.free) * 100)}%` }} /><span className="small">Add {inr(need)} more from {g.vendor} for free shipping on this package (before any coupon)</span></div>
                         : <div className="small ok-t">This package ships free</div>}
               {g.lines.map(row)}
             </section>);

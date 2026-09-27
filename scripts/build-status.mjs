@@ -46,7 +46,7 @@ function walk(dir, out = []) {
 const matrix = parseCsv(read('docs/traceability-matrix.csv'));
 const exact = new Map();   // id -> Set(files)
 const ranged = new Map();
-const files = [...walk('app'), ...walk('components'), ...walk('lib'), ...walk('supabase/migrations'), 'middleware.ts'].filter((f) => fs.existsSync(path.join(ROOT, f)));
+const files = [...walk('app'), ...walk('components'), ...walk('lib'), ...walk('supabase/migrations'), 'middleware.ts', 'next.config.mjs'].filter((f) => fs.existsSync(path.join(ROOT, f)));
 for (const f of files) {
   let src = read(f);
   for (const [, pre, a, b] of src.matchAll(RANGE)) {
@@ -94,6 +94,7 @@ function entryTarget(f) {
   if (f === 'app/robots.ts') return { label: 'robots.txt', href: '/robots.txt', kind: 'page' };
   if (f === 'app/sitemap.ts') return { label: 'sitemap.xml', href: '/sitemap.xml', kind: 'page' };
   if (f === 'middleware.ts') return { label: 'Every request (middleware)', href: null, kind: 'server' };
+  if (f === 'next.config.mjs') return { label: 'Every page (security headers)', href: '/', kind: 'page' };
   if (f.startsWith('supabase/migrations/')) return { label: 'Database rules (Supabase)', href: null, kind: 'database' };
   if (/^app\/.*route\.ts$/.test(f)) return { label: `Server endpoint ${f.slice(3).replace(/\/route\.ts$/, '')}`, href: null, kind: 'server' };
   const m = f.match(/^app\/(.*?)\/?page\.tsx$/);

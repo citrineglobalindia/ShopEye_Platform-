@@ -1,4 +1,5 @@
 'use client';
+// SRS: CUST-FR-167 (the table scrolls sideways inside its own labelled, keyboard-focusable panel on phones; the page itself never scrolls sideways)
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
@@ -30,7 +31,7 @@ export default function Compare() {
       <Crumbs items={[['Home', '/'], ['Compare products']]} />
       <h1 style={{ margin: 0 }}>Compare products</h1>
       {!rows.length ? <div className="panel empty">Nothing to compare yet. Tick “Compare” on up to 4 product pages.</div> : (
-        <div className="tablewrap panel"><table className="cmp">
+        <div className="tablewrap panel" tabIndex={0} role="region" aria-label="Product comparison (scrolls sideways on small screens)"><table className="cmp">
           <thead><tr><th scope="col"><span className="sr-only">Detail</span></th>{rows.map((r) => (
             <th key={r.id} scope="col"><Link href={`/p/${r.id}`} className="cmp-head">{r.image && <img src={r.image} alt="" />}<span>{r.title}</span></Link>
               <button className="linklike small" onClick={() => { clearCompare(r.id); load(); }}>Remove</button></th>))}</tr></thead>

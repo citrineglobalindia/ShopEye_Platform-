@@ -2,12 +2,13 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, AUTH_COOKIE } from './config';
 
 // Per-request client carrying the shopper's session (RLS applies as that user)
 export async function sbServer() {
   const store = await cookies();
   return createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    cookieOptions: AUTH_COOKIE,
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => { try { list.forEach(({ name, value, options }) => store.set(name, value, options)); } catch {} },

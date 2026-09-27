@@ -1,3 +1,4 @@
+// SRS: CUST-FR-180 (structured data lists each variant as an offer with its real price and stock, and only published verified reviews; nothing is marked up when there is no data)
 // SRS: CUST-FR-182 CUST-FR-029 CUST-FR-045 CUST-FR-047 CUST-FR-048 CUST-FR-049 CUST-FR-050 (product URLs use the permanent product ID, so they never change; unknown or removed products show a clean not-found page; variant switch updates photos, price and stock; alternatives when unavailable; return policy before purchase; no fabricated ratings; product structured data and canonical URL)
 import { notFound } from 'next/navigation';
 import { sbPublic } from '@/lib/sb-server';
@@ -10,6 +11,7 @@ import { WishHeart, TrackView, RecentlyViewed } from '@/components/ShopWidgets';
 import { Rail } from '@/components/ProductGrid';
 import { listProducts } from '@/lib/catalog';
 import { ReviewList, Stars } from '@/components/Reviews';
+import { Questions } from '@/components/Questions';
 import { CompareToggle } from '@/components/Alerts';
 export const revalidate = 30;
 
@@ -42,11 +44,19 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const low = Math.min(...variants.map((v: any) => v.selling_price));
   const more = cat ? (await listProducts({ categoryId: p.category_id, perPage: 9 })).items.filter((x) => x.product_id !== id).slice(0, 8) : [];
   const specs = Object.entries(p.specifications ?? {}).filter(([, v]) => v);
+  // Only published reviews (RLS for anonymous readers) go into the search markup
+  const reviews = FIXTURES || !(p.rating_count > 0) ? [] : (await sbPublic().from('product_reviews').select('author_name,rating,title,body,created_at')
+    .eq('product_id', id).eq('status', 'published').order('helpful_count', { ascending: false }).limit(5)).data ?? [];
   const ld = { '@context': 'https://schema.org', '@type': 'Product', name: p.title, description: p.description ?? undefined,
     image: media.filter((m: any) => !m.url.startsWith('data:')).map((m: any) => m.url), brand: { '@type': 'Brand', name: variants[0].vendor_name },
     ...(p.rating_count > 0 ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: Number(p.rating_avg), reviewCount: p.rating_count } } : {}),
-    offers: { '@type': 'AggregateOffer', priceCurrency: 'INR', lowPrice: low, offerCount: variants.length,
-      availability: variants.some((v: any) => v.available > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' } };
+    offers: { '@type': 'AggregateOffer', priceCurrency: 'INR', lowPrice: low, highPrice: Math.max(...variants.map((v: any) => v.selling_price)), offerCount: variants.length,
+      availability: variants.some((v: any) => v.available > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      offers: variants.map((v: any) => ({ '@type': 'Offer', sku: v.sku, price: v.selling_price, priceCurrency: 'INR', url: `https://www.shopeye.in/p/${id}`,
+        itemCondition: 'https://schema.org/NewCondition', seller: { '@type': 'Organization', name: v.vendor_name },
+        availability: v.available > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' })) },
+    ...(reviews.length ? { review: reviews.map((r: any) => ({ '@type': 'Review', author: { '@type': 'Person', name: r.author_name }, datePublished: String(r.created_at).slice(0, 10),
+        reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 }, ...(r.title ? { name: r.title } : {}), ...(r.body ? { reviewBody: r.body } : {}) })) } : {}) };
   return (
     <div className="wrap section">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
@@ -73,6 +83,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {specs.length > 0 && <section><h2>Specifications</h2><dl className="specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl></section>}
       </div>
       <ReviewList productId={id} avg={p.rating_avg} count={p.rating_count ?? 0} />
+      <Questions productId={id} />
       <TrackView id={id} />
       <div id="more">{cat && <Rail title={`More from ${cat.name}`} href={`/c/${cat.slug}`} items={more} />}</div>
       <RecentlyViewed exclude={id} />

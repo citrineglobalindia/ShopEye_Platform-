@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
-import { inr, STATES, shipFor } from '@/lib/config';
+import { shippingRules } from '@/lib/shop-client';
+import { inr, STATES, shipFor, SHIP_DEFAULT, type ShipRules } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { payForOrder } from '@/lib/pay';
 
@@ -12,6 +13,8 @@ const blank = { recipient: '', mobile: '', line1: '', line2: '', landmark: '', c
 
 export default function Checkout() {
   const router = useRouter();
+  const [rules, setRules] = useState<ShipRules>(SHIP_DEFAULT);
+  useEffect(() => { shippingRules().then(setRules); }, []);
   const [user, setUser] = useState<any>(null); const [cart, setCart] = useState<any>(null); const [lines, setLines] = useState<any[]>([]);
   const [addrs, setAddrs] = useState<any[]>([]); const [addrId, setAddrId] = useState(''); const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>(blank); const [method, setMethod] = useState('upi'); const [coupon, setCoupon] = useState('');
@@ -82,7 +85,7 @@ export default function Checkout() {
   const sub = lines.reduce((s, l) => s + (l.v ? Number(l.v.selling_price) * l.qty : 0), 0);
   const changed = lines.filter((l) => l.v && Number(l.price_at_add) > 0 && Number(l.price_at_add) !== Number(l.v.selling_price));
   const pkgs = Object.values(lines.filter((l) => l.v).reduce((g: any, l) => ((g[l.v.vendor_name] ||= { vendor: l.v.vendor_name, lines: [] }).lines.push(l), g), {})) as any[];
-  const ship = pkgs.reduce((s, g) => s + shipFor(g.lines.reduce((t: number, l: any) => t + Number(l.v.selling_price) * l.qty, 0)), 0);
+  const ship = pkgs.reduce((s, g) => s + shipFor(g.lines.reduce((t: number, l: any) => t + Number(l.v.selling_price) * l.qty, 0), rules), 0);
   const f = (k: string) => ({ id: `f-${k}`, value: form[k] ?? '', onChange: (e: any) => { setForm({ ...form, [k]: e.target.value }); if (fe[k]) setFe({ ...fe, [k]: '' }); },
     'aria-invalid': fe[k] ? true : undefined, 'aria-describedby': fe[k] ? `e-${k}` : undefined });
   const fx = (k: string) => fe[k] ? <span id={`e-${k}`} className="field-err" role="alert">{fe[k]}</span> : null;

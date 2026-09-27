@@ -11,9 +11,9 @@ export default function Admin() {
   if (ok === null) return <div className="wrap section">Loading…</div>;
   if (!ok) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
   return (<div className="wrap section stack"><div className="order-head"><h1 style={{ margin: 0 }}>Admin</h1><span className="cta-row"><a className="btn ghost sm" href="/admin/reviews">Review moderation</a><a className="btn ghost sm" href="/status">Build status</a></span></div>
-    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
+    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
       <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
+    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
   </div>);
 }
 
@@ -86,6 +86,22 @@ function Orders() {
     {!rows.length ? <div className="panel">No orders yet.</div> : <div className="panel tablewrap"><table><thead><tr><th>Package</th><th>Placed</th><th>Total</th><th>Status</th><th></th></tr></thead>
       <tbody>{rows.map((r) => <tr key={r.id}><td>{r.sub_order_number}</td><td>{new Date(r.created_at).toLocaleString('en-IN')}</td><td>{inr(r.total)}</td><td><StatusChip s={r.status} /></td>
         <td>{r.status === 'shipped' && <button className="btn sm" onClick={() => delivered(r.id)}>Mark delivered</button>}</td></tr>)}</tbody></table></div>}</div>);
+}
+
+// SRS: CUST-FR-140 (urgent help requests are listed first)
+function Tickets() {
+  const [rows, setRows] = useState<any[]>([]); const [err, setErr] = useState('');
+  const load = () => sb().from('support_tickets').select('id,ticket_number,category,subject,message,status,priority,urgent_reason,created_at').not('status', 'in', '(resolved,closed)')
+    .order('priority', { ascending: false }).order('created_at').limit(100).then(({ data, error }: any) => { if (error) setErr(friendly(error)); setRows(data ?? []); });
+  useEffect(() => { load(); }, []);
+  async function set(id: string, st: string) { const { error } = await sb().rpc('update_ticket_status', { p_ticket: id, p_status: st }); if (error) setErr(friendly(error)); load(); }
+  return (<div className="stack">{err && <div className="msg err">{err}</div>}
+    {!rows.length ? <div className="panel">No open help requests.</div> : rows.map((t) => (
+      <details key={t.id} className="panel"><summary className="pkg-head"><span>{t.priority === 'urgent' && <span className="chip warn">Urgent</span>} <strong>{t.ticket_number}</strong> · {t.subject}</span><StatusChip s={t.status} /></summary>
+        <p className="small muted">{t.category}{t.urgent_reason ? ` · ${t.urgent_reason.replace(/_/g, ' ')}` : ''} · {new Date(t.created_at).toLocaleString('en-IN')}</p>
+        <p style={{ whiteSpace: 'pre-wrap' }}>{t.message}</p>
+        <div className="cta-row">{t.status === 'open' && <button className="btn sm" onClick={() => set(t.id, 'in_progress')}>Start</button>}<button className="btn ghost sm" onClick={() => set(t.id, 'resolved')}>Mark resolved</button></div>
+      </details>))}</div>);
 }
 
 function Categories() {

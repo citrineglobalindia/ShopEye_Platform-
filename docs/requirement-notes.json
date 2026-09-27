@@ -798,7 +798,7 @@
   ]
  },
  "CUST-FR-063": {
-  "what": "Planned: a “spend ₹X more for free shipping” bar, shown only when it is accurate for the current cart. Today each package already shows “This package ships free” when it qualifies.",
+  "what": "Each cart package shows how much more to add for free shipping, with a progress bar. The threshold is read live from the same rule the server charges by; if it can’t be read, the bar is hidden rather than guessed.",
   "try": [
    {
     "label": "Cart",
@@ -806,9 +806,9 @@
    }
   ],
   "check": [
-   "Partly visible today: the per-package free shipping message."
-  ],
-  "next": "Needs the platform-wide shipping rules to be finalised so the threshold is always correct."
+   "Add an item under the free-shipping amount and read “Add ₹X more from <seller> for free shipping”.",
+   "Change the threshold in the database settings and reload the cart; the bar follows."
+  ]
  },
  "CUST-FR-064": {
   "what": "You can add, edit, delete and choose saved addresses in your account and at checkout.",
@@ -1541,11 +1541,21 @@
   ]
  },
  "CUST-FR-132": {
-  "what": "Planned: product questions and answers, hiding customers’ contact details and with a report button.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Shoppers can ask questions on a product page. Questions show first name and initial only; phone numbers, email addresses and chat links are refused. The seller or the ShopEye team answers, the asker is emailed, and anyone signed in can report a question or answer (three reports hide it until a moderator looks).",
+  "try": [
+   {
+    "label": "Questions on a product",
+    "href": "go:product#qa-h"
+   },
+   {
+    "label": "Moderation (admin)",
+    "href": "/admin/reviews"
+   }
   ],
-  "next": "Product Q&A isn’t built yet; it will reuse the review moderation tools."
+  "check": [
+   "Ask a question containing a phone number; it is refused.",
+   "Ask a normal question, publish it in /admin/reviews, answer it, and check the product page and your inbox."
+  ]
  },
  "CUST-FR-133": {
   "what": "Average rating and review count update whenever an approved review changes.",
@@ -1636,11 +1646,21 @@
   ]
  },
  "CUST-FR-140": {
-  "what": "Planned: urgent/emergency messaging only for issue types that really have an urgent route.",
-  "check": [
-   "Not ready to test yet."
+  "what": "The help form offers “urgent” only for two situations that genuinely have an urgent route: money taken with no order, and someone else using the account. The database refuses urgent for anything else, and urgent requests are listed first for the support team.",
+  "try": [
+   {
+    "label": "Contact support",
+    "href": "/support/new"
+   },
+   {
+    "label": "Help requests (admin)",
+    "href": "/admin"
+   }
   ],
-  "next": "Comes with the Help Desk portal (escalation categories)."
+  "check": [
+   "Choose “A payment” and tick “Money left my account but I have no order”; the confirmation says it was marked urgent.",
+   "Choose “An order or delivery”: no urgent option appears."
+  ]
  },
  "CUST-FR-141": {
   "what": "Uploaded files are checked (type and size) and stored privately; nobody gets a public link to them.",
@@ -1679,11 +1699,16 @@
   ]
  },
  "CUST-FR-144": {
-  "what": "Planned: stop customers from removing their last verified sign-in method without adding another.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Your sign-in email is the account’s only sign-in method. It can be replaced by a new, verified email but never removed, so you can’t lock yourself out.",
+  "try": [
+   {
+    "label": "Change email",
+    "href": "/account#sec-h"
+   }
   ],
-  "next": "Only relevant once there is more than one sign-in method (social login decision)."
+  "check": [
+   "Open My account: there is a Change email option but no way to remove it."
+  ]
  },
  "CUST-FR-145": {
   "what": "Changing your name or address never alters names or addresses on past orders.",
@@ -1717,18 +1742,29 @@
   ]
  },
  "CUST-FR-148": {
-  "what": "Planned: ask for a fresh code before sensitive account changes.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Changing your email, downloading your data or signing out other devices needs a sign-in within the last 10 minutes; otherwise we email an 8-digit code and you confirm it first.",
+  "try": [
+   {
+    "label": "Privacy and security",
+    "href": "/account#sec-h"
+   }
   ],
-  "next": "Pre-launch hardening, together with the account-closure decision."
+  "check": [
+   "Sign in, wait more than 10 minutes, press “Download my data”, and confirm the code step appears first."
+  ]
  },
  "CUST-FR-149": {
-  "what": "Planned: a full review of cookies, CSRF, content security and HTTPS. Most of it already exists (secure cookies, same-site checks on payments, a content security policy); the formal review is still to do.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Sign-in cookies are Secure and SameSite, payment and sign-out actions only accept requests from ShopEye’s own pages, and a strict content security policy and HSTS are sent on every page.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
   ],
-  "next": "Pre-launch security hardening pass."
+  "check": [
+   "Check the response headers of any page for Content-Security-Policy and Strict-Transport-Security.",
+   "Sign-out is a button (POST); a link from another site cannot sign you out."
+  ]
  },
  "CUST-FR-150": {
   "what": "Error messages shown to customers never include technical details, database names or internal errors.",
@@ -1841,11 +1877,20 @@
   ]
  },
  "CUST-FR-160": {
-  "what": "Planned: a full WCAG 2.2 AA accessibility audit of the customer site.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Customer pages pass an automated WCAG 2.2 AA audit (axe-core) with no violations on 13 key pages at desktop and phone width. Brand teal text was darkened to meet contrast.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   },
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
   ],
-  "next": "Pre-launch accessibility audit."
+  "check": [
+   "Run scripts/a11y-audit.py against a local build; every line prints PASS."
+  ]
  },
  "CUST-FR-161": {
   "what": "Every button, link and field can be reached by keyboard and shows a clear focus outline.",
@@ -1932,14 +1977,23 @@
   ]
  },
  "CUST-FR-167": {
-  "what": "Planned: tables such as invoice summaries reflow or scroll neatly on small screens.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Tables that can be wider than a phone (your orders, product comparison) scroll sideways inside their own labelled panel, which you can also scroll with the keyboard; the page itself never scrolls sideways.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   },
+   {
+    "label": "Compare",
+    "href": "/compare"
+   }
   ],
-  "next": "Comes with invoices (Finance P3); other tables already scroll inside their panel."
+  "check": [
+   "At phone width, open My orders and swipe the table; the rest of the page stays still."
+  ]
  },
  "CUST-FR-168": {
-  "what": "Planned: formal check that every request is HTTPS with no mixed content. The site is already HTTPS-only on Vercel.",
+  "what": "Every page is served over HTTPS only: plain http redirects to https, browsers are told to use HTTPS for two years (HSTS, including subdomains), and any stray http resource is upgraded automatically.",
   "try": [
    {
     "label": "Home page",
@@ -1947,9 +2001,8 @@
    }
   ],
   "check": [
-   "Visit http://shopeye.in and confirm it redirects to https."
-  ],
-  "next": "Add HSTS and a mixed-content check in the pre-launch hardening pass."
+   "Open http://shopeye.in and confirm it redirects to https://www.shopeye.in."
+  ]
  },
  "CUST-FR-169": {
   "what": "Planned: document how sign-in secrets are handled. ShopEye has no passwords today; codes and tokens are handled by Supabase Auth.",
@@ -2045,11 +2098,17 @@
   ]
  },
  "CUST-FR-178": {
-  "what": "Planned: a log of account security events (sign-ins, email changes) with times, plus customer alerts for important changes.",
-  "check": [
-   "Not ready to test yet."
+  "what": "My account lists recent security activity with times: sign-ins, email changes, code confirmations, data downloads and signing out other devices. Email changes notify both the old and new address, and signing out other devices sends a notice.",
+  "try": [
+   {
+    "label": "Security activity",
+    "href": "/account#sec-h"
+   }
   ],
-  "next": "Pre-launch hardening, alongside the account security decisions."
+  "check": [
+   "Sign in and open My account; your sign-in appears under Recent security activity.",
+   "Press “Sign out other devices” and check your inbox for the notice."
+  ]
  },
  "CUST-FR-179": {
   "what": "Category and product pages each have their own title, description and canonical URL.",
@@ -2068,7 +2127,7 @@
   ]
  },
  "CUST-FR-180": {
-  "what": "Planned: add offer and review data to the product search markup, only from real reviews.",
+  "what": "Product search markup lists each variant as an offer with its real price, stock and seller, plus up to five published verified reviews; nothing is marked up when the data doesn’t exist.",
   "try": [
    {
     "label": "A product",
@@ -2076,9 +2135,8 @@
    }
   ],
   "check": [
-   "Not ready to test yet (basic product markup already exists)."
-  ],
-  "next": "Extend the product JSON-LD with offers and review ratings."
+   "View a product’s page source and find the JSON-LD Product block with its offers."
+  ]
  },
  "CUST-FR-181": {
   "what": "Filtered, sorted and paged listings are marked noindex so search engines don’t index duplicates.",

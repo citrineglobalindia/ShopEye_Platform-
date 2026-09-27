@@ -489,6 +489,121 @@ do $$ begin
 end $$;
 do $$ begin perform test.act_as(null); end $$;
 
+\echo '== 21. Product questions and answers (as real API roles, CUST-FR-132)'
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare r jsonb; begin
+  r := public.ask_question(test.id('p1'), 'Is the cotton pre-washed, or will it shrink?');
+  perform test.ok(r->>'status' = 'pending', 'Customer asks a product question; it waits for moderation (CUST-FR-132)');
+  perform test.throws($q$ select public.ask_question(test.id('p1'), 'Please call me on 98450 12345 about bulk') $q$, 'CONTACT_DETAILS_NOT_ALLOWED', 'Questions with a phone number are refused (CUST-FR-132 no contact details)');
+  perform test.throws($q$ select public.ask_question(test.id('p1'), 'Mail me at someone@example.com with sizes') $q$, 'CONTACT_DETAILS_NOT_ALLOWED', 'Questions with an email address are refused (CUST-FR-132 no contact details)');
+  perform test.throws($q$ select public.ask_question(test.id('p1'), 'ok?') $q$, 'QUESTION_LENGTH', 'Too-short questions are refused');
+end $$;
+reset role;
+do $$ begin perform test.put('qa_q', (select id::text from public.product_questions limit 1)); end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.ok((select count(*) from public.product_questions) = 0, 'Pending questions are invisible to other shoppers');
+  perform test.throws(format($q$ select public.moderate_question(%L, 'published') $q$, test.get('qa_q')), 'permission|FORBIDDEN', 'Shoppers cannot moderate questions');
+end $$;
+reset role;
+do $$ begin perform test.act_as(test.id('admin')); perform public.moderate_question(test.get('qa_q')::uuid, 'published'); end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('v2_owner')); end $$;
+do $$ begin
+  perform test.throws(format($q$ select public.answer_question(%L, 'Yes, pre-washed.') $q$, test.get('qa_q')), 'FORBIDDEN', 'A different seller cannot answer another seller''s product question');
+end $$;
+do $$ begin perform test.act_as(test.id('v1_owner')); end $$;
+do $$ begin
+  perform test.throws(format($q$ select public.answer_question(%L, 'WhatsApp me at 9845012345') $q$, test.get('qa_q')), 'CONTACT_DETAILS_NOT_ALLOWED', 'Seller answers cannot share contact details either');
+  perform test.ok(public.answer_question(test.get('qa_q')::uuid, 'Yes, it is pre-washed and shrinks less than 2%.') is not null, 'The product''s own seller answers a published question');
+end $$;
+reset role;
+do $$ begin perform test.put('qa_a', (select id::text from public.product_answers limit 1)); end $$;
+set role anon;
+do $$ begin perform test.act_as(null); end $$;
+do $$ begin
+  perform test.ok((select count(*) from public.product_questions where status = 'published') = 1 and (select count(*) from public.product_answers) = 1, 'Anyone can read published questions and their answers');
+  perform test.ok((select author_name from public.product_questions) = 'Cust A.', 'Question shows first name and initial only, no contact details');
+  perform test.throws($q$ select answered_by from public.product_answers $q$, 'permission denied', 'Who typed an answer stays internal');
+  perform test.throws($q$ select count(*) from public.qa_reports $q$, 'permission denied', 'Reports are private');
+end $$;
+reset role;
+do $$ begin
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'question_answered' and customer_id = test.id('cust_a')), 'The asker is emailed when their question is answered');
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform test.throws(format($q$ select public.report_qa('question', %L, 'spam') $q$, test.get('qa_q')), 'OWN_CONTENT', 'You cannot report your own question');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.throws(format($q$ select public.report_qa('answer', %L, '') $q$, test.get('qa_a')), 'REASON_REQUIRED', 'A report needs a reason');
+  perform public.report_qa('answer', test.get('qa_a')::uuid, 'Not about the product');
+  perform public.report_qa('answer', test.get('qa_a')::uuid, 'Not about the product');
+end $$;
+reset role;
+do $$ begin
+  perform test.ok((select report_count from public.product_answers where id = test.get('qa_a')::uuid) = 1, 'Shoppers can report an answer; reporting twice counts once (CUST-FR-132 report)');
+end $$;
+
+\echo '== 22. Account security activity and notices (CUST-FR-178)'
+do $$ begin
+  update auth.users set last_sign_in_at = now() where id = test.id('cust_a');
+  perform test.ok(exists (select 1 from public.security_events where customer_id = test.id('cust_a') and kind = 'signed_in'), 'Each sign-in is recorded with its time');
+  update auth.users set email = 'cust_a.new@test.local' where id = test.id('cust_a');
+  perform test.ok((select email from public.profiles where id = test.id('cust_a')) = 'cust_a.new@test.local', 'After an email change, order and account emails go to the new address');
+  perform test.ok((select detail->>'from' = 'cu•••@test.local' from public.security_events where customer_id = test.id('cust_a') and kind = 'email_changed'), 'Email change is recorded with masked old and new addresses');
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'security_notice' and to_email = 'cust_a@test.local')
+              and exists (select 1 from app.notification_outbox where kind = 'security_notice' and to_email = 'cust_a.new@test.local'), 'Both the old and the new address are told about an email change');
+  update auth.users set email = 'cust_a@test.local' where id = test.id('cust_a');
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform public.log_security_event('signed_out_other_devices');
+  perform test.throws($q$ select public.log_security_event('signed_in') $q$, 'UNKNOWN_KIND', 'The browser cannot fake sign-in events');
+  perform test.ok((select count(*) from public.security_events) >= 4 and (select bool_and(customer_id = test.id('cust_a')) from public.security_events), 'Customers see their own security activity only');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.ok((select count(*) from public.security_events) = 0, 'Another customer sees none of it');
+  perform test.throws($q$ insert into public.security_events(customer_id, kind) values (test.id('cust_b'), 'signed_in') $q$, 'permission denied|row-level', 'Security events cannot be written directly');
+end $$;
+reset role;
+do $$ begin
+  perform test.ok(exists (select 1 from app.notification_outbox where kind = 'security_notice' and customer_id = test.id('cust_a') and subject like '%other devices%'), 'Signing out other devices sends a security notice');
+end $$;
+update public.support_tickets set created_at = created_at - interval '2 hours';   -- earlier sections used this hour's allowance
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ declare r jsonb; begin
+  r := public.create_support_ticket('payment', 'Money taken, no order', 'UPI debited 1,299 at 10:40 but I have no order.', null, 'payment_taken_no_order');
+  perform test.ok(r->>'priority' = 'urgent', 'Money taken with no order is accepted as urgent (CUST-FR-140)');
+  perform test.throws($q$ select public.create_support_ticket('order', 'Where is my parcel', 'It has not arrived yet, please check.', null, 'payment_taken_no_order') $q$,
+                      'URGENT_NOT_SUPPORTED', 'Urgent is refused for situations without an urgent escalation (CUST-FR-140)');
+  r := public.create_support_ticket('other', 'Question about sizes', 'Do you have a size guide for kurtas?');
+  perform test.ok(r->>'priority' = 'normal', 'Ordinary requests stay normal priority');
+  perform test.throws($q$ select public.update_ticket_status((select id from public.support_tickets limit 1), 'resolved') $q$, 'permission|FORBIDDEN', 'Customers cannot change ticket status');
+end $$;
+reset role;
+do $$ begin
+  perform test.act_as(test.id('admin'));
+  perform test.ok(public.update_ticket_status((select id from public.support_tickets where priority = 'urgent' limit 1), 'in_progress') = 'in_progress', 'Support team picks up the urgent request first');
+  perform test.act_as(null);
+end $$;
+do $$ begin perform test.put('ship_free', (app.setting('shipping.free_threshold_per_vendor'))::text); end $$;
+set role anon;
+do $$ begin perform test.act_as(null); end $$;
+do $$ begin
+  perform test.ok((public.shipping_rules()->>'free_threshold_per_vendor') = test.get('ship_free') and (public.shipping_rules()->>'flat_fee_per_vendor')::numeric = 49,
+                  'Cart reads the live shipping rule the server charges by, including a changed threshold (CUST-FR-063)');
+end $$;
+reset role;
+do $$ begin perform test.act_as(null); end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;
