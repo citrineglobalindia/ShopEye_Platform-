@@ -15,6 +15,13 @@ export function DeliverTo({ compact = false }: { compact?: boolean }) {
     setBusy(true); setErr(''); const r = await detect(); setBusy(false);
     if (r.loc) { setLoc(r.loc); setOpen(false); } else setErr(r.err ?? '');
   }
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: MouseEvent) => { if (!(e.target as Element).closest('.deliver')) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', off); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', off); document.removeEventListener('keydown', esc); };
+  }, [open]);
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^[1-9][0-9]{5}$/.test(edit)) { setErr('Enter a 6-digit pincode'); return; }

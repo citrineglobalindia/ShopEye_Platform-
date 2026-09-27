@@ -8,6 +8,8 @@ import { listCategories, FIXTURES } from '@/lib/catalog';
 import { Analytics } from '@/components/Analytics';
 import { BottomNav } from '@/components/BottomNav';
 import { LocationGate } from '@/components/LocationGate';
+import { Suspense } from 'react';
+import { MenuCloser } from '@/components/MenuCloser';
 
 export const viewport = { themeColor: '#021A53' };
 export const metadata: Metadata = {
@@ -45,6 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Analytics />
         <BottomNav />
         <LocationGate />
+        <Suspense><MenuCloser /></Suspense>
       </body>
     </html>
   );
