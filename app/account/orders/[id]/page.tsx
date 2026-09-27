@@ -61,7 +61,14 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
     <div className="wrap section stack">
       <Crumbs items={[['Home', '/'], ['My orders', '/account/orders'], [o.order_number]]} />
       {sp.placed && <OrderAnalytics orderId={o.id} />}
-      {sp.placed && <div className="msg ok" role="status">Order placed. We’ve sent the details to {user.email}.</div>}
+      {sp.placed && (
+        <section className="panel placed" role="status" aria-labelledby="placed-h">
+          <span className="placed-tick" aria-hidden="true">✓</span>
+          <h2 id="placed-h" style={{ margin: 0 }}>Thank you! Your order is placed.</h2>
+          <p className="muted" style={{ margin: 0 }}>Order ID <strong>{o.order_number}</strong> · confirmation sent to {user.email}</p>
+          <p className="small" style={{ margin: 0 }}>Expected delivery: <strong>{(() => { const d = (n: number) => new Date(Date.now() + n * 864e5).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); return `${d(3)} – ${d(6)}`; })()}</strong> · each seller’s package is tracked separately</p>
+          <div className="cta-row" style={{ justifyContent: 'center' }}><a className="btn" href="#packages">Track your order</a><Link className="btn ghost" href="/">Continue shopping</Link></div>
+        </section>)}
       {sp.pay === 'pending' && <div className="msg info">We’re confirming your payment with the bank. This page updates once it’s confirmed. Don’t pay again.</div>}
       {sp.pay === 'dismissed' && <div className="msg info">Payment wasn’t completed. Use Pay now below to finish.</div>}
       {sp.payerr && <div className="msg err">{sp.payerr}</div>}
@@ -82,7 +89,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
             const cancellable = ['pending_payment', 'confirmed', 'packed', 'ready_to_ship'].includes(s.status);
             const canReturn = ['delivered', 'completed'].includes(s.status) && s.return_window_ends_at && new Date(s.return_window_ends_at) > new Date();
             return (
-              <section key={s.id} className="panel stack">
+              <section key={s.id} id={i === 0 ? 'packages' : undefined} className="panel stack" style={{ scrollMarginTop: 140 }}>
                 <div className="pkg-head"><h2 style={{ margin: 0 }}>Package {i + 1} of {subs!.length}</h2><StatusChip s={s.status} /></div>
                 {!cancelled && s.status !== 'pending_payment' && (
                   <ol className="steps" aria-label="Delivery progress">

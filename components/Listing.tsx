@@ -4,7 +4,7 @@ import { ProductGrid } from '@/components/ProductGrid';
 import type { ListResult } from '@/lib/catalog';
 import { inr } from '@/lib/config';
 import { FilterBox } from '@/components/FilterBox';
-import { SortSelect, FilterForm } from '@/components/ListingControls';
+import { SortSelect, FilterForm, MobileListBar, FilterSheetClose } from '@/components/ListingControls';
 
 const SORTS: [string, string][] = [['', 'Relevance'], ['new', 'Newest first'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low'], ['discount', 'Biggest discount']];
 const OFFS = [10, 20, 30, 40];
@@ -24,7 +24,9 @@ export function Listing({ base, params, result, empty }: { base: string; params:
   const keep = Object.entries(params).filter(([k]) => ['q'].includes(k));
   return (
     <div className="listing">
-      <aside className="filters">
+      <MobileListBar base={base} params={params} options={SORTS} filterCount={chips.length} />
+      <aside className="filters" id="filters" aria-label="Filters">
+        <FilterSheetClose />
         <FilterBox label={`Filters${chips.length ? ` (${chips.length})` : ''}`}>
           <FilterForm base={base}>
             {keep.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
@@ -38,7 +40,7 @@ export function Listing({ base, params, result, empty }: { base: string; params:
               {OFFS.map((o) => <label key={o} className="radio"><input type="radio" name="off" value={o} defaultChecked={params.off === String(o)} /> {o}% or more</label>)}
               <label className="radio"><input type="radio" name="off" value="" defaultChecked={!params.off} /> Any</label>
             </fieldset>
-            {!!f?.brands.length && <fieldset><legend>Brand</legend>
+            {!!f?.brands.length && <fieldset id="f-brand" tabIndex={-1}><legend>Brand</legend>
               {f.brands.slice(0, 12).map((b) => <label key={b.value} className="radio"><input type="radio" name="brand" value={b.value} defaultChecked={params.brand === b.value} /> {b.label} <span className="muted small">({b.count})</span></label>)}
               <label className="radio"><input type="radio" name="brand" value="" defaultChecked={!params.brand} /> Any</label></fieldset>}
             {!!f?.sizes.length && <fieldset><legend>Size</legend><div className="size-opts">

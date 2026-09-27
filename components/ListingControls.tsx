@@ -1,7 +1,7 @@
 'use client';
 // SRS: CUST-FR-038 (changing sort or filters keeps the shopper's place: no full reload, no jump to top)
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 // remember where the shopper was and return there after the results update
 function useKeepScroll(pending: boolean) {
@@ -30,5 +30,38 @@ export function FilterForm({ base, children }: { base: string; children: React.R
       const u = new URLSearchParams(); new FormData(e.currentTarget).forEach((v, k) => { if (String(v)) u.set(k, String(v)); });
       start(() => router.push(`${base}${u.toString() ? `?${u}` : ''}`, { scroll: false }));
       const d = e.currentTarget.closest('details'); if (d && window.matchMedia('(max-width: 860px)').matches) d.open = false;
+      const a = document.getElementById('filters'); if (a) delete a.dataset.open; document.body.classList.remove('sheet-open');
     }}>{children}</form>);
+}
+
+// Phone toolbar (Sort · Filter · Brand) opening bottom sheets, like the mobile app
+export function MobileListBar({ base, params, options, filterCount }: { base: string; params: Record<string, string | undefined>; options: [string, string][]; filterCount: number }) {
+  const router = useRouter(); const [pending, start] = useTransition();
+  const openFilters = (focus?: string) => {
+    const a = document.getElementById('filters'); if (!a) return;
+    a.dataset.open = 'true'; document.body.classList.add('sheet-open');
+    setTimeout(() => (document.getElementById(focus ?? 'filters-close') as HTMLElement | null)?.focus(), 60);
+  };
+  const [sortOpen, setSortOpen] = useSortState();
+  const setSort = (v: string) => {
+    const u = new URLSearchParams(); Object.entries(params).forEach(([k, x]) => x && k !== 'sort' && k !== 'page' && u.set(k, x)); if (v) u.set('sort', v);
+    setSortOpen(false); start(() => router.push(`${base}${u.toString() ? `?${u}` : ''}`, { scroll: false }));
+  };
+  return (<>
+    <div className="m-bar" aria-busy={pending}>
+      <button type="button" onClick={() => setSortOpen(true)}>⇅ Sort</button>
+      <button type="button" onClick={() => openFilters()}>☰ Filter{filterCount ? ` (${filterCount})` : ''}</button>
+      <button type="button" onClick={() => openFilters('f-brand')}>Brand</button>
+    </div>
+    {sortOpen && <>
+      <div className="sheet-back" onClick={() => setSortOpen(false)} />
+      <div className="sheet" role="dialog" aria-modal="true" aria-label="Sort by">
+        <div className="sheet-h"><strong>Sort by</strong><button type="button" className="linklike" onClick={() => setSortOpen(false)} autoFocus>Close</button></div>
+        {options.map(([v, l]) => <button key={v} type="button" className={`sheet-opt${(params.sort ?? '') === v ? ' on' : ''}`} onClick={() => setSort(v)}>{l}{(params.sort ?? '') === v ? ' ✓' : ''}</button>)}
+      </div></>}
+  </>);
+}
+function useSortState() { return useState(false); }
+export function FilterSheetClose() {
+  return <button type="button" id="filters-close" className="linklike sheet-x" onClick={() => { const a = document.getElementById('filters'); if (a) delete a.dataset.open; document.body.classList.remove('sheet-open'); }}>Close</button>;
 }

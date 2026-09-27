@@ -57,6 +57,7 @@ export default function Cart() {
   const live = active.filter((l) => l.v);
   const groups = Object.values(live.reduce((g: any, l) => ((g[l.v.vendor_name] ||= { vendor: l.v.vendor_name, lines: [] }).lines.push(l), g), {})) as { vendor: string; lines: Line[] }[];
   const items = live.reduce((s, l) => s + Number(l.v.selling_price) * l.qty, 0);
+  const mrpTotal = live.reduce((s, l) => s + Math.max(Number(l.v.mrp || 0), Number(l.v.selling_price)) * l.qty, 0);
   const ship = groups.reduce((s, g) => s + shipFor(g.lines.reduce((t, l) => t + Number(l.v.selling_price) * l.qty, 0), rules), 0);
   const blocked = active.some((l) => !ok(l));
   const row = (l: Line) => (
@@ -64,11 +65,17 @@ export default function Cart() {
       <Link href={l.v ? `/p/${l.v.product_id}` : '#'} className="cart-img">{l.v?.image ? <Pic src={l.v.image} alt="" w={160} h={200} sizes="96px" /> : <span />}</Link>
       <div className="cart-body">
         {l.v ? <Link href={`/p/${l.v.product_id}`}><strong>{l.v.title}</strong></Link> : <strong className="muted">This item is no longer available</strong>}
-        {l.v && <div className="small muted">{Object.values(l.v.attributes || {}).join(' / ')}</div>}
+        {l.v && <div className="small muted">{Object.values(l.v.attributes || {}).join(' / ')}{l.v.vendor_name ? ` · Sold by ${l.v.vendor_name}` : ''}</div>}
+        {l.v && <div className="price-line"><strong>{inr(Number(l.v.selling_price))}</strong>{Number(l.v.mrp) > Number(l.v.selling_price) && <><span className="mrp">{inr(l.v.mrp)}</span><span className="off-chip">{Math.round(100 * (Number(l.v.mrp) - Number(l.v.selling_price)) / Number(l.v.mrp))}% off</span></>}</div>}
         {l.v && Number(l.price_at_add) > 0 && Number(l.price_at_add) !== Number(l.v.selling_price) && <div className="small chip warn">Price changed from {inr(l.price_at_add)} to {inr(l.v.selling_price)}</div>}
         {l.v && l.stock! < l.qty && <div className="small chip bad">{l.stock ? `Only ${l.stock} left: lower the quantity` : 'Out of stock'}</div>}
         <div className="cart-actions">
-          {l.v && !l.saved && <select aria-label="Quantity" value={l.qty} onChange={(e) => setQty(l, Number(e.target.value))}>{Array.from({ length: Math.min(10, l.v.max_qty_per_order || 10) }, (_, n) => n + 1).map((n) => <option key={n}>{n}</option>)}</select>}
+          {l.v && !l.saved && (() => { const max = Math.min(10, l.v.max_qty_per_order || 10, Math.max(l.stock ?? 10, 1)); return (
+            <span className="qty-step" role="group" aria-label={`Quantity of ${l.v.title}`}>
+              <button type="button" aria-label="Decrease quantity" disabled={l.qty <= 1} onClick={() => setQty(l, l.qty - 1)}>−</button>
+              <output aria-live="polite">{l.qty}</output>
+              <button type="button" aria-label="Increase quantity" disabled={l.qty >= max} onClick={() => setQty(l, l.qty + 1)}>+</button>
+            </span>); })()}
           {user && l.v && <button className="linklike" onClick={() => toggleSaved(l)}>{l.saved ? 'Move to cart' : 'Save for later'}</button>}
           <button className="linklike danger-t" onClick={() => remove(l)}>Remove</button>
         </div>
@@ -79,7 +86,7 @@ export default function Cart() {
     <div className="wrap section split">
       <div className="stack">
         <Crumbs items={[['Home', '/'], ['Cart']]} />
-        <h1 style={{ margin: 0 }}>Your cart</h1>
+        <h1 style={{ margin: 0 }}>My cart{live.length ? ` (${live.reduce((s, l) => s + l.qty, 0)})` : ''}</h1>
         {!user && <div className="msg info">You’re not signed in. Your cart is saved on this device; <Link href="/login?next=/cart">sign in</Link> to keep it with your account.</div>}
         {blocked && <div className="msg err" role="alert">Some items need attention before checkout.</div>}
         {groups.map((g, i) => {
@@ -96,11 +103,18 @@ export default function Cart() {
         {saved.length > 0 && <section className="panel stack"><h3 style={{ margin: 0 }}>Saved for later ({saved.length})</h3><p className="small muted" style={{ margin: 0 }}>Not included in your total.</p>{saved.map(row)}</section>}
       </div>
       <aside className="panel sum sticky-sum">
-        <div><span>Items ({live.reduce((s, l) => s + l.qty, 0)})</span><span>{inr(items)}</span></div>
+        <h2 style={{ margin: 0 }}>Price details</h2>
+        <div><span>Price ({live.reduce((s, l) => s + l.qty, 0)} items)</span><span>{inr(mrpTotal)}</span></div>
+        {mrpTotal > items && <div className="ok-t"><span>Discount</span><span>−{inr(mrpTotal - items)}</span></div>}
         <div><span>Shipping ({groups.length} {groups.length === 1 ? 'package' : 'packages'})</span><span>{ship ? inr(ship) : 'Free'}</span></div>
-        <div className="tot"><span>Estimated total</span><span>{inr(items + ship)}</span></div>
+        <div className="tot"><span>Total</span><span>{inr(items + ship)}</span></div>
+        {mrpTotal > items && <div className="small ok-t" style={{ fontWeight: 700 }}>You save {inr(mrpTotal - items)} on this order</div>}
         <p className="small muted" style={{ margin: 0 }}>Coupons are applied at checkout. Prices include GST.</p>
-        {blocked || !live.length ? <button className="btn" disabled>Continue to checkout</button> : <Link className="btn" href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Continue to checkout' : 'Sign in to check out'}</Link>}
+        {blocked || !live.length ? <button className="btn" disabled>Continue to checkout</button> : <Link className="btn" href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Proceed to checkout' : 'Sign in to check out'}</Link>}
       </aside>
+      {live.length > 0 && <div className="m-checkout" aria-hidden="true">
+        <span><span className="small muted">Total</span><strong>{inr(items + ship)}</strong></span>
+        {blocked ? <button className="btn" disabled tabIndex={-1}>Fix cart first</button> : <Link className="btn" tabIndex={-1} href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Proceed to checkout' : 'Sign in to check out'}</Link>}
+      </div>}
     </div>);
 }

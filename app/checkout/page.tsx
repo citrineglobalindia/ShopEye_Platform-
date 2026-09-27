@@ -23,6 +23,7 @@ export default function Checkout() {
   const [form, setForm] = useState<any>(blank); const [method, setMethod] = useState('upi'); const [coupon, setCoupon] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(''); const [ack, setAck] = useState(false);
   const [fe, setFe] = useState<Record<string, string>>({});
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const DK = 'shopeye.checkout.draft';
 
   async function load() {
@@ -40,11 +41,11 @@ export default function Checkout() {
     const { data: a } = await db.from('customer_addresses').select('*').eq('customer_id', user.id).is('archived_at', null).order('is_default', { ascending: false });
     setAddrs(a ?? []); if (a?.length) setAddrId(a[0].id); else setAdding(true);
     try { const d = JSON.parse(sessionStorage.getItem(DK) || 'null');
-      if (d) { if (d.form) setForm(d.form); if (d.method) setMethod(d.method); if (d.coupon) setCoupon(d.coupon); if (d.addrId && (a ?? []).some((x: any) => x.id === d.addrId)) setAddrId(d.addrId); if (d.adding) setAdding(true); } } catch {}
+      if (d) { if (d.form) setForm(d.form); if (d.method) setMethod(d.method); if (d.coupon) setCoupon(d.coupon); if (d.addrId && (a ?? []).some((x: any) => x.id === d.addrId)) setAddrId(d.addrId); if (d.adding) setAdding(true); if (d.step && (a ?? []).length) setStep(d.step); } } catch {}
   }
   useEffect(() => { load(); window.addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) load(); }); }, []);
   // keep what the shopper typed if they leave and come back (this tab only; no payment data is stored)
-  useEffect(() => { try { sessionStorage.setItem(DK, JSON.stringify({ form, method, coupon, addrId, adding })); } catch {} }, [form, method, coupon, addrId, adding]);
+  useEffect(() => { try { sessionStorage.setItem(DK, JSON.stringify({ form, method, coupon, addrId, adding, step })); } catch {} }, [form, method, coupon, addrId, adding, step]);
 
   async function saveAddress(e: React.FormEvent) {
     e.preventDefault(); setErr('');
@@ -108,17 +109,29 @@ export default function Checkout() {
   const f = (k: string) => ({ id: `f-${k}`, value: form[k] ?? '', onChange: (e: any) => { setForm({ ...form, [k]: e.target.value }); if (fe[k]) setFe({ ...fe, [k]: '' }); },
     'aria-invalid': fe[k] ? true : undefined, 'aria-describedby': fe[k] ? `e-${k}` : undefined });
   const fx = (k: string) => fe[k] ? <span id={`e-${k}`} className="field-err" role="alert">{fe[k]}</span> : null;
+  const STEPS: [1 | 2 | 3, string][] = [[1, 'Address'], [2, 'Payment'], [3, 'Review']];
+  const addr = addrs.find((x) => x.id === addrId);
+  const METHODS: [string, string, string][] = [['upi', 'UPI', 'Google Pay, PhonePe, Paytm and other UPI apps'], ['card', 'Credit / debit card', 'Visa, Mastercard, RuPay'],
+    ['netbanking', 'Net banking', 'All major Indian banks'], ['wallet', 'Wallets', 'Paytm, PhonePe and other wallets'], ['cod', 'Cash on delivery', 'Pay when you receive it, where available']];
+  const go = (n: 1 | 2 | 3) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => (document.getElementById(`step-${n}`) as HTMLElement)?.focus(), 50); };
   return (
     <div className="wrap section split">
       <div className="stack">
         <h1>Checkout</h1>
-        <section className="panel stack" aria-labelledby="addr-h">
+        <ol className="stepper" aria-label="Checkout steps">
+          {STEPS.map(([n, l]) => (
+            <li key={n} className={step === n ? 'on' : step > n ? 'done' : ''} aria-current={step === n ? 'step' : undefined}>
+              {step > n ? <button type="button" onClick={() => go(n)} aria-label={`${l}, completed. Go back to ${l}`}><span className="dot">✓</span>{l}</button> : <span><span className="dot">{n}</span>{l}</span>}
+            </li>))}
+        </ol>
+        {step === 1 && <section className="panel stack" aria-labelledby="addr-h" id="step-1" tabIndex={-1}>
           <h2 id="addr-h" style={{ margin: 0 }}>Delivery address</h2>
           {addrs.map((a) => (
-            <label key={a.id} style={{ display: 'flex', gap: 10, fontWeight: 400, alignItems: 'start' }}>
-              <input type="radio" name="addr" checked={addrId === a.id} onChange={() => setAddrId(a.id)} style={{ width: 'auto', marginTop: 5 }} />
-              <span><strong>{a.recipient}</strong>, {a.line1}, {a.line2}, {a.city} {a.pincode} <span className="muted">({a.mobile})</span></span></label>))}
-          {!adding ? <button className="btn ghost sm" style={{ justifySelf: 'start' }} onClick={() => setAdding(true)}>Add a new address</button> : (
+            <label key={a.id} className={`choice${addrId === a.id ? ' on' : ''}`}>
+              <input type="radio" name="addr" checked={addrId === a.id} onChange={() => setAddrId(a.id)} />
+              <span><strong>{a.recipient}</strong>{a.address_type ? <span className="small muted"> · {a.address_type === 'work' ? 'Work' : 'Home'}</span> : null}<br />
+                <span className="small">{a.line1}, {a.line2}{a.landmark ? `, ${a.landmark}` : ''}, {a.city} – {a.pincode}</span><br /><span className="small muted">{a.mobile}</span></span></label>))}
+          {!adding ? <button className="btn ghost sm" style={{ justifySelf: 'start' }} onClick={() => setAdding(true)}>+ Add a new address</button> : (
             <form className="form" onSubmit={saveAddress} style={{ maxWidth: 'none' }} noValidate>
               <div className="row2"><label>Full name<input required maxLength={100} {...f('recipient')} />{fx('recipient')}</label>
                 <label>Mobile number<input required inputMode="tel" placeholder="10-digit mobile" {...f('mobile')} />{fx('mobile')}</label></div>
@@ -128,15 +141,23 @@ export default function Checkout() {
                 <label>Pincode<input required inputMode="numeric" maxLength={6} {...f('pincode')} />{fx('pincode')}</label></div>
               <div className="row2"><label>City<input required {...f('city')} />{fx('city')}</label>
                 <label>State<select {...f('state_code')}>{STATES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></label></div>
+              <fieldset><legend>Address type</legend><div style={{ display: 'flex', gap: 16 }}>
+                {[['home', 'Home'], ['work', 'Work']].map(([v, l]) => <label key={v} className="radio"><input type="radio" name="atype" checked={form.address_type === v} onChange={() => setForm({ ...form, address_type: v })} style={{ width: 'auto' }} /> {l}</label>)}</div></fieldset>
               <div style={{ display: 'flex', gap: 10 }}><button className="btn dark">Save address</button>
                 {addrs.length > 0 && <button type="button" className="btn ghost" onClick={() => setAdding(false)}>Cancel</button>}</div>
             </form>)}
-        </section>
-        <section className="panel stack" aria-labelledby="pay-h">
-          <h2 id="pay-h" style={{ margin: 0 }}>Payment</h2>
-          {[['upi', 'UPI, card, net banking or wallet (Razorpay)'], ['cod', 'Cash on delivery (where available)']].map(([v, l]) => (
-            <label key={v} style={{ display: 'flex', gap: 10, fontWeight: 400 }}>
-              <input type="radio" name="pm" checked={method === v} onChange={() => setMethod(v)} style={{ width: 'auto' }} /> {l}</label>))}
+          <h3 style={{ margin: '6px 0 0' }}>Delivery</h3>
+          <div className="choice on"><span className="dot-static" aria-hidden="true" /><span><strong>Standard delivery</strong> <span className="small muted">· tracked, one package per seller</span><br />
+            <span className="small">{ship ? `${inr(ship)} shipping` : 'Free delivery'}</span></span></div>
+          {err && <div className="msg err" role="alert">{err}</div>}
+          <button className="btn" disabled={!addrId || adding} onClick={() => go(2)}>Continue to payment</button>
+        </section>}
+        {step === 2 && <section className="panel stack" aria-labelledby="pay-h" id="step-2" tabIndex={-1}>
+          <h2 id="pay-h" style={{ margin: 0 }}>Select payment method</h2>
+          {METHODS.map(([v, l, d]) => (
+            <label key={v} className={`choice${method === v ? ' on' : ''}`}>
+              <input type="radio" name="pm" checked={method === v} onChange={() => setMethod(v)} />
+              <span><strong>{l}</strong><br /><span className="small muted">{d}</span></span></label>))}
           <label>Coupon code (optional)<input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} maxLength={30} /></label>
           {wallet && method !== 'cod' && (Number(wallet.gift_card) + Number(wallet.store_credit) + Number(wallet.loyalty_points)) > 0 && (
             <fieldset className="stack" style={{ gap: 6 }}><legend>ShopEye balance</legend>
@@ -146,17 +167,24 @@ export default function Checkout() {
                 <input type="number" min={0} max={Math.min(Number(wallet.loyalty_points), bal.cap)} value={pts} onChange={(e) => setPts(Math.max(0, Math.floor(Number(e.target.value) || 0)))} /></label>}
               <p className="small muted" style={{ margin: 0 }}>Applied to the final total after any coupon. If you don’t finish paying within an hour, the balance goes back to your account.</p>
             </fieldset>)}
-        </section>
+          <div className="secure small"><strong>100% secure payments.</strong> Card and UPI details are entered in Razorpay’s protected window; ShopEye never sees or stores them.</div>
+          <div className="cta-row"><button className="btn ghost" onClick={() => go(1)}>Back</button><button className="btn" onClick={() => go(3)}>Continue to review</button></div>
+        </section>}
+        {step === 3 && <section className="panel stack" aria-labelledby="rev-h" id="step-3" tabIndex={-1}>
+          <h2 id="rev-h" style={{ margin: 0 }}>Review your order</h2>
+          <div className="review-row"><div><div className="small muted">Deliver to</div>{addr && <><strong>{addr.recipient}</strong><div className="small">{addr.line1}, {addr.line2}, {addr.city} – {addr.pincode}</div></>}</div><button className="linklike" onClick={() => go(1)}>Change</button></div>
+          <div className="review-row"><div><div className="small muted">Payment</div><strong>{METHODS.find((m) => m[0] === method)?.[1]}</strong>{coupon && <div className="small">Coupon {coupon}</div>}</div><button className="linklike" onClick={() => go(2)}>Change</button></div>
+          {pkgs.map((g, i) => (
+            <div key={g.vendor} className="review-row" style={{ display: 'block' }}><div className="small muted">Package {i + 1} from {g.vendor} · standard delivery</div>
+              {g.lines.map((l: any) => <div key={l.variant_id} className="small" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}><span>{l.v.title}{Object.values(l.v.attributes || {}).length ? ` (${Object.values(l.v.attributes).join(' / ')})` : ''} × {l.qty}</span><span>{inr(Number(l.v.selling_price) * l.qty)}</span></div>)}
+            </div>))}
+          <div className="cta-row"><button className="btn ghost" onClick={() => go(2)}>Back</button></div>
+        </section>}
       </div>
       <aside className="panel sum sticky-sum">
         <h2 style={{ margin: 0 }}>Order summary</h2>
         {pkgs.length > 1 && <p className="small" style={{ margin: 0 }}>Your order ships as <strong>{pkgs.length} separate packages</strong>, one from each seller, each with its own tracking.</p>}
-        {pkgs.map((g, i) => (
-          <div key={g.vendor} className="pkg-sum">
-            <div className="small muted">Package {i + 1} from {g.vendor}</div>
-            {g.lines.map((l: any) => <div key={l.variant_id} className="small"><span>{l.v.title}{Object.values(l.v.attributes || {}).length ? ` (${Object.values(l.v.attributes).join(' / ')})` : ''} × {l.qty}</span><span>{inr(Number(l.v.selling_price) * l.qty)}</span></div>)}
-          </div>))}
-        <div><span>Items</span><span>{inr(sub)}</span></div>
+        <div><span>Items ({lines.reduce((n, l) => n + l.qty, 0)})</span><span>{inr(sub)}</span></div>
         <div><span>Shipping</span><span>{ship ? inr(ship) : 'Free'}</span></div>
         <div className="tot"><span>Total</span><span>{inr(sub + ship)}</span></div>
         {bal.use > 0 && <>
@@ -171,8 +199,10 @@ export default function Checkout() {
             <ul style={{ margin: '6px 0' }}>{changed.map((l) => <li key={l.variant_id}>{l.v.title}: {inr(l.price_at_add)} → {inr(l.v.selling_price)}</li>)}</ul>
             <label style={{ display: 'flex', gap: 8, fontWeight: 600 }}><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} style={{ width: 'auto' }} /> I’ve reviewed the new prices</label>
           </div>)}
-        {err && <div className="msg err" role="alert">{err}</div>}
-        <button className="btn" disabled={busy || !addrId || adding || (changed.length > 0 && !ack)} onClick={place}>{busy ? 'Placing order…' : method === 'cod' || (bal.use > 0 && sub + ship - bal.use <= 0) ? 'Place order' : 'Place order and pay'}</button>
+        {step === 3 && err && <div className="msg err" role="alert">{err}</div>}
+        {step === 3
+          ? <button className="btn" disabled={busy || !addrId || adding || (changed.length > 0 && !ack)} onClick={place}>{busy ? 'Placing order…' : method === 'cod' || (bal.use > 0 && sub + ship - bal.use <= 0) ? 'Place order' : `Place order and pay ${inr(Math.max(0, sub + ship - bal.use))}`}</button>
+          : <button className="btn" disabled={step === 1 && (!addrId || adding)} onClick={() => go((step + 1) as 2 | 3)}>{step === 1 ? 'Continue to payment' : 'Continue to review'}</button>}
       </aside>
     </div>
   );
