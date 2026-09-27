@@ -9,6 +9,18 @@ function save(l: Loc) { try { localStorage.setItem('shopeye.pin', l.pin); localS
 async function lookup(q = ''): Promise<Loc | null> {
   try { const d = await (await fetch(GEO + q)).json(); return d?.countryCode === 'IN' && /^[1-9][0-9]{5}$/.test(d.postcode ?? '') ? { pin: d.postcode, city: d.city || d.locality } : null; } catch { return null; }
 }
+// GPS positions: BigDataCloud first; where it has no pincode for that spot, OpenStreetMap's reverse geocoder often does
+async function fromCoords(lat: number, lon: number): Promise<Loc | { city?: string } | null> {
+  const a = await lookup(`&latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`);
+  if (a) return a;
+  try {
+    const d = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`, { headers: { 'Accept-Language': 'en' } })).json();
+    const ad = d?.address ?? {}; const pin = String(ad.postcode ?? '').replace(/\s/g, '');
+    const city = ad.city || ad.town || ad.village || ad.county;
+    if (ad.country_code === 'in' && /^[1-9][0-9]{5}$/.test(pin)) return { pin, city };
+    return city ? { city } : null;
+  } catch { return null; }
+}
 export function DeliverTo({ compact = false }: { compact?: boolean }) {
   const [loc, setLoc] = useState<Loc | null>(null); const [edit, setEdit] = useState(''); const [open, setOpen] = useState(false);
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
@@ -24,10 +36,10 @@ export function DeliverTo({ compact = false }: { compact?: boolean }) {
     if (!navigator.geolocation) { setErr('Location isn’t available in this browser.'); return; }
     setBusy(true); setErr('');
     navigator.geolocation.getCurrentPosition(async (p) => {
-      const l = await lookup(`&latitude=${p.coords.latitude.toFixed(4)}&longitude=${p.coords.longitude.toFixed(4)}`);
+      const l = await fromCoords(p.coords.latitude, p.coords.longitude);
       setBusy(false);
-      if (!l) { setErr('We couldn’t find a pincode here. Please type it.'); return; }
-      const v = { ...l, exact: true }; setLoc(v); save(v); setOpen(false);
+      if (!l || !('pin' in l)) { setErr(l?.city ? `We found ${l.city} but not your exact pincode. Please type it.` : 'We couldn’t find a pincode for this spot. Please type it.'); return; }
+      const v = { ...(l as Loc), exact: true }; setLoc(v); save(v); setOpen(false);
     }, (e) => {
       setBusy(false);
       setErr(e.code === 1 ? 'Location access is blocked for this site. Allow it from the lock icon next to the address bar (Site settings → Location), or type your pincode.'
