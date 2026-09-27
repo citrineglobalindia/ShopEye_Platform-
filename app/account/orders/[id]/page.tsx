@@ -13,6 +13,7 @@ import { CancelItem, PayNow } from '@/components/OrderActions';
 import { ReturnItem, CancelReturn, Reorder } from '@/components/ReturnActions';
 import { ReviewForm } from '@/components/Reviews';
 import { GstDetails } from '@/components/GstDetails';
+import { OrderAnalytics } from '@/components/Analytics';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Order details', robots: { index: false } };
 
@@ -55,6 +56,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
   return (
     <div className="wrap section stack">
       <Crumbs items={[['Home', '/'], ['My orders', '/account/orders'], [o.order_number]]} />
+      {sp.placed && <OrderAnalytics orderId={o.id} />}
       {sp.placed && <div className="msg ok" role="status">Order placed. We’ve sent the details to {user.email}.</div>}
       {sp.pay === 'pending' && <div className="msg info">We’re confirming your payment with the bank. This page updates once it’s confirmed. Don’t pay again.</div>}
       {sp.pay === 'dismissed' && <div className="msg info">Payment wasn’t completed. Use Pay now below to finish.</div>}

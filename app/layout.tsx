@@ -5,6 +5,7 @@ import { Footer } from '@/components/Footer';
 import { GuestCartMerge } from '@/components/ShopWidgets';
 import { sbServer } from '@/lib/sb-server';
 import { listCategories, FIXTURES } from '@/lib/catalog';
+import { Analytics } from '@/components/Analytics';
 
 export const viewport = { themeColor: '#021A53' };
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <GuestCartMerge signedIn={!!user} />
         <main id="main">{children}</main>
         <Footer signedIn={!!user} />
+        <Analytics />
       </body>
     </html>
   );

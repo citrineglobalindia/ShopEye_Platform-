@@ -13,6 +13,7 @@ import { Rail } from '@/components/ProductGrid';
 import { listProducts } from '@/lib/catalog';
 import { ReviewList, Stars } from '@/components/Reviews';
 import { Questions } from '@/components/Questions';
+import { TrackEvent } from '@/components/Analytics';
 import { CompareToggle } from '@/components/Alerts';
 export const revalidate = 30;
 
@@ -85,6 +86,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       </div>
       <ReviewList productId={id} avg={p.rating_avg} count={p.rating_count ?? 0} />
       <Questions productId={id} />
+      <TrackEvent name="view_item" params={{ currency: 'INR', value: low, items: [{ item_id: variants[0].sku, item_name: p.title, price: low }] }} />
       <TrackView id={id} />
       <div id="more">{cat && <Rail title={`More from ${cat.name}`} href={`/c/${cat.slug}`} items={more} />}</div>
       <RecentlyViewed exclude={id} />

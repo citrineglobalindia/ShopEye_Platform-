@@ -254,3 +254,9 @@ main { min-height: 60vh; }
 .promo { display: grid; gap: 4px; padding: 18px 22px; margin: 4px 0 14px; border-radius: var(--r-md); text-decoration: none; color: #fff;
   background: linear-gradient(100deg, var(--ink) 0%, #0B3A8C 55%, var(--teal) 100%); }
 .promo strong { font: 700 1.25rem var(--display); } .promo span { opacity: .92; } .promo-cta { font-weight: 700; color: var(--marigold); }
+.or-rule { display: flex; align-items: center; gap: 10px; } .or-rule::before, .or-rule::after { content: ''; flex: 1; border-top: 1px solid var(--line, #DDE1EC); }
+.google-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.consent { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: #fff; border-top: 2px solid var(--ink); box-shadow: 0 -8px 24px #021a531f; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.consent-in { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 14px 0; }
+.consent-in > div:first-child { flex: 1 1 420px; }
+@media (max-width: 860px) { .filter-box:not(.m-open) > :not(summary) { display: none; } }

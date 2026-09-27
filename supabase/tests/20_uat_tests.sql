@@ -696,6 +696,57 @@ do $$ declare h text; begin
 end $$;
 do $$ begin perform test.act_as(null); end $$;
 
+\echo '== 25. Google sign-in consent and new sign-in method alerts (CUST-FR-015, CUST-FR-022)'
+do $$ begin
+  update public.profiles set terms_version = null, privacy_version = null, consent_at = null where id = test.id('cust_b');   -- as if they signed up with Google
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.ok(public.needs_consent(), 'An account created through Google is asked to accept the terms before continuing (CUST-FR-015)');
+  perform test.ok(public.record_consent()->>'terms_version' = '2026-09', 'Accepting records the current terms and privacy versions');
+  perform test.ok(not public.needs_consent(), 'After accepting, the customer is not asked again');
+end $$;
+reset role;
+do $$ begin
+  perform test.ok((select consent_at is not null and privacy_version = '2026-09' from public.profiles where id = test.id('cust_b')), 'Consent time and privacy version are stored on the profile');
+  insert into auth.identities(user_id, provider) values (test.id('cust_a'), 'email');
+  insert into auth.identities(user_id, provider) values (test.id('cust_a'), 'google');
+  perform test.ok(exists (select 1 from public.security_events where customer_id = test.id('cust_a') and kind = 'sign_in_method_added' and detail->>'method' = 'Google'),
+                  'Linking Google to an existing account is recorded as a security event (CUST-FR-022)');
+  perform test.ok(exists (select 1 from app.notification_outbox where customer_id = test.id('cust_a') and subject like 'A new sign-in method%'), 'and the customer is emailed about it');
+  insert into auth.identities(user_id, provider) values (test.id('v1_owner'), 'google');
+  perform test.ok(not exists (select 1 from public.security_events where customer_id = test.id('v1_owner') and kind = 'sign_in_method_added'), 'A first sign-in method on a new account is not reported as a change');
+end $$;
+
+\echo '== 26. GA4 purchase events: consented, server-side, once per order (CUST-FR-186, CUST-FR-188)'
+do $$ declare o uuid; begin
+  select id into o from public.orders where customer_id = test.id('cust_a') and payment_status <> 'paid' limit 1;
+  perform test.put('ga_order', o::text);
+  perform test.put('ga_paid', (select id::text from public.orders where payment_status = 'paid' limit 1));
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin perform test.ok(not public.set_order_analytics(test.get('ga_order')::uuid, '123456789.1234567890'), 'A shopper cannot attach analytics to someone else''s order'); end $$;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform test.throws(format($q$ select public.set_order_analytics(%L, 'asha@example.com') $q$, test.get('ga_order')), 'INVALID_CLIENT_ID', 'Only a GA client id is accepted, never an email or other identifier (CUST-FR-188)');
+  perform test.ok(public.set_order_analytics(test.get('ga_order')::uuid, '123456789.1234567890'), 'After checkout the browser hands over its GA client id once (only with analytics consent)');
+  perform test.ok(not public.set_order_analytics(test.get('ga_order')::uuid, '999999999.1234567890'), 'It cannot be changed afterwards');
+end $$;
+reset role;
+do $$ declare p jsonb; begin
+  perform test.ok(not exists (select 1 from app.analytics_outbox where order_id = test.get('ga_order')::uuid), 'No purchase event is queued before payment is confirmed (CUST-FR-186)');
+  update public.orders set analytics_client_id = '555555555.1234567890' where id = test.get('ga_paid')::uuid;
+  perform app.enqueue_purchase(test.get('ga_paid')::uuid); perform app.enqueue_purchase(test.get('ga_paid')::uuid);
+  perform test.ok((select count(*) from app.analytics_outbox where order_id = test.get('ga_paid')::uuid) = 1, 'A paid order queues exactly one purchase event, however often it is triggered');
+  select payload into p from app.analytics_outbox where order_id = test.get('ga_paid')::uuid;
+  perform test.ok(p->'events'->0->>'name' = 'purchase' and (p->'events'->0->'params'->>'value')::numeric > 0 and jsonb_array_length(p->'events'->0->'params'->'items') > 0,
+                  'The event carries order number, value and items');
+  perform test.ok(p::text !~* '@|\+91|user_id|customer|address|phone' , 'The event has no email, phone, address, customer or user id (CUST-FR-185/188)');
+end $$;
+do $$ begin perform test.act_as(null); end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

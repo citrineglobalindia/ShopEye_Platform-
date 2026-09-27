@@ -208,17 +208,17 @@
   ]
  },
  "CUST-FR-015": {
-  "what": "Planned: sign up with a social identity (for example Google) while still accepting ShopEye’s terms and privacy notice before the account is created. Today sign-up is by email code only; the login and consent groundwork it would build on is in place.",
+  "what": "Shoppers can sign up or sign in with Google. The terms box must be ticked before leaving for Google, and the acceptance is recorded when Google sends them back; anyone who arrives without it sees a consent page before anything else.",
   "try": [
    {
-    "label": "Current sign-up",
+    "label": "Sign in",
     "href": "/login"
    }
   ],
   "check": [
-   "Not ready to test yet."
-  ],
-  "next": "Needs your decision on which social logins to offer (Google, Apple, others), then provider setup in Supabase Auth and a terms-acceptance step for social sign-ups."
+   "Untick the terms box and press Continue with Google: you’re asked to tick it first.",
+   "Sign up with a new Google account and check the profile records the terms version and time."
+  ]
  },
  "CUST-FR-016": {
   "what": "After signing in or up you go straight back to the action you started, such as adding to wishlist or continuing checkout. Only ShopEye addresses are allowed as the return target.",
@@ -293,11 +293,16 @@
   ]
  },
  "CUST-FR-022": {
-  "what": "Planned: an email alert whenever your sign-in method or password changes. ShopEye uses email codes rather than passwords, so this applies once passwords or social login are added.",
-  "check": [
-   "Not ready to test yet."
+  "what": "When a new sign-in method (such as Google) is added to an existing account, it is recorded under Recent security activity and the customer is emailed straight away. A brand-new Google account isn’t reported as a change.",
+  "try": [
+   {
+    "label": "Security activity",
+    "href": "/account#sec-h"
+   }
   ],
-  "next": "Comes with the social-login / password decision; the email outbox that would send it already exists."
+  "check": [
+   "Sign in with Google using the same email as an existing account, then check your inbox and My account."
+  ]
  },
  "CUST-FR-023": {
   "what": "Sign-in links carry only a one-time code that is used once; the browser is then sent to a clean address and nothing is cached; other sites only ever see shopeye.in as the referrer, never the link itself. No page or API puts access tokens in a URL, sign-in failures show a generic message, and server logs are redacted.",
@@ -441,11 +446,16 @@
   ]
  },
  "CUST-FR-034": {
-  "what": "Planned: record search terms and clicks for analytics, anonymised and only with the visitor’s consent.",
-  "check": [
-   "Not ready to test yet."
+  "what": "With the shopper’s consent, Google Analytics receives the search term and result count, and which result was clicked. Phone numbers, emails and long numbers in search terms are replaced before sending, and page views never include the query string.",
+  "try": [
+   {
+    "label": "Search",
+    "href": "/search?q=saree"
+   }
   ],
-  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+  "check": [
+   "Accept analytics, search, and check the GA4 DebugView shows the search and select_item events."
+  ]
  },
  "CUST-FR-035": {
   "what": "Filters and sort are stored in the page URL, so a filtered listing can be bookmarked or shared and opens exactly the same.",
@@ -968,28 +978,28 @@
   "check": [
    "Not ready to test yet."
   ],
-  "next": "Needs your decision on whether to offer gift cards."
+  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
  },
  "CUST-FR-077": {
   "what": "Planned: using part of a gift card keeps the remaining balance for later.",
   "check": [
    "Not ready to test yet."
   ],
-  "next": "Needs your decision on whether to offer gift cards."
+  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
  },
  "CUST-FR-078": {
   "what": "Planned: store credit shows its expiry date.",
   "check": [
    "Not ready to test yet."
   ],
-  "next": "Needs your decision on store credit rules."
+  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
  },
  "CUST-FR-079": {
   "what": "Planned: loyalty points show how many you earn and how they convert, with any caps, before you commit.",
   "check": [
    "Not ready to test yet."
   ],
-  "next": "Needs your decision on a loyalty programme."
+  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
  },
  "CUST-FR-080": {
   "what": "Refunds go back to the way you paid (UPI account, card, bank account or wallet), and the order page says exactly where and how much is expected.",
@@ -1531,7 +1541,7 @@
   "check": [
    "Not ready to test yet."
   ],
-  "next": "Needs gift card / credit decisions and Finance refund-priority rules."
+  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
  },
  "CUST-FR-128": {
   "what": "Only reviews from customers whose order was delivered get the “Verified purchase” marker.",
@@ -1772,7 +1782,7 @@
   "check": [
    "Not ready to test yet."
   ],
-  "next": "Needs your decision on account closure and data retention."
+  "next": "You chose not to build self-service account closure for now; closure and deletion requests are handled through support."
  },
  "CUST-FR-147": {
   "what": "You can download a copy of your personal data from the account page.",
@@ -1848,14 +1858,7 @@
   ]
  },
  "CUST-FR-153": {
-  "what": "Planned: measure and tune Core Web Vitals (load speed, responsiveness) on key pages under real traffic.",
-  "check": [
-   "Not ready to test yet."
-  ],
-  "next": "Pre-launch performance pass once real traffic data (Vercel Speed Insights) is available."
- },
- "CUST-FR-154": {
-  "what": "Planned: serve images in responsive sizes and modern formats from a CDN. Images already lazy-load today.",
+  "what": "Planned: consistently strong Core Web Vitals under real traffic. Layout shift on listings is fixed (0.26 to 0), pages load their main content in about 1–1.4 s in a phone lab test, and real-visit vitals are reported to analytics with consent.",
   "try": [
    {
     "label": "Home page",
@@ -1863,9 +1866,21 @@
    }
   ],
   "check": [
-   "Partly visible today: images load as you scroll."
+   "Run scripts/web-vitals-check.py against a production build."
   ],
-  "next": "Pre-launch performance pass (image optimisation)."
+  "next": "Trim JavaScript that runs on page load on the home and product pages (lab blocking time is 200–420 ms, target under 200 ms), then confirm with real-visit data once traffic arrives."
+ },
+ "CUST-FR-154": {
+  "what": "Product photos hosted by ShopEye are served by Vercel’s image CDN in responsive sizes and AVIF/WebP. The main product photo loads first with high priority; everything below the fold loads lazily.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   }
+  ],
+  "check": [
+   "Open a product with DevTools → Network → Img and check the photos come as avif or webp in sizes that fit the screen."
+  ]
  },
  "CUST-FR-155": {
   "what": "Search and listing results stream in behind a loading skeleton; the header and filters stay usable meanwhile.",
@@ -2241,31 +2256,52 @@
   ]
  },
  "CUST-FR-185": {
-  "what": "Planned: analytics events that never contain passwords, codes, card details or unnecessary personal data.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Analytics events never contain passwords, codes, card details, emails, phone numbers, names or addresses: blocked fields are dropped and every text value is scrubbed before sending.",
+  "try": [
+   {
+    "label": "Search",
+    "href": "/search?q=saree"
+   }
   ],
-  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+  "check": [
+   "Search for a phone number with analytics accepted; GA receives “[number]” instead."
+  ]
  },
  "CUST-FR-186": {
-  "what": "Planned: purchase analytics sent from the server when an order is confirmed, so refreshes don’t double-count.",
-  "check": [
-   "Not ready to test yet."
+  "what": "The purchase is sent to Google Analytics from ShopEye’s server once payment is confirmed, exactly once per order, so refreshing or revisiting the success page never double-counts.",
+  "try": [
+   {
+    "label": "My orders",
+    "href": "/account/orders"
+   }
   ],
-  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+  "check": [
+   "Needs the GA secrets in Supabase Vault; then place and pay an order with analytics accepted and see one purchase in GA4."
+  ]
  },
  "CUST-FR-187": {
-  "what": "Planned: optional analytics and marketing tags load only after the visitor consents.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Google Analytics loads only after the shopper chooses “Accept analytics” on the cookie banner. “Essential only” keeps it off completely; ad storage and personalisation are never enabled; the choice can be changed from Cookie settings in the footer.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
   ],
-  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+  "check": [
+   "In a private window, open the site: nothing from Google loads until you accept.",
+   "Choose Essential only and check the Network tab stays free of googletagmanager requests."
+  ]
  },
  "CUST-FR-188": {
-  "what": "Planned: analytics identifiers limited to what the privacy design allows.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Analytics uses only Google’s random browser id, and only after consent. ShopEye never sends a user id, email or account details, Google signals are off, and the server-side purchase event accepts nothing but that browser id.",
+  "try": [
+   {
+    "label": "Home page",
+    "href": "/"
+   }
   ],
-  "next": "Needs your decision on the analytics tool and the cookie/consent approach."
+  "check": [
+   "Automated: the database refuses an email as the analytics id, and the purchase event is checked for personal data."
+  ]
  }
 }

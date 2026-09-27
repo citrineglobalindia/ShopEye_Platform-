@@ -7,6 +7,7 @@ import { inr } from '@/lib/config';
 import { compareIds, clearCompare } from '@/components/Alerts';
 import { Stars } from '@/components/Reviews';
 import { Crumbs } from '@/components/Crumbs';
+import { Pic } from '@/components/Pic';
 
 export default function Compare() {
   const [rows, setRows] = useState<any[] | null>(null);
@@ -33,7 +34,7 @@ export default function Compare() {
       {!rows.length ? <div className="panel empty">Nothing to compare yet. Tick “Compare” on up to 4 product pages.</div> : (
         <div className="tablewrap panel" tabIndex={0} role="region" aria-label="Product comparison (scrolls sideways on small screens)"><table className="cmp">
           <thead><tr><th scope="col"><span className="sr-only">Detail</span></th>{rows.map((r) => (
-            <th key={r.id} scope="col"><Link href={`/p/${r.id}`} className="cmp-head">{r.image && <img src={r.image} alt="" />}<span>{r.title}</span></Link>
+            <th key={r.id} scope="col"><Link href={`/p/${r.id}`} className="cmp-head">{r.image && <Pic src={r.image} alt="" w={320} h={400} sizes="160px" />}<span>{r.title}</span></Link>
               <button className="linklike small" onClick={() => { clearCompare(r.id); load(); }}>Remove</button></th>))}</tr></thead>
           <tbody>
             {line('Price', (r) => r.v ? <strong>{inr(r.v.selling_price)}</strong> : '—')}

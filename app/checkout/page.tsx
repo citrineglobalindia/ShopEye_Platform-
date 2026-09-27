@@ -8,13 +8,14 @@ import { shippingRules } from '@/lib/shop-client';
 import { inr, STATES, shipFor, SHIP_DEFAULT, type ShipRules } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { payForOrder } from '@/lib/pay';
+import { track } from '@/lib/analytics';
 
 const blank = { recipient: '', mobile: '', line1: '', line2: '', landmark: '', city: '', state_code: 'KA', pincode: '', address_type: 'home' };
 
 export default function Checkout() {
   const router = useRouter();
   const [rules, setRules] = useState<ShipRules>(SHIP_DEFAULT);
-  useEffect(() => { shippingRules().then(setRules); }, []);
+  useEffect(() => { shippingRules().then(setRules); track('begin_checkout', { currency: 'INR' }); }, []);
   const [user, setUser] = useState<any>(null); const [cart, setCart] = useState<any>(null); const [lines, setLines] = useState<any[]>([]);
   const [addrs, setAddrs] = useState<any[]>([]); const [addrId, setAddrId] = useState(''); const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>(blank); const [method, setMethod] = useState('upi'); const [coupon, setCoupon] = useState('');

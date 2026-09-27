@@ -8,6 +8,7 @@ import { friendly } from '@/lib/errors';
 import { addToCart } from '@/lib/shop-client';
 import { AlertButton } from '@/components/Alerts';
 import { useEffect } from 'react';
+import { track } from '@/lib/analytics';
 
 type V = { variant_id: string; sku: string; attributes: Record<string, string>; mrp: number; selling_price: number; discount_pct: number; available: number };
 const label = (v: V) => Object.values(v.attributes || {}).join(' / ') || v.sku;
@@ -26,6 +27,7 @@ export default function AddToCart({ variants }: { variants: V[] }) {
     setBusy(true); setMsg(null);
     try {
       await addToCart(sel.variant_id, qty, sel.selling_price);
+      track('add_to_cart', { currency: 'INR', value: sel.selling_price * qty, items: [{ item_id: sel.sku ?? sel.variant_id, price: sel.selling_price, quantity: qty }] });
       if (buyNow) router.push('/checkout'); else setMsg({ t: 'ok', m: 'Added to your cart.' });
     } catch (e) { setMsg({ t: 'err', m: friendly(e) }); } finally { setBusy(false); }
   }

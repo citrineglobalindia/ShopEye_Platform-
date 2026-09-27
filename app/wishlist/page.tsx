@@ -7,6 +7,7 @@ import { sb } from '@/lib/sb-browser';
 import { inr } from '@/lib/config';
 import { toggleWishlist, addToCart } from '@/lib/shop-client';
 import { Crumbs } from '@/components/Crumbs';
+import { Pic } from '@/components/Pic';
 
 export default function Wishlist() {
   const router = useRouter(); const [items, setItems] = useState<any[] | null>(null); const [signedIn, setSignedIn] = useState(true); const [msg, setMsg] = useState('');
@@ -46,7 +47,7 @@ export default function Wishlist() {
           <div className="grid">{items.map((it) => (
             <div key={it.id} className={`card${it.inStock ? '' : ' oos'}`}>
               <Link href={`/p/${it.id}`} className="card-link">
-                <div className="ph">{it.image ? <img src={it.image} alt={it.v?.title ?? ''} /> : <span className="small">No photo</span>}{!it.inStock && <span className="oos-badge">Out of stock</span>}</div>
+                <div className="ph">{it.image ? <Pic src={it.image} alt={it.v?.title ?? ''} /> : <span className="small">No photo</span>}{!it.inStock && <span className="oos-badge">Out of stock</span>}</div>
                 <div className="b">{it.v ? <><span className="small muted">{it.v.vendor_name}</span><span className="card-t">{it.v.title}</span><span className="price">{inr(it.v.selling_price)}</span></> : <span className="muted">No longer available</span>}</div>
               </Link>
               <div className="card-foot">

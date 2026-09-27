@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { sb } from '@/lib/sb-browser';
 import { guestCart, mergeGuestCart, wishlistIds, toggleWishlist, recentIds, trackView, clearRecent } from '@/lib/shop-client';
 import { inr } from '@/lib/config';
+import { Pic } from '@/components/Pic';
 
 // Header cart link: server count for signed-in users, browser cart for guests
 export function CartLink({ serverCount, signedIn }: { serverCount: number; signedIn: boolean }) {
@@ -63,7 +64,7 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
       <div className="rail-head"><h2 id="rv-h">Recently viewed</h2><button className="linklike" onClick={clearRecent}>Clear</button></div>
       <div className="rail">{items.map((p) => (
         <Link key={p.product_id} href={`/p/${p.product_id}`} className="card mini">
-          <div className="ph">{p.image ? <img src={p.image} alt={p.title} loading="lazy" /> : <span className="small">No photo</span>}</div>
+          <div className="ph">{p.image ? <Pic src={p.image} alt={p.title} /> : <span className="small">No photo</span>}</div>
           <div className="b"><span className="card-t">{p.title}</span><span className="price">{inr(p.selling_price)}</span></div>
         </Link>))}</div>
     </section>);

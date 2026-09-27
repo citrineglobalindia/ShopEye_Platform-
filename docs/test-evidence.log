@@ -1,5 +1,6 @@
 psql:supabase/migrations/20260926000019_email_outbox.sql:211: NOTICE:  trigger "on_auth_user_verified" for relation "auth.users" does not exist, skipping
 psql:supabase/migrations/20260926000022_qa_security_shipping.sql:224: NOTICE:  trigger "on_auth_user_security" for relation "auth.users" does not exist, skipping
+psql:supabase/migrations/20260926000024_google_signin_analytics.sql:42: NOTICE:  trigger "on_auth_identity_added" for relation "auth.identities" does not exist, skipping
 == 1. Status models & direct-write guards
 PASS  Vendor active→draft rejected by server (VS-FR-887) (rejected: INVALID_TRANSITION: vendor cannot move from active to draft)
 PASS  Draft product cannot self-activate without review (rejected: INVALID_TRANSITION: product cannot move from draft to active)
@@ -244,6 +245,23 @@ PASS  Unknown ticket category is rejected by the database, not just the form (re
 PASS  Too-short subject is rejected by the database (rejected: new row for relation "support_tickets" violates check constraint "support_tickets_subject_)
 PASS  Over-long question is rejected by the database (rejected: QUESTION_LENGTH: ask in 10 to 500 characters)
 PASS  Customer text is HTML-escaped in emails; a script tag arrives as plain text (CUST-FR-170)
+== 25. Google sign-in consent and new sign-in method alerts (CUST-FR-015, CUST-FR-022)
+PASS  An account created through Google is asked to accept the terms before continuing (CUST-FR-015)
+PASS  Accepting records the current terms and privacy versions
+PASS  After accepting, the customer is not asked again
+PASS  Consent time and privacy version are stored on the profile
+PASS  Linking Google to an existing account is recorded as a security event (CUST-FR-022)
+PASS  and the customer is emailed about it
+PASS  A first sign-in method on a new account is not reported as a change
+== 26. GA4 purchase events: consented, server-side, once per order (CUST-FR-186, CUST-FR-188)
+PASS  A shopper cannot attach analytics to someone else's order
+PASS  Only a GA client id is accepted, never an email or other identifier (CUST-FR-188) (rejected: INVALID_CLIENT_ID)
+PASS  After checkout the browser hands over its GA client id once (only with analytics consent)
+PASS  It cannot be changed afterwards
+PASS  No purchase event is queued before payment is confirmed (CUST-FR-186)
+PASS  A paid order queues exactly one purchase event, however often it is triggered
+PASS  The event carries order number, value and items
+PASS  The event has no email, phone, address, customer or user id (CUST-FR-185/188)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
@@ -268,12 +286,12 @@ PASS  Every note belongs to a real SRS requirement ID
 PASS  Every note says what the functionality does and how to check it
 PASS  Every "Try it" link in the notes points at a page that exists
 PASS  Every page derived from the code points at a page that exists
-PASS  Unfinished requirements are labelled Planned and say what they wait on (18)
-PASS  Finished requirements are not described as planned (170)
+PASS  Unfinished requirements are labelled Planned and say what they wait on (10)
+PASS  Finished requirements are not described as planned (178)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text
-== 14. Accessibility: WCAG 2.2 AA automated audit (axe-core 4.10, demo catalogue)
+== 14. Accessibility: WCAG 2.2 AA automated audit (axe-core 4.10, demo catalogue, cookie banner showing)
 PASS  WCAG 2.2 AA (axe) no violations on / at 1280px
 PASS  WCAG 2.2 AA (axe) no violations on /search?q=saree at 1280px
 PASS  WCAG 2.2 AA (axe) no violations on /c/sarees at 1280px
@@ -311,3 +329,10 @@ PASS  Sign-in link handler redirects to a clean, uncached URL with no raw auth e
 PASS  No code puts access or refresh tokens in a URL (CUST-FR-023)
 PASS  Redactor removes emails, phone numbers, OTPs, tokens, card numbers, keys and signatures (CUST-FR-174)
 PASS  Redactor leaves ordinary messages readable
+== 16. Core Web Vitals, lab (phone, 4x CPU, slow network) — informational, not yet all within target
+FAIL  Core Web Vitals (lab, phone, 4x CPU, slow network) on /: LCP 1380 ms, CLS 0.000, TBT 335 ms
+PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /search?q=saree: LCP 864 ms, CLS 0.000, TBT 262 ms
+PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /c/sarees: LCP 980 ms, CLS 0.000, TBT 243 ms
+FAIL  Core Web Vitals (lab, phone, 4x CPU, slow network) on /p/00000000-0000-4000-8000-000000000001: LCP 704 ms, CLS 0.000, TBT 367 ms
+PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /cart: LCP 1200 ms, CLS 0.000, TBT 177 ms
+PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /login: LCP 596 ms, CLS 0.000, TBT 223 ms

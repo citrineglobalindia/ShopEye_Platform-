@@ -6,6 +6,7 @@ import { sb } from '@/lib/sb-browser';
 import { inr, shipFor, SHIP_DEFAULT, type ShipRules } from '@/lib/config';
 import { guestCart, setGuestCart, cartChanged, shippingRules } from '@/lib/shop-client';
 import { Crumbs } from '@/components/Crumbs';
+import { Pic } from '@/components/Pic';
 
 type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
 export default function Cart() {
@@ -60,7 +61,7 @@ export default function Cart() {
   const blocked = active.some((l) => !ok(l));
   const row = (l: Line) => (
     <div key={l.key} className="cart-line">
-      <Link href={l.v ? `/p/${l.v.product_id}` : '#'} className="cart-img">{l.v?.image ? <img src={l.v.image} alt="" /> : <span />}</Link>
+      <Link href={l.v ? `/p/${l.v.product_id}` : '#'} className="cart-img">{l.v?.image ? <Pic src={l.v.image} alt="" w={160} h={200} sizes="96px" /> : <span />}</Link>
       <div className="cart-body">
         {l.v ? <Link href={`/p/${l.v.product_id}`}><strong>{l.v.title}</strong></Link> : <strong className="muted">This item is no longer available</strong>}
         {l.v && <div className="small muted">{Object.values(l.v.attributes || {}).join(' / ')}</div>}

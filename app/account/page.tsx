@@ -16,7 +16,7 @@ function authAgeMinutes(token?: string | null): number {
         const t = Math.max(...amr.map((m: any) => Number(m.timestamp) || 0)); return t ? (Date.now() / 1000 - t) / 60 : Infinity; } catch { return Infinity; }
 }
 const SEC_LABEL: Record<string, string> = { signed_in: 'Signed in', email_changed: 'Sign-in email changed', email_change_requested: 'Email change requested',
-  signed_out_other_devices: 'Signed out of other devices', reverified: 'Confirmed it was you with an email code', data_exported: 'Downloaded your data' };
+  signed_out_other_devices: 'Signed out of other devices', sign_in_method_added: 'New sign-in method added', reverified: 'Confirmed it was you with an email code', data_exported: 'Downloaded your data' };
 const blank = { id: '', recipient: '', mobile: '', line1: '', line2: '', landmark: '', city: '', state_code: 'KA', pincode: '', address_type: 'home' };
 export default function Account() {
   const router = useRouter();
@@ -223,8 +223,9 @@ export default function Account() {
         </form>
         <div className="addr"><div><strong>Your data</strong><div className="small muted">Download your profile, addresses, orders, help requests and preferences as a file.</div></div><button className="btn ghost sm" onClick={() => guarded('download your data', downloadData)}>Download my data</button></div>
         <div className="addr"><div><strong>Signed in on other devices?</strong><div className="small muted">Signs you out everywhere except this device.</div></div><button className="btn ghost sm" onClick={() => guarded('sign out your other devices', signOutOthers)}>Sign out other devices</button></div>
+        <div className="addr"><div><strong>Sign-in methods</strong><div className="small muted">{['Email code', ...(user.identities ?? []).filter((i: any) => i.provider !== 'email').map((i: any) => i.provider === 'google' ? 'Google' : i.provider)].join(' · ')}</div></div></div>
         <div><strong>Recent security activity</strong>
-          {events.length ? <ul className="small" style={{ margin: '4px 0 0', paddingLeft: 18 }}>{events.map((e) => <li key={e.id}>{SEC_LABEL[e.kind] ?? e.kind}{e.kind === 'email_changed' && e.detail?.from ? ` (${e.detail.from} → ${e.detail.to})` : ''} · {new Date(e.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</li>)}</ul>
+          {events.length ? <ul className="small" style={{ margin: '4px 0 0', paddingLeft: 18 }}>{events.map((e) => <li key={e.id}>{SEC_LABEL[e.kind] ?? e.kind}{e.kind === 'email_changed' && e.detail?.from ? ` (${e.detail.from} → ${e.detail.to})` : ''}{e.kind === 'sign_in_method_added' && e.detail?.method ? ` (${e.detail.method})` : ''} · {new Date(e.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</li>)}</ul>
             : <div className="small muted">Nothing recorded yet.</div>}
           <div className="small muted" style={{ marginTop: 4 }}>Don’t recognise something? Sign out other devices and contact us.</div></div>
         <div className="addr"><div><strong>Recently viewed</strong><div className="small muted">{rv ? `${rv} products remembered on this device.` : 'Nothing remembered on this device.'}</div></div>{rv > 0 && <button className="btn ghost sm" onClick={() => { clearRecent(); setRv(0); }}>Clear</button>}</div>

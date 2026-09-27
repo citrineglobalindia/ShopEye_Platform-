@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CookieSettingsLink } from './Analytics';
 export function Footer({ signedIn }: { signedIn: boolean }) {
   return (
     <footer className="foot">
@@ -10,7 +11,7 @@ export function Footer({ signedIn }: { signedIn: boolean }) {
       </div>
       <div className="wrap foot-base small">
         <span>© {new Date().getFullYear()} ShopEye. Prices include GST.</span>
-        <span>Payments secured by Razorpay{signedIn && <> · <form action="/auth/signout" method="post" style={{ display: 'inline' }}><button className="linklike foot-signout">Sign out</button></form></>}</span>
+        <span><CookieSettingsLink /> · Payments secured by Razorpay{signedIn && <> · <form action="/auth/signout" method="post" style={{ display: 'inline' }}><button className="linklike foot-signout">Sign out</button></form></>}</span>
       </div>
     </footer>
   );

@@ -11,3 +11,4 @@ create or replace function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
+create table if not exists auth.identities (id uuid primary key default gen_random_uuid(), user_id uuid not null, provider text not null, provider_id text, identity_data jsonb default '{}'::jsonb, created_at timestamptz default now());
