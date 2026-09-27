@@ -28,7 +28,12 @@ export function DeliverTo({ compact = false }: { compact?: boolean }) {
       setBusy(false);
       if (!l) { setErr('We couldn’t find a pincode here. Please type it.'); return; }
       const v = { ...l, exact: true }; setLoc(v); save(v); setOpen(false);
-    }, () => { setBusy(false); setErr('Location permission was declined. You can type your pincode instead.'); }, { timeout: 10000, maximumAge: 600000 });
+    }, (e) => {
+      setBusy(false);
+      setErr(e.code === 1 ? 'Location access is blocked for this site. Allow it from the lock icon next to the address bar (Site settings → Location), or type your pincode.'
+        : e.code === 3 ? 'Finding your location took too long. Try again, or type your pincode.'
+        : 'Your device couldn’t find your location (check that Location is switched on). You can type your pincode instead.');
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
   }
   function submit(e: React.FormEvent) {
     e.preventDefault();
