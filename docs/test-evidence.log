@@ -351,7 +351,7 @@ PASS  Finished requirements are not described as planned (183)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text
-== 14. Accessibility: WCAG 2.2 AA automated audit (axe-core 4.10, demo catalogue, cookie banner showing)
+== 14. Accessibility: WCAG 2.2 AA automated audit (axe-core 4.10, demo catalogue, cookie banner and location prompt showing)
 PASS  WCAG 2.2 AA (axe) no violations on / at 1280px
 PASS  WCAG 2.2 AA (axe) no violations on /search?q=saree at 1280px
 PASS  WCAG 2.2 AA (axe) no violations on /c/sarees at 1280px

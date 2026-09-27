@@ -7,6 +7,7 @@ import { sbServer } from '@/lib/sb-server';
 import { listCategories, FIXTURES } from '@/lib/catalog';
 import { Analytics } from '@/components/Analytics';
 import { BottomNav } from '@/components/BottomNav';
+import { LocationGate } from '@/components/LocationGate';
 
 export const viewport = { themeColor: '#021A53' };
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Footer signedIn={!!user} />
         <Analytics />
         <BottomNav />
+        <LocationGate />
       </body>
     </html>
   );

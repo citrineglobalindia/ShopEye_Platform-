@@ -441,3 +441,10 @@ main { min-height: 60vh; }
   .m-checkout > span { display: grid; line-height: 1.1; } .m-checkout strong { font-size: 1.15rem; }
   body:has(.m-checkout) { padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
 }
+/* first-visit delivery location (required) */
+.gate-back { position: fixed; inset: 0; z-index: 100; background: #0b1538b3; display: grid; place-items: center; padding: 16px; }
+.gate { width: min(420px, 100%); display: grid; gap: 12px; text-align: center; padding: 26px 22px; box-shadow: 0 30px 60px #0008; }
+.gate-ic { font-size: 2rem; } .gate .btn { width: 100%; justify-content: center; }
+.gate-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; } .gate-form input { text-align: center; font-size: 1.05rem; letter-spacing: .08em; }
+body.gate-open { overflow: hidden; }
+@media (max-width: 600px) { .gate-back { place-items: end center; padding: 0; } .gate { border-radius: 18px 18px 0 0; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); } }
