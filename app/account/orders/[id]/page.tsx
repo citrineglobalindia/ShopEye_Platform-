@@ -1,3 +1,4 @@
+// SRS: CUST-FR-127 (orders paid with several tenders show what each paid and where each refund goes)
 // SRS: CUST-FR-080 CUST-FR-104 CUST-FR-107 CUST-FR-109 (refunds show where the money goes, by original payment method, and how much; each package's invoice and credit notes with the items they cover; optional business GSTIN)
 // SRS: CUST-FR-121 CUST-FR-137 CUST-FR-152 CUST-FR-075 CUST-FR-086 CUST-FR-089 CUST-FR-090 CUST-FR-093 CUST-FR-094 CUST-FR-095 CUST-FR-096 CUST-FR-099 CUST-FR-101 CUST-FR-102 CUST-FR-110 CUST-FR-114 CUST-FR-116 CUST-FR-117 CUST-FR-122 CUST-FR-123 CUST-FR-125 CUST-FR-139
 // (partial returns reflected in the money summary; links from emails require sign-in and handle missing orders; phone number masked; pending payment shows hold time; owner-only order page reachable by refresh without new order; snapshots; item-level status;
@@ -14,6 +15,7 @@ import { ReturnItem, CancelReturn, Reorder } from '@/components/ReturnActions';
 import { ReviewForm } from '@/components/Reviews';
 import { GstDetails } from '@/components/GstDetails';
 import { OrderAnalytics } from '@/components/Analytics';
+import { StoreCreditButton } from '@/components/StoreCreditButton';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Order details', robots: { index: false } };
 
@@ -37,9 +39,11 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
     db.from('sub_orders').select('id,sub_order_number,status,total,shipping_total,delivered_at,return_window_ends_at').eq('order_id', id).order('created_at'),
     db.from('order_items').select('id,sub_order_id,variant_id,product_snapshot,qty,unit_price,discount,line_total,cancelled_qty,return_requested_qty,refunded_amount').eq('order_id', id),
     db.from('shipments').select('id,sub_order_id,carrier,awb,status,shipped_at,delivered_at,last_event_at'),
-    db.from('refunds').select('refund_number,requested_amount,approved_amount,processor_status,approval_status,created_at,completed_at,source_type').eq('order_id', id).order('created_at'),
+    db.from('refunds').select('id,refund_number,requested_amount,approved_amount,processor_status,approval_status,created_at,completed_at,source_type,destination,payments(gateway,method)').eq('order_id', id).order('created_at'),
     db.from('returns').select('id,return_number,order_item_id,qty,status,reason,rejection_reason,created_at').order('created_at', { ascending: false }),
   ]);
+  const { data: pays } = await db.from('payments').select('gateway,method,amount,status').eq('order_id', id).in('status', ['paid', 'partially_refunded', 'refunded']);
+  const { data: scDays } = await db.rpc('my_wallet');
   const { data: docs } = await db.from('invoices').select('id,kind,number,sub_order_id,issued_at,total,doc_key,original_invoice_id,invoice_lines(description,qty,order_item_id)').eq('order_id', id).order('issued_at');
   const vids = [...new Set((items ?? []).map((it: any) => it.variant_id))];
   const { data: vp } = vids.length ? await db.from('product_variants').select('id,product_id').in('id', vids) : { data: [] };
@@ -135,11 +139,13 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
             <section className="panel stack"><h2 style={{ margin: 0 }}>Refunds</h2>
               {refunds.map((r: any) => (
                 <div key={r.refund_number} className="pkg-head">
-                  <span><strong>{r.refund_number}</strong> <span className="small muted">for {r.source_type}, {d(r.created_at)}</span></span>
+                  <span><strong>{r.refund_number}</strong> <span className="small muted">for {r.source_type}, {d(r.created_at)} · to {r.payments?.gateway === 'shopeye_wallet' ? 'your ShopEye balance' : r.destination === 'store_credit' ? 'ShopEye store credit' : REFUND_TO[o.payment_method] ?? 'your original payment method'}</span>
+                    {r.payments?.gateway === 'razorpay' && r.destination === 'original' && r.processor_status === 'not_sent' && ['not_required', 'approved'].includes(r.approval_status) &&
+                      <span className="small" style={{ display: 'block' }}><StoreCreditButton refundId={r.id} days={scDays?.rules?.store_credit_expiry_days ?? 365} /></span>}</span>
                   <span>{inr(r.approved_amount ?? r.requested_amount)} <StatusChip s={r.processor_status === 'not_sent' ? (r.approval_status === 'pending' ? 'pending' : 'initiated') : r.processor_status} /></span>
                 </div>))}
               {refunds.some((r: any) => r.processor_status === 'failed') && <div className="msg err small">A refund couldn’t be sent to your bank. We retry automatically; if it hasn’t arrived in 3 working days, <Link href={`/support/new?order=${o.id}&category=refund`}>contact us</Link> and we’ll sort it out.</div>}
-              <p className="small" style={{ margin: 0 }}>Refunds go to <strong>{REFUND_TO[o.payment_method] ?? 'your original payment method'}</strong>. {refundPending > 0 && <>Expected: <strong>{inr(refundPending)}</strong>. </>}Banks usually take 5–7 working days after we send them.</p>
+              <p className="small" style={{ margin: 0 }}>{(pays ?? []).some((p: any) => p.gateway === 'shopeye_wallet') ? <>Refunds go to <strong>{REFUND_TO[o.payment_method] ?? 'your original payment method'}</strong> first, up to what it paid, then back to your <Link href="/account/balance">ShopEye balance</Link> (gift card, store credit, then points).</> : <>Refunds go to <strong>{REFUND_TO[o.payment_method] ?? 'your original payment method'}</strong>.</>} {refundPending > 0 && <>Expected: <strong>{inr(refundPending)}</strong>. </>}Banks usually take 5–7 working days after we send them.</p>
             </section>)}
         </div>
         <aside className="stack">
@@ -150,6 +156,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
             <div><span>Shipping</span><span>{Number(o.shipping_total) ? inr(o.shipping_total) : 'Free'}</span></div>
             <div className="tot"><span>Total charged</span><span>{inr(o.grand_total)}</span></div>
             {cancelledValue > 0 && <div className="small"><span>Cancelled items</span><span>{inr(cancelledValue)}</span></div>}
+            {(pays ?? []).some((p: any) => p.gateway === 'shopeye_wallet') && (pays ?? []).map((p: any, k: number) => <div key={k} className="small"><span>Paid with {p.gateway === 'shopeye_wallet' ? 'ShopEye balance' : (REFUND_TO[p.method] ? p.method.toUpperCase() : 'Razorpay')}</span><span>{inr(p.amount)}</span></div>)}
             {refundedTotal > 0 && <div className="small ok-t"><span>Refunded</span><span>−{inr(refundedTotal)}</span></div>}
             {refundPending > 0 && <div className="small"><span>Refund in progress</span><span>{inr(refundPending)}</span></div>}
             {(refundedTotal > 0 || refundPending > 0) && <div className="small"><strong>Net paid after refunds</strong><strong>{inr(Number(o.grand_total) - refundedTotal)}</strong></div>}

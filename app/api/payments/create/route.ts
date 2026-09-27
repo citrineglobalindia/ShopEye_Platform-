@@ -19,7 +19,8 @@ export async function POST(req: Request) {
   if (order.payment_method === 'cod') return NextResponse.json({ error: 'This order is cash on delivery.' }, { status: 400 });
   if (['paid', 'partially_refunded', 'refunded'].includes(order.payment_status)) return NextResponse.json({ error: 'This order is already paid.' }, { status: 409 });
 
-  const { data: pay } = await svc.from('payments').select('id,gateway_order_id,amount,status').eq('order_id', order.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  // Only the open Razorpay payment; the ShopEye-balance part (if any) is settled inside ShopEye
+  const { data: pay } = await svc.from('payments').select('id,gateway_order_id,amount,status').eq('order_id', order.id).eq('gateway', 'razorpay').in('status', ['initiated', 'pending', 'failed']).order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (!pay) return NextResponse.json({ error: 'Payment record missing. Contact support with your order number.' }, { status: 409 });
   let gatewayOrderId = pay.gateway_order_id;
   try {

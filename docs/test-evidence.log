@@ -52,7 +52,7 @@ PASS  Accountant (preparer) lacks refund approval right (AF-FR-0586) (rejected: 
 PASS  Unapproved refund cannot be executed (rejected: REFUND_NOT_APPROVED: pending)
 PASS  Maker cannot approve own refund even with approve right (UAT-23) (rejected: SELF_APPROVAL_FORBIDDEN: maker cannot approve own item)
 PASS  Independent checker approves
-PASS  Refund above refundable balance blocked (CUST-FR-124) (rejected: REFUND_EXCEEDS_BALANCE: requested 99999.00 refundable 4048.20)
+PASS  Refund above refundable balance blocked (CUST-FR-124) (rejected: REFUND_EXCEEDS_BALANCE: requested 99999.00)
 == 5. Ledger immutability, balanced journals, closed periods (UAT-17/22/28/30)
 PASS  Stock ledger is append-only (SM-FR-0173) (rejected: IMMUTABLE_RECORD: UPDATE on public.stock_ledger is not permitted; post a reversal/correcti)
 PASS  Vendor ledger is append-only (AF-FR-0234) (rejected: IMMUTABLE_RECORD: DELETE on finance.vendor_ledger is not permitted; post a reversal/correc)
@@ -262,6 +262,45 @@ PASS  No purchase event is queued before payment is confirmed (CUST-FR-186)
 PASS  A paid order queues exactly one purchase event, however often it is triggered
 PASS  The event carries order number, value and items
 PASS  The event has no email, phone, address, customer or user id (CUST-FR-185/188)
+== 27. ShopEye balance: gift cards, store credit, loyalty, paying and refunds by tender (CUST-FR-076..080, CUST-FR-127)
+PASS  Admin issues gift cards; each code is shown once
+PASS  Only a hash of each code is stored, never the code itself
+PASS  Issuing gift cards records the balance liability in the ledger
+PASS  Customers cannot issue gift cards (rejected: FORBIDDEN: missing permission gift_card.manage)
+PASS  Redeeming a gift card (spacing and case don't matter) adds its value to the balance, checked on the server (CUST-FR-076)
+PASS  A gift card can be redeemed only once (rejected: GIFT_CARD_ALREADY_REDEEMED)
+PASS  Unknown codes are refused
+PASS  After 5 wrong codes in an hour even a valid code waits (guessing protection) (rejected: RATE_LIMITED: too many wrong gift card codes, try again in an hour)
+PASS  Customers only see their own balance
+PASS  A card/UPI refund can be taken as ShopEye store credit instead, instantly (CUST-FR-080)
+PASS  Store credit shows its expiry date: 365 days from issue (CUST-FR-078)
+PASS  A refund can be converted only once (rejected: REFUND_ALREADY_SENT)
+PASS  The refund is marked paid, to store credit
+PASS  The ledger credits customer balances, not the payment gateway
+PASS  Points can't be used without enough points (CUST-FR-079) (rejected: INSUFFICIENT_BALANCE: loyalty)
+PASS  At checkout the gift card balance is used first, then store credit; the rest is left for Razorpay (CUST-FR-077)
+PASS  The used balance is held for this order
+PASS  Balance can be applied only once per order (rejected: BALANCE_ALREADY_APPLIED)
+PASS  Removing it before paying releases the full amount
+PASS  and the balance is back straight away
+PASS  A second removal gives back only what the second apply took
+PASS  Nothing is ever given back twice
+PASS  Re-applying just the gift card leaves ₹5,999 to pay
+PASS  A new Razorpay payment is opened for the remaining amount; the old one is cancelled, never edited
+PASS  When Razorpay confirms the rest, the order is paid and the balance part becomes final
+PASS  The order journal splits the payment: ₹5,999 from the gateway, ₹500 from customer balances
+PASS  A refund on a split payment goes to card/UPI first (up to what it paid), then to ShopEye balance (CUST-FR-127)
+PASS  The balance part is refunded instantly, back to the gift card balance it came from
+PASS  When the balance covers everything the order is confirmed at once, without Razorpay
+PASS  and the unused Razorpay payment is cancelled
+PASS  If the old Razorpay order is still paid, the order is not charged twice
+PASS  and that payment is flagged for a refund
+PASS  A delivered ₹6,499 package earns 64 points, usable after the return window (CUST-FR-079)
+PASS  The balance shows pending points, their value and the per-order cap before they are used (CUST-FR-079)
+PASS  Points can pay at most 10% of an order (₹649 of ₹6,499), as shown at checkout (CUST-FR-079)
+PASS  Once the return window closes the points are usable
+PASS  Expired balance leaves the account with a ledger entry (and is booked as income)
+PASS  Balance always equals the sum of its ledger entries
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
@@ -275,7 +314,7 @@ PASS  Vendor 2 cannot see Vendor 1 sub-orders
 PASS  Vendor cannot create products for another vendor (rejected: new row violates row-level security policy for table "products")
 PASS  Vendor cannot publish without moderation (rejected: new row violates row-level security policy for table "products")
 == 11. Books balance
-PASS  Trial balance: total debits 19968.38 = total credits 19968.38
+PASS  Trial balance: total debits 36923.02 = total credits 36923.02
 ALL TESTS PASSED
 == 12. Concurrency: 10 simultaneous checkouts for the last unit
 orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0
@@ -286,8 +325,8 @@ PASS  Every note belongs to a real SRS requirement ID
 PASS  Every note says what the functionality does and how to check it
 PASS  Every "Try it" link in the notes points at a page that exists
 PASS  Every page derived from the code points at a page that exists
-PASS  Unfinished requirements are labelled Planned and say what they wait on (10)
-PASS  Finished requirements are not described as planned (178)
+PASS  Unfinished requirements are labelled Planned and say what they wait on (5)
+PASS  Finished requirements are not described as planned (183)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text

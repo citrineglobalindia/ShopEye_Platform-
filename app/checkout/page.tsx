@@ -1,4 +1,5 @@
 'use client';
+// SRS: CUST-FR-076 CUST-FR-079 (gift card balance, store credit and points offered at checkout with their values and the 10% points cap shown before placing; checked again on the server)
 // SRS: CUST-FR-013 CUST-FR-044 CUST-FR-073 CUST-FR-159 CUST-FR-162 CUST-FR-066 CUST-FR-069 CUST-FR-071 CUST-FR-072 CUST-FR-166 (inline field errors tied to inputs plus a summary; prices recalculated server-side by place_order; back navigation keeps the form and re-checks prices/stock; order saved before success is shown; serviceability re-checked at order; idempotent place order; price changes shown and confirmed; separate packages identified; total and action stay reachable on phones)
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,7 +16,8 @@ const blank = { recipient: '', mobile: '', line1: '', line2: '', landmark: '', c
 export default function Checkout() {
   const router = useRouter();
   const [rules, setRules] = useState<ShipRules>(SHIP_DEFAULT);
-  useEffect(() => { shippingRules().then(setRules); track('begin_checkout', { currency: 'INR' }); }, []);
+  useEffect(() => { shippingRules().then(setRules); track('begin_checkout', { currency: 'INR' }); sb().rpc('my_wallet').then(({ data }: any) => setWallet(data)); }, []);
+  const [wallet, setWallet] = useState<any>(null); const [useGift, setUseGift] = useState(true); const [useCredit, setUseCredit] = useState(true); const [pts, setPts] = useState(0);
   const [user, setUser] = useState<any>(null); const [cart, setCart] = useState<any>(null); const [lines, setLines] = useState<any[]>([]);
   const [addrs, setAddrs] = useState<any[]>([]); const [addrId, setAddrId] = useState(''); const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>(blank); const [method, setMethod] = useState('upi'); const [coupon, setCoupon] = useState('');
@@ -73,6 +75,12 @@ export default function Checkout() {
       sessionStorage.removeItem(k);
       try { sessionStorage.removeItem(DK); } catch {}
       if (method === 'cod') { router.replace(`/account/orders/${data.order_id}?placed=1`); return; }
+      // ShopEye balance is applied on the server against the final order total (after coupon); the rest goes to Razorpay
+      if (bal.use > 0) {
+        const r = await sb().rpc('apply_balance', { p_order: data.order_id, p_gift_card: bal.gift > 0, p_store_credit: bal.credit > 0, p_points: bal.points });
+        if (r.error && !/BALANCE_ALREADY_APPLIED/.test(r.error.message)) throw r.error;
+        if (r.data?.paid) { router.replace(`/account/orders/${data.order_id}?placed=1`); return; }
+      }
       const a = addrs.find((x) => x.id === addrId);
       let result = 'dismissed';
       try { result = await payForOrder(data.order_id, { email: user.email, contact: a?.mobile, name: a?.recipient }); }
@@ -87,6 +95,16 @@ export default function Checkout() {
   const changed = lines.filter((l) => l.v && Number(l.price_at_add) > 0 && Number(l.price_at_add) !== Number(l.v.selling_price));
   const pkgs = Object.values(lines.filter((l) => l.v).reduce((g: any, l) => ((g[l.v.vendor_name] ||= { vendor: l.v.vendor_name, lines: [] }).lines.push(l), g), {})) as any[];
   const ship = pkgs.reduce((s, g) => s + shipFor(g.lines.reduce((t: number, l: any) => t + Number(l.v.selling_price) * l.qty, 0), rules), 0);
+  // Preview of the balance the server will apply (gift card, then store credit, then points up to 10% of the order)
+  const bal = (() => {
+    if (!wallet || method === 'cod') return { gift: 0, credit: 0, points: 0, pv: 0, use: 0, cap: 0 };
+    const total = sub + ship; const rate = Number(wallet.rules.rupees_per_point);
+    const gift = useGift ? Math.min(total, Number(wallet.gift_card)) : 0;
+    const credit = useCredit ? Math.min(total - gift, Number(wallet.store_credit)) : 0;
+    const cap = Math.floor(Math.floor(total * wallet.rules.max_redeem_pct / 100) / rate);
+    const points = Math.max(0, Math.min(pts, Number(wallet.loyalty_points), cap, Math.floor((total - gift - credit) / rate)));
+    return { gift, credit, points, pv: points * rate, use: gift + credit + points * rate, cap };
+  })();
   const f = (k: string) => ({ id: `f-${k}`, value: form[k] ?? '', onChange: (e: any) => { setForm({ ...form, [k]: e.target.value }); if (fe[k]) setFe({ ...fe, [k]: '' }); },
     'aria-invalid': fe[k] ? true : undefined, 'aria-describedby': fe[k] ? `e-${k}` : undefined });
   const fx = (k: string) => fe[k] ? <span id={`e-${k}`} className="field-err" role="alert">{fe[k]}</span> : null;
@@ -120,6 +138,14 @@ export default function Checkout() {
             <label key={v} style={{ display: 'flex', gap: 10, fontWeight: 400 }}>
               <input type="radio" name="pm" checked={method === v} onChange={() => setMethod(v)} style={{ width: 'auto' }} /> {l}</label>))}
           <label>Coupon code (optional)<input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} maxLength={30} /></label>
+          {wallet && method !== 'cod' && (Number(wallet.gift_card) + Number(wallet.store_credit) + Number(wallet.loyalty_points)) > 0 && (
+            <fieldset className="stack" style={{ gap: 6 }}><legend>ShopEye balance</legend>
+              {Number(wallet.gift_card) > 0 && <label className="radio"><input type="checkbox" checked={useGift} onChange={(e) => setUseGift(e.target.checked)} style={{ width: 'auto' }} /> Gift card balance ({inr(wallet.gift_card)} available)</label>}
+              {Number(wallet.store_credit) > 0 && <label className="radio"><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} style={{ width: 'auto' }} /> Store credit ({inr(wallet.store_credit)} available)</label>}
+              {Number(wallet.loyalty_points) > 0 && <label>Loyalty points to use <span className="small muted">({wallet.loyalty_points} available, 1 point = {inr(wallet.rules.rupees_per_point)}, up to {bal.cap} on this order)</span>
+                <input type="number" min={0} max={Math.min(Number(wallet.loyalty_points), bal.cap)} value={pts} onChange={(e) => setPts(Math.max(0, Math.floor(Number(e.target.value) || 0)))} /></label>}
+              <p className="small muted" style={{ margin: 0 }}>Applied to the final total after any coupon. If you don’t finish paying within an hour, the balance goes back to your account.</p>
+            </fieldset>)}
         </section>
       </div>
       <aside className="panel sum sticky-sum">
@@ -133,6 +159,11 @@ export default function Checkout() {
         <div><span>Items</span><span>{inr(sub)}</span></div>
         <div><span>Shipping</span><span>{ship ? inr(ship) : 'Free'}</span></div>
         <div className="tot"><span>Total</span><span>{inr(sub + ship)}</span></div>
+        {bal.use > 0 && <>
+          {bal.gift > 0 && <div className="small"><span>Gift card balance</span><span>−{inr(bal.gift)}</span></div>}
+          {bal.credit > 0 && <div className="small"><span>Store credit</span><span>−{inr(bal.credit)}</span></div>}
+          {bal.points > 0 && <div className="small"><span>{bal.points} points</span><span>−{inr(bal.pv)}</span></div>}
+          <div className="tot"><span>To pay now</span><span>{inr(Math.max(0, sub + ship - bal.use))}</span></div></>}
         <p className="small muted" style={{ margin: 0 }}>Any coupon is applied when you place the order, and the final total is confirmed before payment. Prices include GST.</p>
         {changed.length > 0 && (
           <div className="msg err" role="alert">
@@ -141,7 +172,7 @@ export default function Checkout() {
             <label style={{ display: 'flex', gap: 8, fontWeight: 600 }}><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} style={{ width: 'auto' }} /> I’ve reviewed the new prices</label>
           </div>)}
         {err && <div className="msg err" role="alert">{err}</div>}
-        <button className="btn" disabled={busy || !addrId || adding || (changed.length > 0 && !ack)} onClick={place}>{busy ? 'Placing order…' : method === 'cod' ? 'Place order' : 'Place order and pay'}</button>
+        <button className="btn" disabled={busy || !addrId || adding || (changed.length > 0 && !ack)} onClick={place}>{busy ? 'Placing order…' : method === 'cod' || (bal.use > 0 && sub + ship - bal.use <= 0) ? 'Place order' : 'Place order and pay'}</button>
       </aside>
     </div>
   );

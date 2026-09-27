@@ -11,9 +11,9 @@ export default function Admin() {
   if (ok === null) return <div className="wrap section">Loading…</div>;
   if (!ok) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
   return (<div className="wrap section stack"><div className="order-head"><h1 style={{ margin: 0 }}>Admin</h1><span className="cta-row"><a className="btn ghost sm" href="/admin/reviews">Review moderation</a><a className="btn ghost sm" href="/status">Build status</a></span></div>
-    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
+    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['giftcards', 'Gift cards'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
       <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
+    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'giftcards' && <GiftCards />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
   </div>);
 }
 
@@ -86,6 +86,39 @@ function Orders() {
     {!rows.length ? <div className="panel">No orders yet.</div> : <div className="panel tablewrap"><table><thead><tr><th>Package</th><th>Placed</th><th>Total</th><th>Status</th><th></th></tr></thead>
       <tbody>{rows.map((r) => <tr key={r.id}><td>{r.sub_order_number}</td><td>{new Date(r.created_at).toLocaleString('en-IN')}</td><td>{inr(r.total)}</td><td><StatusChip s={r.status} /></td>
         <td>{r.status === 'shipped' && <button className="btn sm" onClick={() => delivered(r.id)}>Mark delivered</button>}</td></tr>)}</tbody></table></div>}</div>);
+}
+
+// SRS: CUST-FR-076 (ShopEye issues closed-loop gift cards; codes are shown once and only their hash is kept)
+function GiftCards() {
+  const [rows, setRows] = useState<any[]>([]); const [n, setN] = useState('1'); const [amt, setAmt] = useState('500'); const [days, setDays] = useState('365'); const [note, setNote] = useState('');
+  const [codes, setCodes] = useState<any[]>([]); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
+  const load = () => sb().from('gift_cards').select('id,last4,amount,expires_at,status,note,redeemed_at,created_at').order('created_at', { ascending: false }).limit(100).then(({ data }: any) => setRows(data ?? []));
+  useEffect(() => { load(); }, []);
+  async function issue(e: React.FormEvent) {
+    e.preventDefault(); setErr(''); setBusy(true);
+    const { data, error } = await sb().rpc('admin_issue_gift_cards', { p_count: Number(n), p_amount: Number(amt), p_valid_days: Number(days), p_note: note || null }); setBusy(false);
+    if (error) { setErr(/COUNT/.test(error.message) ? 'Issue between 1 and 500 cards at a time.' : /AMOUNT/.test(error.message) ? 'Amount must be above ₹0 and at most ₹10,000.' : /VALIDITY/.test(error.message) ? 'Validity must be 30 to 1,095 days.' : friendly(error)); return; }
+    setCodes(data ?? []); load();
+  }
+  function download() {
+    const csv = 'code,amount,expires\n' + codes.map((c) => `${c.code},${c.amount},${String(c.expires_at).slice(0, 10)}`).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); Object.assign(document.createElement('a'), { href: url, download: 'shopeye-gift-cards.csv' }).click(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  return (<div className="stack">
+    <form className="panel stack" onSubmit={issue}>
+      <strong>Issue gift cards</strong>
+      <div className="row2" style={{ gap: 8 }}><label>How many<input inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} /></label><label>Amount (₹ each)<input inputMode="numeric" value={amt} onChange={(e) => setAmt(e.target.value)} /></label></div>
+      <div className="row2" style={{ gap: 8 }}><label>Valid for (days)<input inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} /></label><label>Note (e.g. campaign)<input value={note} onChange={(e) => setNote(e.target.value)} maxLength={120} /></label></div>
+      <p className="small muted" style={{ margin: 0 }}>Closed-loop cards, usable only on ShopEye. The total is booked as a promotional expense and a customer-balance liability.</p>
+      {err && <div className="msg err" role="alert">{err}</div>}
+      <div><button className="btn sm" disabled={busy}>{busy ? 'Issuing…' : 'Issue'}</button></div>
+    </form>
+    {codes.length > 0 && <div className="panel stack"><strong>New codes — copy or download them now. They can’t be shown again.</strong>
+      <pre className="small" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{codes.map((c) => `${c.code}  ₹${c.amount}`).join('\n')}</pre>
+      <div><button className="btn ghost sm" onClick={download}>Download CSV</button></div></div>}
+    <div className="panel tablewrap" tabIndex={0} role="region" aria-label="Gift cards"><table><thead><tr><th>Card</th><th>Amount</th><th>Status</th><th>Expires</th><th>Note</th></tr></thead>
+      <tbody>{rows.map((g) => <tr key={g.id}><td>••{g.last4}</td><td>{inr(g.amount)}</td><td><StatusChip s={g.status} /></td><td>{new Date(g.expires_at).toLocaleDateString('en-IN')}</td><td className="small">{g.note}</td></tr>)}</tbody></table></div>
+  </div>);
 }
 
 // SRS: CUST-FR-140 (urgent help requests are listed first)

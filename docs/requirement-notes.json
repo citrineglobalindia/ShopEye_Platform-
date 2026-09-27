@@ -974,35 +974,69 @@
   ]
  },
  "CUST-FR-076": {
-  "what": "Planned: gift card balances checked on the server before use.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Gift card codes are checked on the server before any value is added: the code must exist, be unused and unexpired, and repeated wrong guesses are blocked for an hour. Only a hash of each code is stored.",
+  "try": [
+   {
+    "label": "ShopEye balance",
+    "href": "/account/balance"
+   }
   ],
-  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
+  "check": [
+   "Enter a made-up code: it’s refused; after five wrong codes even a valid one waits an hour.",
+   "Admin → Gift cards: issue a card, then add it on the balance page."
+  ]
  },
  "CUST-FR-077": {
-  "what": "Planned: using part of a gift card keeps the remaining balance for later.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Redeeming a gift card adds its full value to your balance; using part of it on an order leaves the rest there for later orders until the card’s expiry.",
+  "try": [
+   {
+    "label": "ShopEye balance",
+    "href": "/account/balance"
+   },
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
   ],
-  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
+  "check": [
+   "Add a ₹500 card, pay ₹300 of an order with it, and check ₹200 remains on the balance page."
+  ]
  },
  "CUST-FR-078": {
-  "what": "Planned: store credit shows its expiry date.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Store credit shows exactly how much expires and when, on the balance page and in its history; refunds taken as store credit last 365 days.",
+  "try": [
+   {
+    "label": "ShopEye balance",
+    "href": "/account/balance"
+   }
   ],
-  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
+  "check": [
+   "Take a refund as store credit and read “What expires next”."
+  ]
  },
  "CUST-FR-079": {
-  "what": "Planned: loyalty points show how many you earn and how they convert, with any caps, before you commit.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Loyalty points: 1 point per ₹100 of delivered items, each worth ₹1, usable once the return window closes and for up to 10% of an order. Product pages show the points an item earns; checkout shows your points, their value and the cap before you place the order.",
+  "try": [
+   {
+    "label": "A product",
+    "href": "go:product"
+   },
+   {
+    "label": "ShopEye balance",
+    "href": "/account/balance"
+   },
+   {
+    "label": "Checkout",
+    "href": "/checkout"
+   }
   ],
-  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
+  "check": [
+   "Open a product and read “Earn N loyalty points”.",
+   "At checkout, enter more points than the cap: only the capped amount is applied."
+  ]
  },
  "CUST-FR-080": {
-  "what": "Refunds go back to the way you paid (UPI account, card, bank account or wallet), and the order page says exactly where and how much is expected.",
+  "what": "Refunds go back the way you paid, and the order page says where and how much. A card/UPI refund that hasn’t been sent yet can instead be taken instantly as ShopEye store credit.",
   "try": [
    {
     "label": "An invoice",
@@ -1010,7 +1044,7 @@
    }
   ],
   "check": [
-   "Cancel an item on a paid order and read “Refunds go to the UPI account you paid from. Expected: ₹…”."
+   "Cancel an item on a paid order and read the refund destination; use “Take as store credit instead”."
   ]
  },
  "CUST-FR-081": {
@@ -1537,11 +1571,16 @@
   ]
  },
  "CUST-FR-127": {
-  "what": "Planned: for orders paid with more than one method, show how the refund is split across them.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Orders paid partly with ShopEye balance show what each method paid. Refunds go to card/UPI first (up to what it paid), then back to your ShopEye balance in a fixed order: gift card, store credit, then points.",
+  "try": [
+   {
+    "label": "An invoice",
+    "href": "go:order"
+   }
   ],
-  "next": "Being built next: you chose store credit, gift cards and loyalty points. This needs the checkout to accept several payment types and refunds to follow tender order."
+  "check": [
+   "Pay part of an order with balance, cancel it, and check the refunds list shows the card/UPI part and the balance part separately."
+  ]
  },
  "CUST-FR-128": {
   "what": "Only reviews from customers whose order was delivered get the “Verified purchase” marker.",

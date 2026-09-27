@@ -46,6 +46,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const low = Math.min(...variants.map((v: any) => v.selling_price));
   const more = cat ? (await listProducts({ categoryId: p.category_id, perPage: 9 })).items.filter((x) => x.product_id !== id).slice(0, 8) : [];
   const specs = Object.entries(p.specifications ?? {}).filter(([, v]) => v);
+  // SRS: CUST-FR-079 (points this item earns and their value, shown before buying)
+  const lr: any = FIXTURES ? { points_per_100: 1, rupees_per_point: 1 } : (await sbPublic().rpc('loyalty_rules')).data;
+  const earn = lr ? Math.floor(low / 100) * Number(lr.points_per_100) : 0;
   // Only published reviews (RLS for anonymous readers) go into the search markup
   const reviews = FIXTURES || !(p.rating_count > 0) ? [] : (await sbPublic().from('product_reviews').select('author_name,rating,title,body,created_at')
     .eq('product_id', id).eq('status', 'published').order('helpful_count', { ascending: false }).limit(5)).data ?? [];
@@ -76,6 +79,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <ul className="assure small">
             <li><strong>{p.is_returnable ? `${days}-day returns` : 'Not returnable'}</strong><span>{p.is_returnable ? 'From the date of delivery. See the returns policy.' : 'This item can’t be returned once delivered.'}</span></li>
             <li><strong>Price includes {Number(p.gst_rate)}% GST</strong><span>A GST invoice is issued by the seller.</span></li>
+            {earn > 0 && <li><strong>Earn {earn} loyalty point{earn === 1 ? '' : 's'}</strong><span>Worth ₹{earn * Number(lr.rupees_per_point)} on a later order, usable once the return window closes.</span></li>}
             <li><strong>Reviewed by ShopEye</strong><span>This listing and seller were checked before going live.</span></li>
           </ul>
         </div>

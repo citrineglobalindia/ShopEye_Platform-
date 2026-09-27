@@ -747,6 +747,136 @@ do $$ declare p jsonb; begin
 end $$;
 do $$ begin perform test.act_as(null); end $$;
 
+\echo '== 27. ShopEye balance: gift cards, store credit, loyalty, paying and refunds by tender (CUST-FR-076..080, CUST-FR-127)'
+do $$ declare r record; n int := 0; begin
+  perform test.act_as(test.id('admin'));
+  for r in select * from public.admin_issue_gift_cards(2, 500, 90, 'Launch promo') loop
+    n := n + 1; perform test.put('gc' || n, r.code);
+  end loop;
+  perform test.ok(n = 2 and test.get('gc1') ~ '^SE[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$', 'Admin issues gift cards; each code is shown once');
+  perform test.ok(not exists (select 1 from public.gift_cards where code_hash like '%' || replace(test.get('gc1'), '-', '') || '%') and (select count(*) from public.gift_cards) = 2,
+                  'Only a hash of each code is stored, never the code itself');
+  perform test.ok(exists (select 1 from finance.journal_lines jl join finance.gl_accounts a on a.code = jl.account_code where a.code = '2600'), 'Issuing gift cards records the balance liability in the ledger');
+  perform test.act_as(null);
+  perform test.put('ord_part', (select id::text from public.orders where order_number = 'SE-00000003'));
+  perform test.put('ord_full', (select id::text from public.orders where order_number = 'SE-00000002'));
+  perform test.put('ord_paid', (select id::text from public.orders where order_number = 'SE-00000005'));
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform test.throws($q$ select * from public.admin_issue_gift_cards(1, 100, 90) $q$, 'permission|FORBIDDEN', 'Customers cannot issue gift cards');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ declare r jsonb; begin
+  r := public.redeem_gift_card(lower(replace(test.get('gc1'), '-', ' ')));
+  perform test.ok((r->>'amount')::numeric = 500 and (r->>'balance')::numeric = 500, 'Redeeming a gift card (spacing and case don''t matter) adds its value to the balance, checked on the server (CUST-FR-076)');
+  perform test.throws(format($q$ select public.redeem_gift_card(%L) $q$, test.get('gc1')), 'GIFT_CARD_ALREADY_REDEEMED', 'A gift card can be redeemed only once');
+  perform test.ok(public.redeem_gift_card('SEAA-AAAA-AAAA-AAAA')->>'error' = 'GIFT_CARD_INVALID', 'Unknown codes are refused');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare i int; begin
+  for i in 1..5 loop perform public.redeem_gift_card('SEZZ-ZZZZ-ZZZZ-ZZZ' || i); end loop;
+  perform test.throws(format($q$ select public.redeem_gift_card(%L) $q$, test.get('gc2')), 'RATE_LIMITED', 'After 5 wrong codes in an hour even a valid code waits (guessing protection)');
+  perform test.ok((select count(*) from public.wallet_lots where customer_id <> test.id('cust_a')) = 0 and (select count(*) from public.wallet_ledger where customer_id <> test.id('cust_a')) = 0, 'Customers only see their own balance');
+end $$;
+reset role;
+do $$ declare rid uuid; begin
+  rid := app.request_refund(test.get('ord_paid')::uuid, 100, 'adjustment', 'support', 'test', 'goodwill', 'test-sc-1');
+  perform test.put('rf_sc', rid::text);
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ declare r jsonb; w jsonb; begin
+  r := public.refund_to_store_credit(test.get('rf_sc')::uuid);
+  w := public.my_wallet();
+  perform test.ok((r->>'amount')::numeric = 100 and (w->>'store_credit')::numeric = 100, 'A card/UPI refund can be taken as ShopEye store credit instead, instantly (CUST-FR-080)');
+  perform test.ok((select min((e->>'expires_at')::timestamptz) from jsonb_array_elements(w->'next_expiries') e where e->>'fund' = 'store_credit')::date = (now() + interval '365 days')::date,
+                  'Store credit shows its expiry date: 365 days from issue (CUST-FR-078)');
+  perform test.throws(format($q$ select public.refund_to_store_credit(%L) $q$, test.get('rf_sc')), 'REFUND_ALREADY_SENT', 'A refund can be converted only once');
+end $$;
+reset role;
+do $$ begin
+  perform test.ok((select processor_status = 'success' and destination = 'store_credit' from public.refunds where id = test.get('rf_sc')::uuid), 'The refund is marked paid, to store credit');
+  perform test.ok(exists (select 1 from finance.journal_lines jl join finance.journal_entries j on j.id = jl.journal_id where j.source_key = 'refund:' || test.get('rf_sc') and jl.account_code = '2600' and jl.credit = 100),
+                  'The ledger credits customer balances, not the payment gateway');
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ declare r jsonb; begin
+  perform test.throws(format($q$ select public.apply_balance(%L, false, false, 50) $q$, test.get('ord_part')), 'INSUFFICIENT_BALANCE', 'Points can''t be used without enough points (CUST-FR-079)');
+  r := public.apply_balance(test.get('ord_part')::uuid, true, true, 0);
+  perform test.ok((r->>'gift_card')::numeric = 500 and (r->>'store_credit')::numeric = 100 and (r->>'to_pay')::numeric = 5899 and not (r->>'paid')::boolean,
+                  'At checkout the gift card balance is used first, then store credit; the rest is left for Razorpay (CUST-FR-077)');
+  perform test.ok((public.my_wallet()->>'gift_card')::numeric = 0 and (public.my_wallet()->>'store_credit')::numeric = 0, 'The used balance is held for this order');
+  perform test.throws(format($q$ select public.apply_balance(%L, true, true, 0) $q$, test.get('ord_part')), 'BALANCE_ALREADY_APPLIED', 'Balance can be applied only once per order');
+  perform test.ok(public.remove_balance(test.get('ord_part')::uuid) = 600, 'Removing it before paying releases the full amount');
+  perform test.ok((public.my_wallet()->>'gift_card')::numeric = 500 and (public.my_wallet()->>'store_credit')::numeric = 100, 'and the balance is back straight away');
+  r := public.apply_balance(test.get('ord_part')::uuid, true, false, 0);
+  perform test.ok(public.remove_balance(test.get('ord_part')::uuid) = 500, 'A second removal gives back only what the second apply took');
+  perform test.ok((public.my_wallet()->>'gift_card')::numeric = 500 and (public.my_wallet()->>'store_credit')::numeric = 100, 'Nothing is ever given back twice');
+  r := public.apply_balance(test.get('ord_part')::uuid, true, false, 0);
+  perform test.ok((r->>'to_pay')::numeric = 5999, 'Re-applying just the gift card leaves ₹5,999 to pay');
+end $$;
+reset role;
+do $$ declare v text; begin
+  perform test.ok((select amount from public.payments where order_id = test.get('ord_part')::uuid and gateway = 'razorpay' and status = 'initiated') = 5999
+              and (select count(*) from public.payments where order_id = test.get('ord_part')::uuid and gateway = 'razorpay' and status = 'cancelled') >= 1,
+                  'A new Razorpay payment is opened for the remaining amount; the old one is cancelled, never edited');
+  perform app.attach_gateway_order(test.get('ord_part')::uuid, 'order_RZP_BAL');
+  v := app.process_payment_event('evt_bal_1', 'payment.captured', 'order_RZP_BAL', 'pay_BAL', 5999, '{}'::jsonb, true);
+  perform test.ok(v = 'processed' and (select payment_status from public.orders where id = test.get('ord_part')::uuid) = 'paid'
+                  and exists (select 1 from public.payments where order_id = test.get('ord_part')::uuid and gateway = 'shopeye_wallet' and status = 'paid')
+                  and not exists (select 1 from public.payments where order_id = test.get('ord_part')::uuid and gateway = 'shopeye_wallet' and status = 'authorized'),
+                  'When Razorpay confirms the rest, the order is paid and the balance part becomes final');
+  perform test.ok(exists (select 1 from finance.journal_lines jl join finance.journal_entries j on j.id = jl.journal_id where j.source_key = 'order-confirm:' || test.get('ord_part') and jl.account_code = '2600' and jl.debit = 500)
+              and exists (select 1 from finance.journal_lines jl join finance.journal_entries j on j.id = jl.journal_id where j.source_key = 'order-confirm:' || test.get('ord_part') and jl.account_code = '1100' and jl.debit = 5999),
+                  'The order journal splits the payment: ₹5,999 from the gateway, ₹500 from customer balances');
+  perform app.request_refund(test.get('ord_part')::uuid, 6199, 'full', 'support', 'test', 'goodwill', 'test-split-1');
+  perform test.ok((select array_agg(p.gateway || ':' || r.requested_amount order by r.created_at) from public.refunds r join public.payments p on p.id = r.payment_id where r.idempotency_key like 'test-split-1%')
+                  = array['razorpay:5999.00', 'shopeye_wallet:200.00'], 'A refund on a split payment goes to card/UPI first (up to what it paid), then to ShopEye balance (CUST-FR-127)');
+  perform test.ok((select processor_status from public.refunds r join public.payments p on p.id = r.payment_id where r.idempotency_key like 'test-split-1%' and p.gateway = 'shopeye_wallet') = 'success'
+                  and app.wallet_available(test.id('cust_b'), 'gift_card') = 200, 'The balance part is refunded instantly, back to the gift card balance it came from');
+end $$;
+do $$ declare r jsonb; begin
+  perform app.wallet_credit(test.id('cust_b'), 'store_credit', 7000, now() + interval '1 year', now(), 'refund_credit', 'test adjustment', 'test-adj-1');
+  perform test.act_as(test.id('cust_b'));
+  r := public.apply_balance(test.get('ord_full')::uuid, false, true, 0);
+  perform test.ok((r->>'paid')::boolean and (select status::text || '/' || payment_status::text from public.orders where id = test.get('ord_full')::uuid) = 'confirmed/paid',
+                  'When the balance covers everything the order is confirmed at once, without Razorpay');
+  perform test.ok(not exists (select 1 from public.payments where order_id = test.get('ord_full')::uuid and gateway = 'razorpay' and status <> 'cancelled'), 'and the unused Razorpay payment is cancelled');
+  perform test.act_as(null);
+  perform test.ok(app.process_payment_event('evt_old_rzp', 'payment.captured', 'order_RZP_002', 'pay_OLD', 6499, '{}'::jsonb, true) = 'exception',
+                  'If the old Razorpay order is still paid, the order is not charged twice');
+  perform test.ok((select flagged_reason from public.payments where gateway_order_id = 'order_RZP_002') like 'CAPTURED_ON_REPLACED_PAYMENT%', 'and that payment is flagged for a refund');
+  perform test.act_as(test.id('cust_b'));
+  perform test.act_as(null);
+end $$;
+do $$ declare so uuid; w jsonb; begin
+  select id into so from public.sub_orders where order_id = test.get('ord_full')::uuid limit 1;
+  update public.sub_orders set status = 'packed' where id = so; update public.sub_orders set status = 'ready_to_ship' where id = so; update public.sub_orders set status = 'shipped' where id = so;
+  update public.sub_orders set status = 'delivered', delivered_at = now(), return_window_ends_at = now() + interval '7 days' where id = so;
+  perform test.ok(exists (select 1 from public.wallet_lots where source_key = 'loyalty:' || so and original = 64 and available_at > now()),
+                  'A delivered ₹6,499 package earns 64 points, usable after the return window (CUST-FR-079)');
+  perform test.act_as(test.id('cust_b')); w := public.my_wallet(); perform test.act_as(null);
+  perform test.ok((w->>'loyalty_pending_points')::int = 64 and (w->'rules'->>'max_redeem_pct')::int = 10 and (w->'rules'->>'rupees_per_point')::numeric = 1,
+                  'The balance shows pending points, their value and the per-order cap before they are used (CUST-FR-079)');
+  update public.wallet_lots set available_at = now() - interval '1 minute' where source_key = 'loyalty:' || so;
+  perform test.ok(app.loyalty_cap(6499) = 649 and app.loyalty_cap(499) = 49, 'Points can pay at most 10% of an order (₹649 of ₹6,499), as shown at checkout (CUST-FR-079)');
+  perform test.ok(app.wallet_available(test.id('cust_b'), 'loyalty') = 64, 'Once the return window closes the points are usable');
+  perform test.act_as(null);
+end $$;
+do $$ declare n int; begin
+  update public.wallet_lots set expires_at = now() - interval '1 second', available_at = least(available_at, now() - interval '2 seconds') where customer_id = test.id('cust_b') and fund = 'gift_card';
+  n := app.expire_wallet_lots();
+  perform test.ok(n >= 1 and app.wallet_available(test.id('cust_b'), 'gift_card') = 0 and exists (select 1 from public.wallet_ledger where customer_id = test.id('cust_b') and kind = 'expiry'),
+                  'Expired balance leaves the account with a ledger entry (and is booked as income)');
+  perform test.ok((select sum(remaining) from public.wallet_lots where customer_id = test.id('cust_b')) =
+                  (select sum(case direction when 'credit' then amount else -amount end) from public.wallet_ledger where customer_id = test.id('cust_b')),
+                  'Balance always equals the sum of its ledger entries');
+end $$;
+do $$ begin perform test.act_as(null); end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;
