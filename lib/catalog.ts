@@ -41,7 +41,7 @@ export async function listProducts(o: ListOpts = {}): Promise<ListResult> {
   const ids = (prods ?? []).map((p: any) => p.id);
   if (!ids.length) return { items: [], total: 0, page: 1, pages: 1, priceMax: 0 };
   const [{ data: vars }, { data: media }, { data: stock }] = await Promise.all([
-    db.from('catalog_variants').select('product_id,title,selling_price,mrp,discount_pct,vendor_name').in('product_id', ids),
+    db.from('catalog_variants').select('product_id,title,selling_price,mrp,discount_pct,vendor_name,is_demo').in('product_id', ids),
     db.from('product_media').select('product_id,url,sort_order').in('product_id', ids).order('sort_order'),
     db.rpc('product_stock', { p_ids: ids }),
   ]);

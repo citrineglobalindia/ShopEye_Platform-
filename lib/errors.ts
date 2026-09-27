@@ -33,6 +33,7 @@ const MAP: [RegExp, string][] = [
   [/POINTS_OVER_CAP: at most (\d+)/, 'Points can pay for at most 10% of an order.'],
   [/BALANCE_ALREADY_APPLIED/, 'Your balance is already applied to this order.'],
   [/REFUND_ALREADY_SENT/, 'This refund has already been sent, so it can’t be changed to store credit.'],
+  [/DEMO_PRODUCT/, 'This is a preview product and can’t be bought yet.'],
   [/RATE_LIMITED/, 'You’ve sent several requests just now. Please wait a little and try again.'],
   [/REASON_REQUIRED/, 'Add a reason of at least a few words.'],
   [/INVALID_TRANSITION/, 'That step isn\u2019t allowed from the current status.'],

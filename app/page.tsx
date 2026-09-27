@@ -5,6 +5,7 @@ import { ProductGrid, Rail } from '@/components/ProductGrid';
 import { listProducts, listCategories, FIXTURES } from '@/lib/catalog';
 import { sbPublic } from '@/lib/sb-server';
 import { RecentlyViewed } from '@/components/ShopWidgets';
+import { Pic } from '@/components/Pic';
 export const revalidate = 60;
 
 const PROMISES = [
@@ -18,6 +19,9 @@ export default async function Home() {
   const [latest, deals, cats] = await Promise.all([
     listProducts({ sort: 'new', perPage: 12 }), listProducts({ sort: 'discount', off: 20, perPage: 8 }), listCategories()]);
   const top = (cats as any[]).filter((c) => !c.parent_id);
+  // One small listing per category: a photo for its tile and a row of picks on the home page
+  const perCat = await Promise.all(top.map((c) => listProducts({ categoryId: c.id, sort: 'new', perPage: 8 })));
+  const catImg = new Map(top.map((c, i) => [c.id, perCat[i].items.find((x) => x.image)?.image ?? null]));
   // SRS: CUST-FR-026 — only banners inside their start/end dates are returned (enforced by row-level security)
   const { data: banners } = FIXTURES ? { data: [{ id: 'b', title: 'Festive handloom week', subtitle: 'Up to 30% off sarees and dupattas from independent weavers. Ends Sunday.', link_path: '/search?sort=discount' }] }
     : await sbPublic().from('promo_banners').select('id,title,subtitle,link_path').order('sort_order').limit(3);
@@ -42,12 +46,20 @@ export default async function Home() {
       {top.length > 0 && (
         <section className="section" aria-labelledby="shop-by">
           <div className="rail-head"><h2 id="shop-by">Shop by category</h2></div>
-          <div className="cat-tiles">{top.map((c) => <Link key={c.id} href={`/c/${c.slug}`} className="cat-tile"><span>{c.name}</span><span aria-hidden="true" className="arrow">›</span></Link>)}</div>
+          <div className="cat-tiles">{top.map((c) => {
+            const img = catImg.get(c.id);
+            return <Link key={c.id} href={`/c/${c.slug}`} className={`cat-tile${img ? ' has-img' : ''}`}>
+              {img && <Pic src={img} alt="" w={340} h={240} sizes="(max-width: 600px) 50vw, 200px" />}
+              <span>{c.name}</span><span aria-hidden="true" className="arrow">›</span></Link>;
+          })}</div>
         </section>)}
 
       <Rail title="Biggest savings right now" href="/search?q=&sort=discount" items={deals.items} />
 
       <RecentlyViewed />
+
+      {top.map((c, i) => perCat[i].items.length >= 4 && i < 6 && (
+        <Rail key={c.id} title={c.name} href={`/c/${c.slug}`} items={perCat[i].items} />))}
 
       <section className="section" id="new" aria-labelledby="new-h">
         <div className="rail-head"><h2 id="new-h">New arrivals</h2>{latest.total > 12 && <Link href="/search?sort=new">See all</Link>}</div>

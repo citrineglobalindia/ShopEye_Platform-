@@ -3,14 +3,14 @@ import Link from 'next/link';
 import { inr } from '@/lib/config';
 import { WishHeart } from '@/components/ShopWidgets';
 import { Pic } from '@/components/Pic';
-export type Card = { product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean; rating_avg?: number | null; rating_count?: number };
+export type Card = { is_demo?: boolean; product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean; rating_avg?: number | null; rating_count?: number };
 export function ProductCard({ p }: { p: Card }) {
   return (
     <div className={`card${p.in_stock === false ? ' oos' : ''}`}>
       <Link href={`/p/${p.product_id}`} className="card-link">
       <div className="ph">
         {p.image ? <Pic src={p.image} alt={p.title} /> : <span className="small">Photo coming soon</span>}
-        {p.in_stock === false ? <span className="oos-badge">Out of stock</span> : p.discount_pct >= 5 && <span className="off-badge">{p.discount_pct}% off</span>}
+        {p.is_demo ? <span className="demo-badge">Preview</span> : p.in_stock === false ? <span className="oos-badge">Out of stock</span> : p.discount_pct >= 5 && <span className="off-badge">{p.discount_pct}% off</span>}
       </div>
       <div className="b">
         <span className="small muted">{p.vendor_name}</span>

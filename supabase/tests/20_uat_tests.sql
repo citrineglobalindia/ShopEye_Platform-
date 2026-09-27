@@ -877,6 +877,26 @@ do $$ declare n int; begin
 end $$;
 do $$ begin perform test.act_as(null); end $$;
 
+\echo '== 28. Preview (demo) products can be browsed but never bought'
+do $$ declare v uuid; begin
+  update public.products set is_demo = true where id = test.id('p2');
+  select id into v from public.product_variants where product_id = test.id('p2') limit 1;
+  perform test.put('demo_v', v::text);
+  perform test.ok((select bool_and(is_demo) from public.catalog_variants where product_id = test.id('p2')) is not false, 'The storefront view tells the site which products are previews');
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform test.throws(format($q$ insert into public.cart_items(cart_id, variant_id, qty, price_at_add) select id, %L, 1, 100 from public.carts where customer_id = test.id('cust_a') limit 1 $q$, test.get('demo_v')),
+                      'DEMO_PRODUCT', 'A preview product can''t be added to a cart, even by calling the API directly');
+end $$;
+reset role;
+do $$ begin
+  perform test.throws(format($q$ insert into public.order_items(order_id, sub_order_id, variant_id, product_snapshot, qty, mrp, unit_price, discount, line_total, gst_rate, taxable_value, tax_amount) select order_id, sub_order_id, %L, product_snapshot, 1, mrp, unit_price, 0, unit_price, gst_rate, taxable_value, tax_amount from public.order_items limit 1 $q$, test.get('demo_v')),
+                      'DEMO_PRODUCT', 'and can never appear on an order');
+  update public.products set is_demo = false where id = test.id('p2');
+end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

@@ -1,6 +1,8 @@
 psql:supabase/migrations/20260926000019_email_outbox.sql:211: NOTICE:  trigger "on_auth_user_verified" for relation "auth.users" does not exist, skipping
 psql:supabase/migrations/20260926000022_qa_security_shipping.sql:224: NOTICE:  trigger "on_auth_user_security" for relation "auth.users" does not exist, skipping
 psql:supabase/migrations/20260926000024_google_signin_analytics.sql:42: NOTICE:  trigger "on_auth_identity_added" for relation "auth.identities" does not exist, skipping
+psql:supabase/migrations/20260926000028_demo_products.sql:28: NOTICE:  trigger "cart_items_no_demo" for relation "public.cart_items" does not exist, skipping
+psql:supabase/migrations/20260926000028_demo_products.sql:30: NOTICE:  trigger "order_items_no_demo" for relation "public.order_items" does not exist, skipping
 == 1. Status models & direct-write guards
 PASS  Vendor active→draft rejected by server (VS-FR-887) (rejected: INVALID_TRANSITION: vendor cannot move from active to draft)
 PASS  Draft product cannot self-activate without review (rejected: INVALID_TRANSITION: product cannot move from draft to active)
@@ -301,6 +303,10 @@ PASS  Points can pay at most 10% of an order (₹649 of ₹6,499), as shown at c
 PASS  Once the return window closes the points are usable
 PASS  Expired balance leaves the account with a ledger entry (and is booked as income)
 PASS  Balance always equals the sum of its ledger entries
+== 28. Preview (demo) products can be browsed but never bought
+PASS  The storefront view tells the site which products are previews
+PASS  A preview product can't be added to a cart, even by calling the API directly (rejected: DEMO_PRODUCT: this item is a preview and can't be bought yet)
+PASS  and can never appear on an order (rejected: DEMO_PRODUCT: this item is a preview and can't be bought yet)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
