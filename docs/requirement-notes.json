@@ -300,11 +300,17 @@
   "next": "Comes with the social-login / password decision; the email outbox that would send it already exists."
  },
  "CUST-FR-023": {
-  "what": "Planned: a full audit that passwords and sign-in tokens never appear in URLs, logs or error messages. Sign-in codes already travel only in the request body; the audit and log redaction are part of pre-launch hardening.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Sign-in links carry only a one-time code that is used once; the browser is then sent to a clean address and nothing is cached; other sites only ever see shopeye.in as the referrer, never the link itself. No page or API puts access tokens in a URL, sign-in failures show a generic message, and server logs are redacted.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
   ],
-  "next": "Pre-launch security hardening pass."
+  "check": [
+   "Open a sign-in link from your email and check the address bar ends on a clean page with no code in it.",
+   "Automated: scripts/test-security.mjs checks the callback and scans the code for tokens in URLs."
+  ]
  },
  "CUST-FR-024": {
   "what": "If you started checkout before signing in, your cart and checkout progress are still there afterwards.",
@@ -986,17 +992,16 @@
   "next": "Needs your decision on a loyalty programme."
  },
  "CUST-FR-080": {
-  "what": "Planned: refunds show where the money goes (original payment method, credit) and how much, following fixed rules per payment type.",
+  "what": "Refunds go back to the way you paid (UPI account, card, bank account or wallet), and the order page says exactly where and how much is expected.",
   "try": [
    {
-    "label": "An order’s refunds",
+    "label": "An invoice",
     "href": "go:order"
    }
   ],
   "check": [
-   "Refund amounts already show on the order page; destination rules come later."
-  ],
-  "next": "Needs the Finance refund-destination rules (and gift card / credit decisions)."
+   "Cancel an item on a paid order and read “Refunds go to the UPI account you paid from. Expected: ₹…”."
+  ]
  },
  "CUST-FR-081": {
   "what": "Discounts can never take an order below zero; the database rejects any negative payable total.",
@@ -1180,11 +1185,16 @@
   ]
  },
  "CUST-FR-097": {
-  "what": "Planned: order documents (invoices, credit notes) available for as long as the retention policy requires.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Every tax invoice and credit note stays in Invoices under My account for 8 years from the date it was issued, the period we keep tax records.",
+  "try": [
+   {
+    "label": "Invoices",
+    "href": "/account/documents"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Open My account → Invoices and check each document shows its “kept until” date."
+  ]
  },
  "CUST-FR-098": {
   "what": "Reorder adds today’s version of the items at today’s price, and flags anything unavailable instead of adding it.",
@@ -1259,46 +1269,81 @@
   ]
  },
  "CUST-FR-104": {
-  "what": "Planned: download and print the GST invoice PDF from the order page.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Each seller’s GST tax invoice appears on the order page once the package ships, with a Download PDF button; the PDF prints cleanly on A4.",
+  "try": [
+   {
+    "label": "An invoice",
+    "href": "go:order"
+   },
+   {
+    "label": "Invoices",
+    "href": "/account/documents"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Open a shipped order, press Download PDF, and print it."
+  ]
  },
  "CUST-FR-105": {
-  "what": "Planned: invoices built from the order’s frozen snapshot, so later profile or address edits never change them.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Invoices are frozen when issued: seller and buyer details, addresses and prices are copied into the invoice, and the database refuses any later edit. Corrections are made with a credit note instead.",
+  "try": [
+   {
+    "label": "An invoice",
+    "href": "go:order"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Change your name or address after an order ships; the invoice PDF still shows the original details."
+  ]
  },
  "CUST-FR-106": {
-  "what": "Planned: invoice totals that add up exactly to the items and adjustments billed.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Invoice totals always add up: each line is price × quantity − discount = taxable value + GST, and the invoice total is the sum of its lines, including shipping. The database enforces this.",
+  "try": [
+   {
+    "label": "An invoice",
+    "href": "go:order"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Add up the lines on an invoice PDF and compare with the total; automated tests check it against the order."
+  ]
  },
  "CUST-FR-107": {
-  "what": "Planned: for multi-seller orders, each invoice states which items it covers.",
-  "check": [
-   "Not ready to test yet."
+  "what": "When one checkout has several sellers, each seller issues its own invoice, and the order page and PDF list exactly which items (and shipping) each invoice covers.",
+  "try": [
+   {
+    "label": "An invoice",
+    "href": "go:order"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Order from two sellers; after both ship, each package shows its own invoice with “Covers: …”."
+  ]
  },
  "CUST-FR-108": {
-  "what": "Planned: invoice files only downloadable by the order’s customer through private, unguessable links.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Invoice PDFs are built on request only for the signed-in buyer (or the seller and finance team). The link needs both the invoice ID and a long random key, and is never cached or stored in public storage.",
+  "try": [
+   {
+    "label": "Invoices",
+    "href": "/account/documents"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Copy an invoice link and open it in a private window: you are asked to sign in, and another account gets “Not found”."
+  ]
  },
  "CUST-FR-109": {
-  "what": "Planned: optional GSTIN entry, validated before the invoice is issued.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Business buyers can add a GSTIN and registered name on the order page until the first invoice is issued. The GSTIN is checked for format, state code and its check character; after invoicing, changes go through support as a formal correction.",
+  "try": [
+   {
+    "label": "An invoice",
+    "href": "go:order"
+   }
   ],
-  "next": "Comes with Finance GST invoicing (phase P3)."
+  "check": [
+   "Enter a GSTIN with the last character changed; it is refused.",
+   "After the package ships, the GSTIN can no longer be edited and the page offers support instead."
+  ]
  },
  "CUST-FR-110": {
   "what": "You can cancel individual items (and part of a quantity) before they ship, even within a multi-seller order.",
@@ -2005,18 +2050,28 @@
   ]
  },
  "CUST-FR-169": {
-  "what": "Planned: document how sign-in secrets are handled. ShopEye has no passwords today; codes and tokens are handled by Supabase Auth.",
-  "check": [
-   "Not ready to test yet."
+  "what": "ShopEye stores no passwords: sign-in uses email one-time codes, which Supabase Auth issues and stores hashed. API secrets (Razorpay, Brevo) live only on the server and in Supabase Vault, never in browser code.",
+  "try": [
+   {
+    "label": "Sign in",
+    "href": "/login"
+   }
   ],
-  "next": "Only needed if passwords are introduced; otherwise closed by documentation in the hardening pass."
+  "check": [
+   "Automated: scripts/test-security.mjs checks every file that reads a secret is server-only and nothing secret is exposed as NEXT_PUBLIC."
+  ]
  },
  "CUST-FR-170": {
-  "what": "Planned: review that every input is checked on the server and every output is safely encoded.",
-  "check": [
-   "Not ready to test yet."
+  "what": "Everything customers send is validated by the database itself (lengths, allowed values, ownership), not just the form, and customer text is escaped wherever it is shown, including emails.",
+  "try": [
+   {
+    "label": "Contact support",
+    "href": "/support/new"
+   }
   ],
-  "next": "Pre-launch security hardening pass."
+  "check": [
+   "Automated: a help request containing a script tag arrives in the email as plain text; invalid categories and lengths are refused by the database."
+  ]
  },
  "CUST-FR-171": {
   "what": "Payment actions only accept requests coming from ShopEye’s own pages, blocking cross-site forgery.",
@@ -2055,11 +2110,10 @@
   ]
  },
  "CUST-FR-174": {
-  "what": "Planned: make sure logs never contain passwords, codes, payment secrets or unnecessary personal data.",
+  "what": "Server logs pass through a redactor that strips emails, phone numbers, one-time codes, tokens, card numbers, API keys and signatures before anything is written.",
   "check": [
-   "Not ready to test yet."
-  ],
-  "next": "Pre-launch security hardening pass (log review)."
+   "Automated: scripts/test-security.mjs feeds sample secrets through the redactor and checks none survive, and that no code logs without it."
+  ]
  },
  "CUST-FR-175": {
   "what": "Uploads go to private storage with safe file names and type checks.",

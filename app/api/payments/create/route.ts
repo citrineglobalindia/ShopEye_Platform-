@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { sbServer, sbService } from '@/lib/sb-server';
 import { rzp, rzpConfig, sameSite } from '@/lib/razorpay';
+import { logError } from '@/lib/log';
 
 // Creates (or reuses) the Razorpay order for a ShopEye order the caller owns.
 export async function POST(req: Request) {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       if (error) throw error;
     }
   } catch (e: any) {
-    console.error('payments/create', order.id, e?.message);
+    logError('payments/create', order.id, e?.message);
     return NextResponse.json({ error: 'We couldn’t start the payment. Please try again.' }, { status: 502 });
   }
   return NextResponse.json({ key_id: cfg.id, gateway_order_id: gatewayOrderId, amount_paise: Math.round(Number(pay.amount) * 100), order_number: order.order_number });

@@ -214,6 +214,36 @@ PASS  Ordinary requests stay normal priority
 PASS  Customers cannot change ticket status (rejected: FORBIDDEN: missing permission ticket.handle)
 PASS  Support team picks up the urgent request first
 PASS  Cart reads the live shipping rule the server charges by, including a changed threshold (CUST-FR-063)
+== 23. GST tax invoices and credit notes (CUST-FR-104..109, CUST-FR-097)
+PASS  A shipped package from a GST-registered seller gets a tax invoice automatically (CUST-FR-104)
+PASS  Invoice number is a per-seller, per-financial-year serial of at most 16 characters
+PASS  Invoice total = billed items (after cancellations and discounts) + shipping = sum of lines = taxable + GST (CUST-FR-106)
+PASS  Seller and delivery both in Karnataka: CGST + SGST, no IGST
+PASS  Inter-state supply puts the whole GST in IGST; intra-state splits it into CGST and SGST
+PASS  A seller without a GSTIN gets no invoice, the gap is logged for admin, and delivery is not blocked
+PASS  Issued invoices cannot be edited (CUST-FR-105) (rejected: INVOICE_IMMUTABLE: issued tax documents cannot be changed; issue a credit note instead)
+PASS  Invoice lines cannot be deleted (rejected: INVOICE_IMMUTABLE: issued tax documents cannot be changed; issue a credit note instead)
+PASS  Later profile edits do not change the invoice (frozen snapshot, CUST-FR-105)
+PASS  Invoices carry the 8-year document retention date (CUST-FR-097)
+PASS  The buyer can open their invoice with its secure link key
+PASS  A wrong or guessed link key returns nothing (CUST-FR-108)
+PASS  The document payload never echoes the link key
+PASS  GSTIN cannot be changed after the invoice is issued; corrections go through support (CUST-FR-109) (rejected: INVOICE_ALREADY_ISSUED: GST details can't change after an invoice is issued; contact suppo)
+PASS  Another customer cannot open the invoice even with the full link (CUST-FR-108)
+PASS  Anonymous visitors have no access to invoices (rejected: permission denied for table invoices)
+PASS  GSTIN is checked for format, state code and its check character (CUST-FR-109)
+PASS  A GSTIN with a wrong check character is refused (rejected: GSTIN_INVALID)
+PASS  A valid GSTIN is captured before the invoice is issued
+PASS  Customers cannot set GST details on someone else's order (rejected: FORBIDDEN)
+PASS  A completed return gets a credit note against the original invoice
+PASS  Credit note covers exactly the returned units and reconciles
+PASS  The original invoice is unchanged by the return
+PASS  One credit note per return, even if the event repeats
+== 24. Server-side validation and output encoding (CUST-FR-170)
+PASS  Unknown ticket category is rejected by the database, not just the form (rejected: new row for relation "support_tickets" violates check constraint "support_tickets_category)
+PASS  Too-short subject is rejected by the database (rejected: new row for relation "support_tickets" violates check constraint "support_tickets_subject_)
+PASS  Over-long question is rejected by the database (rejected: QUESTION_LENGTH: ask in 10 to 500 characters)
+PASS  Customer text is HTML-escaped in emails; a script tag arrives as plain text (CUST-FR-170)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
@@ -238,8 +268,8 @@ PASS  Every note belongs to a real SRS requirement ID
 PASS  Every note says what the functionality does and how to check it
 PASS  Every "Try it" link in the notes points at a page that exists
 PASS  Every page derived from the code points at a page that exists
-PASS  Unfinished requirements are labelled Planned and say what they wait on (30)
-PASS  Finished requirements are not described as planned (158)
+PASS  Unfinished requirements are labelled Planned and say what they wait on (18)
+PASS  Finished requirements are not described as planned (170)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text
@@ -270,3 +300,14 @@ PASS  WCAG 2.2 AA (axe) no violations on /seller at 375px
 PASS  WCAG 2.2 AA (axe) no violations on /status at 375px
 PASS  WCAG 2.2 AA (axe) no violations on /status/CUST-FR-132 at 375px
 PASS  WCAG 2.2 AA (axe) no violations on /p/00000000-0000-0000-0000-000000000000 at 375px
+== 15. Security: validation, output encoding, secrets and log redaction (static + unit)
+PASS  Raw HTML is only used for JSON-LD, and "<" is escaped there (CUST-FR-170 output encoding)
+PASS  No innerHTML, document.write, eval or new Function anywhere in the web app (CUST-FR-170)
+PASS  Every file that reads a secret is a server route or a server-only module, so it can never ship to the browser (CUST-FR-169)
+PASS  No secret is exposed through a NEXT_PUBLIC_ variable (CUST-FR-169)
+PASS  Browser components never import server-only modules
+PASS  All server logging goes through the redacting logger (CUST-FR-174)
+PASS  Sign-in link handler redirects to a clean, uncached URL with no raw auth error; other sites only ever see our origin as referrer (CUST-FR-023)
+PASS  No code puts access or refresh tokens in a URL (CUST-FR-023)
+PASS  Redactor removes emails, phone numbers, OTPs, tokens, card numbers, keys and signatures (CUST-FR-174)
+PASS  Redactor leaves ordinary messages readable

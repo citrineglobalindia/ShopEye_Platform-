@@ -604,6 +604,98 @@ end $$;
 reset role;
 do $$ begin perform test.act_as(null); end $$;
 
+\echo '== 23. GST tax invoices and credit notes (CUST-FR-104..109, CUST-FR-097)'
+do $$ declare inv invoices; so_id uuid; exp numeric; begin
+  select so.id into so_id from public.sub_orders so where so.vendor_id = test.id('vendor1') and so.status = 'delivered' limit 1;
+  select * into inv from public.invoices where sub_order_id = so_id and kind = 'invoice';
+  perform test.put('inv', inv.id::text); perform test.put('inv_key', inv.doc_key); perform test.put('inv_cust', inv.customer_id::text);
+  perform test.ok(inv.id is not null, 'A shipped package from a GST-registered seller gets a tax invoice automatically (CUST-FR-104)');
+  perform test.ok(inv.number ~ '^V[0-9]+/[0-9]{4}/[0-9]+$' and char_length(inv.number) <= 16, 'Invoice number is a per-seller, per-financial-year serial of at most 16 characters');
+  select sum(oi.unit_price * (oi.qty - oi.cancelled_qty) - round(oi.discount * (oi.qty - oi.cancelled_qty) / oi.qty, 2)) + max(so.shipping_total) into exp
+    from public.order_items oi join public.sub_orders so on so.id = oi.sub_order_id where oi.sub_order_id = so_id;
+  perform test.ok(inv.total = exp and inv.total = (select sum(line_total) from public.invoice_lines where invoice_id = inv.id)
+              and inv.total = inv.taxable_total + inv.cgst_total + inv.sgst_total + inv.igst_total,
+              'Invoice total = billed items (after cancellations and discounts) + shipping = sum of lines = taxable + GST (CUST-FR-106)');
+  perform test.ok(inv.supply_type = 'intra' and inv.igst_total = 0 and inv.cgst_total + inv.sgst_total > 0, 'Seller and delivery both in Karnataka: CGST + SGST, no IGST');
+  perform test.ok((select (s).igst from (select app.gst_split(1050, 5, false) s) x) = 50 and (select (s).cgst + (s).sgst from (select app.gst_split(1050, 5, true) s) x) = 50,
+              'Inter-state supply puts the whole GST in IGST; intra-state splits it into CGST and SGST');
+  perform test.ok((select count(*) from app.invoice_failures f join public.sub_orders so on so.id = f.sub_order_id where so.vendor_id = test.id('vendor2') and f.error like 'SELLER_GSTIN_MISSING%') >= 1
+              and exists (select 1 from public.sub_orders where vendor_id = test.id('vendor2') and status = 'delivered'),
+              'A seller without a GSTIN gets no invoice, the gap is logged for admin, and delivery is not blocked');
+  perform test.throws(format($q$ update public.invoices set total = 1 where id = %L $q$, inv.id), 'INVOICE_IMMUTABLE', 'Issued invoices cannot be edited (CUST-FR-105)');
+  perform test.throws(format($q$ delete from public.invoice_lines where invoice_id = %L $q$, inv.id), 'INVOICE_IMMUTABLE', 'Invoice lines cannot be deleted');
+  update public.profiles set full_name = 'Changed Name' where id = inv.customer_id;
+  update public.orders set bill_address = bill_address where id = inv.order_id;
+  perform test.ok((select buyer->>'name' from public.invoices where id = inv.id) = inv.buyer->>'name', 'Later profile edits do not change the invoice (frozen snapshot, CUST-FR-105)');
+  perform test.ok(inv.retain_until >= (now() + interval '8 years' - interval '1 day')::date, 'Invoices carry the 8-year document retention date (CUST-FR-097)');
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.get('inv_cust')::uuid); end $$;
+do $$ begin
+  perform test.ok((public.invoice_document(test.get('inv')::uuid, test.get('inv_key'))->'invoice'->>'number') is not null, 'The buyer can open their invoice with its secure link key');
+  perform test.ok(public.invoice_document(test.get('inv')::uuid, 'guessed-key') is null, 'A wrong or guessed link key returns nothing (CUST-FR-108)');
+  perform test.ok(not ((public.invoice_document(test.get('inv')::uuid, test.get('inv_key'))->'invoice') ? 'doc_key'), 'The document payload never echoes the link key');
+  perform test.throws(format($q$ select public.set_order_gst_details(%L, '27AAPFU0939F1ZV', 'Acme Traders') $q$, (select order_id from public.invoices where id = test.get('inv')::uuid)),
+                      'INVOICE_ALREADY_ISSUED', 'GSTIN cannot be changed after the invoice is issued; corrections go through support (CUST-FR-109)');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin
+  perform test.ok(public.invoice_document(test.get('inv')::uuid, test.get('inv_key')) is null and (select count(*) from public.invoices where id = test.get('inv')::uuid) = 0,
+                  'Another customer cannot open the invoice even with the full link (CUST-FR-108)');
+end $$;
+reset role;
+set role anon;
+do $$ begin perform test.act_as(null); end $$;
+do $$ begin perform test.throws($q$ select count(*) from public.invoices $q$, 'permission denied', 'Anonymous visitors have no access to invoices'); end $$;
+reset role;
+do $$ declare o uuid; begin
+  perform test.ok(app.gstin_valid('27AAPFU0939F1ZV') and not app.gstin_valid('27AAPFU0939F1ZX') and not app.gstin_valid('28AAPFU0939F1ZV') and not app.gstin_valid('99AAPFU0939F1ZV'),
+                  'GSTIN is checked for format, state code and its check character (CUST-FR-109)');
+  select id into o from public.orders where customer_id = test.id('cust_a') and not exists (select 1 from public.invoices i where i.order_id = orders.id) limit 1;
+  perform test.put('gst_order', o::text);
+end $$;
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ begin
+  perform test.throws(format($q$ select public.set_order_gst_details(%L, '27AAPFU0939F1ZX', 'Acme Traders') $q$, test.get('gst_order')), 'GSTIN_INVALID', 'A GSTIN with a wrong check character is refused');
+  perform test.ok(public.set_order_gst_details(test.get('gst_order')::uuid, '27aapfu0939f1zv', 'Acme Traders')->>'gstin' = '27AAPFU0939F1ZV', 'A valid GSTIN is captured before the invoice is issued');
+end $$;
+do $$ begin perform test.act_as(test.id('cust_b')); end $$;
+do $$ begin perform test.throws(format($q$ select public.set_order_gst_details(%L, null, null) $q$, test.get('gst_order')), 'FORBIDDEN', 'Customers cannot set GST details on someone else''s order'); end $$;
+reset role;
+do $$ declare r uuid; inv invoices; cn invoices; begin
+  select r0.id into r from public.returns r0 join public.order_items oi on oi.id = r0.order_item_id where oi.sub_order_id = (select sub_order_id from public.invoices where id = test.get('inv')::uuid) and r0.status = 'requested' limit 1;
+  update public.returns set status = 'approved' where id = r;          update public.returns set status = 'pickup_scheduled' where id = r;
+  update public.returns set status = 'picked_up' where id = r;         update public.returns set status = 'received' where id = r;
+  update public.returns set status = 'quality_check' where id = r;     update public.returns set status = 'accepted' where id = r;
+  update public.returns set status = 'refund_initiated' where id = r;  update public.returns set status = 'refund_completed' where id = r;
+  select * into inv from public.invoices where id = test.get('inv')::uuid;
+  select * into cn from public.invoices where original_invoice_id = inv.id;
+  perform test.ok(cn.kind = 'credit_note' and cn.number like 'V%/C%', 'A completed return gets a credit note against the original invoice');
+  perform test.ok(cn.total = (select round(sum(line_total) * (select qty from public.returns where id = r) / sum(qty), 2) from public.invoice_lines where invoice_id = inv.id and order_item_id is not null)
+                  and cn.total = cn.taxable_total + cn.cgst_total + cn.sgst_total, 'Credit note covers exactly the returned units and reconciles');
+  perform test.ok(inv.total = (select sum(line_total) from public.invoice_lines where invoice_id = inv.id), 'The original invoice is unchanged by the return');
+  update public.returns set status = 'refund_completed' where id = r and false;
+  perform test.ok((select count(*) from public.invoices where original_invoice_id = inv.id) = 1, 'One credit note per return, even if the event repeats');
+end $$;
+
+\echo '== 24. Server-side validation and output encoding (CUST-FR-170)'
+update public.support_tickets set created_at = created_at - interval '2 hours';
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare r jsonb; begin
+  r := public.create_support_ticket('other', '<script>alert(1)</script> help', 'Testing <img src=x onerror=alert(1)> in the message body.');
+  perform test.throws($q$ select public.create_support_ticket('hacking', 'Subject here', 'A message long enough.') $q$, 'check constraint|violates', 'Unknown ticket category is rejected by the database, not just the form');
+  perform test.throws($q$ select public.create_support_ticket('other', 'x', 'A message long enough.') $q$, 'check constraint|violates', 'Too-short subject is rejected by the database');
+  perform test.throws($q$ select public.ask_question(test.id('p1'), repeat('a', 501)) $q$, 'QUESTION_LENGTH', 'Over-long question is rejected by the database');
+end $$;
+reset role;
+do $$ declare h text; begin
+  select o.html into h from app.notification_outbox o join public.support_tickets t on o.dedupe_key = 'ticket:' || t.id where t.subject like '<script>%';
+  perform test.ok(h like '%&lt;script&gt;%' and h not like '%<script>%', 'Customer text is HTML-escaped in emails; a script tag arrives as plain text (CUST-FR-170)');
+end $$;
+do $$ begin perform test.act_as(null); end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

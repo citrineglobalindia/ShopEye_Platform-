@@ -1,4 +1,5 @@
 import 'server-only';
+// SRS: CUST-FR-169 (ShopEye stores no passwords: sign-in is by email one-time code, issued and stored hashed by Supabase Auth; API secrets such as the Razorpay key secret live only in server-only modules and Vercel env, the Brevo key in Supabase Vault)
 import crypto from 'node:crypto';
 export function rzpConfig() {
   const id = process.env.RAZORPAY_KEY_ID, secret = process.env.RAZORPAY_KEY_SECRET;

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { sbService } from '@/lib/sb-server';
 import { rzp, rzpConfig, hmacHex, safeEqual, sameSite } from '@/lib/razorpay';
+import { logError } from '@/lib/log';
 
 // Called after Checkout success. Verifies the signature, then confirms the
 // capture with Razorpay's API before posting — idempotent with the webhook.
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
     if (error) throw error;
     return NextResponse.json({ status: ['processed', 'already_captured', 'duplicate'].includes(data) ? 'paid' : 'pending' });
   } catch (e: any) {
-    console.error('payments/verify', oid, e?.message);
+    logError('payments/verify', oid, e?.message);
     return NextResponse.json({ status: 'pending' });   // webhook will reconcile (CUST-FR-083/085)
   }
 }

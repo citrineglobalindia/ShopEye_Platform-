@@ -1,3 +1,4 @@
+// SRS: CUST-FR-170 (React escapes all customer text; the only raw HTML is this JSON-LD, with "<" escaped; the database validates every write and emails escape customer text, see scripts/test-security.mjs and UAT §24)
 // SRS: CUST-FR-180 (structured data lists each variant as an offer with its real price and stock, and only published verified reviews; nothing is marked up when there is no data)
 // SRS: CUST-FR-182 CUST-FR-029 CUST-FR-045 CUST-FR-047 CUST-FR-048 CUST-FR-049 CUST-FR-050 (product URLs use the permanent product ID, so they never change; unknown or removed products show a clean not-found page; variant switch updates photos, price and stock; alternatives when unavailable; return policy before purchase; no fabricated ratings; product structured data and canonical URL)
 import { notFound } from 'next/navigation';

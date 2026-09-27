@@ -1,3 +1,4 @@
+// SRS: CUST-FR-080 CUST-FR-104 CUST-FR-107 CUST-FR-109 (refunds show where the money goes, by original payment method, and how much; each package's invoice and credit notes with the items they cover; optional business GSTIN)
 // SRS: CUST-FR-121 CUST-FR-137 CUST-FR-152 CUST-FR-075 CUST-FR-086 CUST-FR-089 CUST-FR-090 CUST-FR-093 CUST-FR-094 CUST-FR-095 CUST-FR-096 CUST-FR-099 CUST-FR-101 CUST-FR-102 CUST-FR-110 CUST-FR-114 CUST-FR-116 CUST-FR-117 CUST-FR-122 CUST-FR-123 CUST-FR-125 CUST-FR-139
 // (partial returns reflected in the money summary; links from emails require sign-in and handle missing orders; phone number masked; pending payment shows hold time; owner-only order page reachable by refresh without new order; snapshots; item-level status;
 //  refunded/cancelled amounts separate; split shipment timelines with stale-update notice and delivery date; item cancellation with refund tracking;
@@ -11,9 +12,13 @@ import { Crumbs } from '@/components/Crumbs';
 import { CancelItem, PayNow } from '@/components/OrderActions';
 import { ReturnItem, CancelReturn, Reorder } from '@/components/ReturnActions';
 import { ReviewForm } from '@/components/Reviews';
+import { GstDetails } from '@/components/GstDetails';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Order details', robots: { index: false } };
 
+// Where a refund goes, by how the order was paid (original-tender rule, CUST-FR-080)
+const REFUND_TO: Record<string, string> = { upi: 'the UPI account you paid from', card: 'the card you paid with', netbanking: 'the bank account you paid from',
+  wallet: 'the wallet you paid with', emi: 'the card you paid with (EMI is cancelled pro rata by your bank)', cod: 'your bank account (we’ll ask for the details)' };
 const STEPS = [['confirmed', 'Confirmed'], ['packed', 'Packed'], ['shipped', 'Shipped'], ['delivered', 'Delivered']] as const;
 const RANK: Record<string, number> = { pending_payment: -1, confirmed: 0, packed: 1, ready_to_ship: 1, shipped: 2, delivered: 3, completed: 3 };
 const RSTEPS = [['requested', 'Requested'], ['approved', 'Approved'], ['picked_up', 'Picked up'], ['quality_check', 'Checked'], ['refund_completed', 'Refunded']] as const;
@@ -34,6 +39,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
     db.from('refunds').select('refund_number,requested_amount,approved_amount,processor_status,approval_status,created_at,completed_at,source_type').eq('order_id', id).order('created_at'),
     db.from('returns').select('id,return_number,order_item_id,qty,status,reason,rejection_reason,created_at').order('created_at', { ascending: false }),
   ]);
+  const { data: docs } = await db.from('invoices').select('id,kind,number,sub_order_id,issued_at,total,doc_key,original_invoice_id,invoice_lines(description,qty,order_item_id)').eq('order_id', id).order('issued_at');
   const vids = [...new Set((items ?? []).map((it: any) => it.variant_id))];
   const { data: vp } = vids.length ? await db.from('product_variants').select('id,product_id').in('id', vids) : { data: [] };
   const productOf = new Map((vp ?? []).map((x: any) => [x.id, x.product_id]));
@@ -105,6 +111,24 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                 })}
               </section>);
           })}
+          <section className="panel stack" aria-labelledby="docs-h">
+            <h2 id="docs-h" style={{ margin: 0 }}>Invoices</h2>
+            {(subs ?? []).map((s: any, i: number) => {
+              const inv = (docs ?? []).filter((x: any) => x.sub_order_id === s.id);
+              return (
+                <div key={s.id} className="stack" style={{ gap: 4 }}>
+                  <strong className="small">Package {i + 1} of {subs!.length}</strong>
+                  {!inv.length ? <span className="small muted">{['cancelled', 'pending_payment'].includes(s.status) ? 'No invoice: nothing was shipped.' : 'The seller’s tax invoice appears here once this package ships.'}</span>
+                    : inv.map((x: any) => (
+                      <div key={x.id} className="pkg-head">
+                        <span className="small"><strong>{x.kind === 'credit_note' ? 'Credit note' : 'Tax invoice'} {x.number}</strong> · {inr(x.total)} · {d(x.issued_at)}
+                          <span className="muted" style={{ display: 'block' }}>Covers: {(x.invoice_lines ?? []).map((l: any) => `${l.description} × ${l.qty}`).join('; ')}</span></span>
+                        <a className="btn ghost sm" href={`/api/invoices/${x.id}?k=${x.doc_key}`} target="_blank" rel="noopener">Download PDF</a>
+                      </div>))}
+                </div>);
+            })}
+            <GstDetails orderId={o.id} gstin={o.buyer_gstin} name={o.buyer_legal_name} locked={!!docs?.length || ['cancelled'].includes(o.status)} />
+          </section>
           {!!refunds?.length && (
             <section className="panel stack"><h2 style={{ margin: 0 }}>Refunds</h2>
               {refunds.map((r: any) => (
@@ -113,7 +137,7 @@ export default async function OrderDetail({ params, searchParams }: { params: Pr
                   <span>{inr(r.approved_amount ?? r.requested_amount)} <StatusChip s={r.processor_status === 'not_sent' ? (r.approval_status === 'pending' ? 'pending' : 'initiated') : r.processor_status} /></span>
                 </div>))}
               {refunds.some((r: any) => r.processor_status === 'failed') && <div className="msg err small">A refund couldn’t be sent to your bank. We retry automatically; if it hasn’t arrived in 3 working days, <Link href={`/support/new?order=${o.id}&category=refund`}>contact us</Link> and we’ll sort it out.</div>}
-              <p className="small muted" style={{ margin: 0 }}>Refunds go back to your original payment method. Banks usually take 5–7 working days after we send them.</p>
+              <p className="small" style={{ margin: 0 }}>Refunds go to <strong>{REFUND_TO[o.payment_method] ?? 'your original payment method'}</strong>. {refundPending > 0 && <>Expected: <strong>{inr(refundPending)}</strong>. </>}Banks usually take 5–7 working days after we send them.</p>
             </section>)}
         </div>
         <aside className="stack">

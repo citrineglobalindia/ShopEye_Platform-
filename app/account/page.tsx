@@ -146,6 +146,7 @@ export default function Account() {
       <h1 style={{ margin: 0 }}>My account</h1>
       <div className="acct-links"><Link className="panel" href="/account/orders"><strong>My orders</strong><span className="small muted">Track, cancel or return</span></Link>
         <Link className="panel" href="/wishlist"><strong>Wishlist</strong><span className="small muted">Products you saved</span></Link>
+        <Link className="panel" href="/account/documents"><strong>Invoices</strong><span className="small muted">Tax invoices and credit notes</span></Link>
         <Link className="panel" href="/account/tickets"><strong>Help requests</strong><span className="small muted">Your conversations with us</span></Link></div>
       {msg && <div className="msg ok" role="status">{msg}</div>}{err && <div className="msg err" role="alert">{err}</div>}
       <section className="panel stack">
