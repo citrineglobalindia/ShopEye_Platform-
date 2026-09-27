@@ -54,9 +54,9 @@ export default function AddToCart({ variants }: { variants: V[] }) {
           <select value={qty} onChange={(e) => setQty(Number(e.target.value))}>
             {Array.from({ length: Math.min(sel.available, 10) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
           </select></label>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button className="btn" disabled={busy} onClick={() => go(true)}>Buy now</button>
+        <div className="buy-bar">
           <button className="btn ghost" disabled={busy} onClick={() => go(false)}>Add to cart</button>
+          <button className="btn" disabled={busy} onClick={() => go(true)}>Buy now</button>
         </div></>)}
       {msg && <div className={`msg ${msg.t}`} role="status">{msg.m} {msg.t === 'ok' && <a href="/cart">View cart</a>}</div>}
     </div>

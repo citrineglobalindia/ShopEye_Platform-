@@ -897,6 +897,17 @@ do $$ begin
   update public.products set is_demo = false where id = test.id('p2');
 end $$;
 
+\echo '== 30. Search: typos, partial words, brand/category/seller words (CUST-FR-030, CUST-FR-033)'
+set role anon;
+do $$ begin
+  perform test.ok((select p.title from public.search_products('silk sare') s join public.products p on p.id = s.product_id limit 1) ilike '%silk saree%', 'A misspelt search ("silk sare") still finds the silk saree first');
+  perform test.ok(exists (select 1 from public.search_products('kurtaa') s join public.products p on p.id = s.product_id where p.title ilike '%kurta%'), 'Extra letters are tolerated ("kurtaa" finds kurtas)');
+  perform test.ok(exists (select 1 from public.search_products('sar') s), 'Partial words match');
+  perform test.ok(not exists (select 1 from public.search_products('zzzqqq') s), 'Nonsense finds nothing');
+  perform test.ok(not exists (select 1 from public.search_products('silk') s join public.products p on p.id = s.product_id where p.status <> 'active'), 'Only products on sale are returned');
+end $$;
+reset role;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

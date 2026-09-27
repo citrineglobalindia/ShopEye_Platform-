@@ -21,11 +21,11 @@ export default async function Home() {
       {(banners ?? []).map((b: any) => (
         <Link key={b.id} href={b.link_path || '/'} className="promo"><strong>{b.title}</strong>{b.subtitle && <span>{b.subtitle}</span>}<span className="promo-cta" aria-hidden="true">Shop now ›</span></Link>))}
       <CircleCats title="Shop by category" cats={d.circles} />
+      <RecentlyViewed />
       <Row title="Deals of the day" href="/search?sort=discount" items={d.deals} />
       <Trending title="Trending now" tiles={d.trending} />
       <Promos items={d.promos} />
       <Brands brands={d.brands} />
-      <RecentlyViewed />
       <Sellers sellers={d.vendors} />
       <BestSellers title="Top picks by category" tabs={d.tabs} />
       <section className="section" id="new" aria-labelledby="new-h">

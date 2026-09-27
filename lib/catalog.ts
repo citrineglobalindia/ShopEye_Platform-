@@ -1,4 +1,5 @@
 import 'server-only';
+import { unstable_cache } from 'next/cache';
 import { sbPublic } from './sb-server';
 import { FIX_CATS, FIX_PRODUCTS } from './fixtures';
 import type { Card } from '@/components/ProductGrid';
@@ -34,66 +35,78 @@ function applyFilters(all: (Card & { published_at?: string })[], o: ListOpts): L
   return { items: xs.slice((page - 1) * per, page * per), total: xs.length, page, pages, priceMax, facets };
 }
 
-// CUST-FR-030/035/036/037: search and listing with price/discount/brand/size/colour filters and sort, URL-driven
-export async function listProducts(o: ListOpts = {}): Promise<ListResult> {
-  if (FIXTURES) {
-    const q = o.q?.toLowerCase().trim();
-    return applyFilters(FIX_PRODUCTS.filter((p) => (!o.categoryId || p.category_id === o.categoryId) && (!q || p.title.toLowerCase().includes(q) || p.vendor_name.toLowerCase().includes(q))), o);
-  }
+// One cached snapshot of everything on sale (refreshed every 60 s): listings, filters and the home page are
+// filtered in memory instead of making several database round trips per request.
+const snapshot = unstable_cache(async () => {
   const db = sbPublic();
-  let pq = db.from('products').select('id,published_at,rating_avg,rating_count,brand_id,vendor_id,category_id').eq('status', 'active');
-  const cids = o.categoryIds ?? (o.categoryId ? [o.categoryId] : null);
-  if (cids) pq = pq.in('category_id', cids);
-  if (o.vendor) pq = pq.eq('vendor_id', o.vendor);
-  if (o.q) {
-    const terms = o.q.trim().split(/\s+/).map((w) => w.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean);
-    if (!terms.length) return { items: [], total: 0, page: 1, pages: 1, priceMax: 0 };
-    pq = pq.textSearch('search_tsv', terms.map((w) => `${w}:*`).join(' & '), { config: 'simple' });
-  }
-  const { data: prods } = await pq.order('published_at', { ascending: false }).limit(600);
+  const { data: prods } = await db.from('products').select('id,published_at,rating_avg,rating_count,brand_id,vendor_id,category_id').eq('status', 'active').order('published_at', { ascending: false }).limit(3000);
   const ids = (prods ?? []).map((p: any) => p.id);
-  if (!ids.length) return { items: [], total: 0, page: 1, pages: 1, priceMax: 0 };
-  const brandIds = [...new Set((prods ?? []).map((p: any) => p.brand_id).filter(Boolean))];
-  const [{ data: vars }, { data: media }, { data: stock }, { data: brands }] = await Promise.all([
-    db.from('catalog_variants').select('variant_id,product_id,title,selling_price,mrp,discount_pct,vendor_name,vendor_id,is_demo,attributes').in('product_id', ids),
-    db.from('product_media').select('product_id,url,sort_order').in('product_id', ids).order('sort_order'),
-    db.rpc('product_stock', { p_ids: ids }),
-    brandIds.length ? db.from('brands').select('id,name,slug').in('id', brandIds) : Promise.resolve({ data: [] as any[] }),
-  ]);
-  const inStock = new Map((stock ?? []).map((x: any) => [x.product_id, x.in_stock]));
+  if (!ids.length) return [] as any[];
+  const chunk = <T,>(xs: T[], n: number) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
+  const parts = await Promise.all(chunk(ids, 300).map((c) => Promise.all([
+    db.from('catalog_variants').select('variant_id,product_id,title,selling_price,mrp,discount_pct,vendor_name,vendor_id,is_demo,attributes').in('product_id', c),
+    db.from('product_media').select('product_id,url,sort_order').in('product_id', c).order('sort_order'),
+    db.rpc('product_stock', { p_ids: c }),
+  ])));
+  const vars = parts.flatMap((p) => p[0].data ?? []), media = parts.flatMap((p) => p[1].data ?? []), stock = parts.flatMap((p) => p[2].data ?? []);
+  const { data: brands } = await db.from('brands').select('id,name,slug');
+  const inStock = new Map(stock.map((x: any) => [x.product_id, x.in_stock]));
   const best = new Map<string, any>(); const sizes = new Map<string, Set<string>>(); const colours = new Map<string, Set<string>>();
-  for (const v of vars ?? []) {
+  for (const v of vars) {
     const b = best.get(v.product_id); if (!b || Number(v.selling_price) < Number(b.selling_price)) best.set(v.product_id, v);
     const a = v.attributes ?? {};
     if (a.size) (sizes.get(v.product_id) ?? sizes.set(v.product_id, new Set()).get(v.product_id)!).add(String(a.size));
     if (a.colour) (colours.get(v.product_id) ?? colours.set(v.product_id, new Set()).get(v.product_id)!).add(String(a.colour));
   }
-  const img = new Map<string, string>();
-  for (const m of media ?? []) if (!img.has(m.product_id)) img.set(m.product_id, m.url);
+  const img = new Map<string, string>(); for (const m of media) if (!img.has(m.product_id)) img.set(m.product_id, m.url);
   const bmap = new Map((brands ?? []).map((b: any) => [b.id, b]));
-  const meta = new Map((prods ?? []).map((p: any) => [p.id, p]));
-  const all = ids.filter((id) => best.has(id)).map((id) => {
-    const b = best.get(id); const m: any = meta.get(id); const br: any = bmap.get(m.brand_id);
-    return { ...b, attributes: undefined, selling_price: Number(b.selling_price), mrp: Number(b.mrp), image: img.get(id) ?? null, published_at: m.published_at,
-      in_stock: inStock.get(id) ?? false, rating_avg: m.rating_avg ?? null, rating_count: m.rating_count ?? 0,
-      brand_slug: br?.slug, brand_name: br?.name, category_id: m.category_id, sizes: [...(sizes.get(id) ?? [])], colours: [...(colours.get(id) ?? [])] };
+  return (prods ?? []).filter((m: any) => best.has(m.id)).map((m: any) => {
+    const b = best.get(m.id); const br: any = bmap.get(m.brand_id);
+    return { ...b, attributes: undefined, selling_price: Number(b.selling_price), mrp: Number(b.mrp), image: img.get(m.id) ?? null, published_at: m.published_at,
+      in_stock: inStock.get(m.id) ?? false, rating_avg: m.rating_avg ?? null, rating_count: m.rating_count ?? 0, category_id: m.category_id,
+      brand_slug: br?.slug, brand_name: br?.name, sizes: [...(sizes.get(m.id) ?? [])], colours: [...(colours.get(m.id) ?? [])] };
   });
+}, ['catalog-snapshot-v1'], { revalidate: 60, tags: ['catalog'] });
+
+// CUST-FR-030/033/035/036/037: search (typo-tolerant, ranked) and listing with filters and sort, URL-driven
+export async function listProducts(o: ListOpts = {}): Promise<ListResult> {
+  if (FIXTURES) {
+    const q = o.q?.toLowerCase().trim();
+    return applyFilters(FIX_PRODUCTS.filter((p) => (!o.categoryId || p.category_id === o.categoryId) && (!q || p.title.toLowerCase().includes(q) || p.vendor_name.toLowerCase().includes(q))), o);
+  }
+  let all: any[] = await snapshot();
+  const cids = o.categoryIds ?? (o.categoryId ? [o.categoryId] : null);
+  if (cids) { const set = new Set(cids); all = all.filter((c) => set.has(c.category_id)); }
+  if (o.vendor) all = all.filter((c) => c.vendor_id === o.vendor);
+  if (o.q) {
+    const { data } = await sbPublic().rpc('search_products', { p_q: o.q, p_limit: 300 });
+    const rank = new Map((data ?? []).map((r: any, i: number) => [r.product_id, i]));
+    all = all.filter((c) => rank.has(c.product_id)).sort((a, b) => (rank.get(a.product_id) as number) - (rank.get(b.product_id) as number));
+  }
   return applyFilters(all, o);
 }
+export const searchSuggest = unstable_cache(async (q: string) => {
+  const { data } = await sbPublic().rpc('search_products', { p_q: q, p_limit: 6 });
+  const snap: any[] = await snapshot(); const by = new Map(snap.map((c) => [c.product_id, c]));
+  return (data ?? []).map((r: any) => by.get(r.product_id)).filter(Boolean).map((c: any) => ({ id: c.product_id, title: c.title, price: c.selling_price, image: c.image }));
+}, ['search-suggest-v1'], { revalidate: 60, tags: ['catalog'] });
 export async function listCards(o: ListOpts & { limit?: number } = {}): Promise<Card[]> {
   return (await listProducts({ ...o, sort: o.sort ?? 'new', perPage: o.limit ?? 24 })).items;
 }
+const cachedCats = unstable_cache(async () => {
+  const { data } = await sbPublic().from('categories').select('id,name,slug,parent_id,image_url').eq('active', true).order('sort_order').order('name');
+  return data ?? [];
+}, ['categories-v1'], { revalidate: 60, tags: ['catalog'] });
 export async function listCategories() {
   if (FIXTURES) return FIX_CATS;
-  const { data } = await sbPublic().from('categories').select('id,name,slug,parent_id,image_url').eq('active', true).order('sort_order').order('name');
+  const data = await cachedCats();
   // a sub-category is shown only while its department is active
   const act = new Set((data ?? []).map((c: any) => c.id));
   return (data ?? []).filter((c: any) => !c.parent_id || act.has(c.parent_id));
 }
 export async function getCategory(slug: string) {
   if (FIXTURES) return FIX_CATS.find((c) => c.slug === slug) ?? null;
-  const { data } = await sbPublic().from('categories').select('id,name,slug,parent_id').eq('slug', slug).eq('active', true).maybeSingle();
-  return data;
+  return ((await cachedCats()) as any[]).find((c) => c.slug === slug) ?? null;
 }
 
 // Departments with their sub-categories

@@ -6,6 +6,7 @@ import { GuestCartMerge } from '@/components/ShopWidgets';
 import { sbServer } from '@/lib/sb-server';
 import { listCategories, FIXTURES } from '@/lib/catalog';
 import { Analytics } from '@/components/Analytics';
+import { BottomNav } from '@/components/BottomNav';
 
 export const viewport = { themeColor: '#021A53' };
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main id="main">{children}</main>
         <Footer signedIn={!!user} />
         <Analytics />
+        <BottomNav />
       </body>
     </html>
   );

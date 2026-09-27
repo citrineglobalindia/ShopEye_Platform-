@@ -307,6 +307,12 @@ PASS  Balance always equals the sum of its ledger entries
 PASS  The storefront view tells the site which products are previews
 PASS  A preview product can't be added to a cart, even by calling the API directly (rejected: DEMO_PRODUCT: this item is a preview and can't be bought yet)
 PASS  and can never appear on an order (rejected: DEMO_PRODUCT: this item is a preview and can't be bought yet)
+== 30. Search: typos, partial words, brand/category/seller words (CUST-FR-030, CUST-FR-033)
+PASS  A misspelt search ("silk sare") still finds the silk saree first
+PASS  Extra letters are tolerated ("kurtaa" finds kurtas)
+PASS  Partial words match
+PASS  Nonsense finds nothing
+PASS  Only products on sale are returned
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)

@@ -48,7 +48,7 @@ export function WishHeart({ productId, big }: { productId: string; big?: boolean
 }
 export function TrackView({ id }: { id: string }) { useEffect(() => { trackView(id); }, [id]); return null; }
 
-export function RecentlyViewed({ exclude }: { exclude?: string }) {
+export function RecentlyViewed({ exclude, grid = false, emptyNote }: { exclude?: string; grid?: boolean; emptyNote?: React.ReactNode }) {
   const [items, setItems] = useState<any[]>([]);
   async function load() {
     const ids = recentIds().filter((x) => x !== exclude); if (!ids.length) { setItems([]); return; }
@@ -61,11 +61,11 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
     setItems(ids.filter((i) => best.has(i)).map((i) => ({ ...best.get(i), image: img.get(i) })));
   }
   useEffect(() => { whenIdle(load); window.addEventListener('shopeye:recent', load); return () => window.removeEventListener('shopeye:recent', load); }, [exclude]);
-  if (!items.length) return null;
+  if (!items.length) return emptyNote ? <>{emptyNote}</> : null;
   return (
     <section className="section" aria-labelledby="rv-h">
-      <div className="rail-head"><h2 id="rv-h">Recently viewed</h2><button className="linklike" onClick={clearRecent}>Clear</button></div>
-      <div className="rail">{items.map((p) => (
+      <div className="rail-head"><h2 id="rv-h">Recently viewed</h2><span className="cta-row">{!grid && <Link href="/recently-viewed" className="small">View all ›</Link>}<button className="linklike" onClick={clearRecent}>Clear history</button></span></div>
+      <div className={grid ? 'grid' : 'rail'}>{items.map((p) => (
         <Link key={p.product_id} href={`/p/${p.product_id}`} className="card mini">
           <div className="ph">{p.image ? <Pic src={p.image} alt={p.title} /> : <span className="small">No photo</span>}</div>
           <div className="b"><span className="card-t">{p.title}</span><span className="price">{inr(p.selling_price)}</span></div>

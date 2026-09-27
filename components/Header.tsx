@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Mark } from '@/components/Logo';
 import { CartLink } from '@/components/ShopWidgets';
 import { DeliverTo } from '@/components/DeliverTo';
+import { SearchBox } from '@/components/SearchBox';
 
 type Cat = { id: string; name: string; slug: string; parent_id: string | null };
 const I = {
@@ -33,20 +34,18 @@ export function Header({ user, cartCount, isSeller, isAdmin, cats }: { user: { e
           </nav>
         </details>
         <Link href="/" className="brand" aria-label="ShopEye home"><Mark /></Link>
-        <form action="/search" className="search" role="search">
-          <input name="q" placeholder="Search for products, brands and more" aria-label="Search products" />
-          <button type="submit" aria-label="Search"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
-        </form>
+        <SearchBox />
         <DeliverTo />
         <nav className="nav" aria-label="Account">
           <Link href="/account/orders" className="nav-i hide-sm"><Icon d={I.box} /><span>Orders</span></Link>
-          <Link href="/wishlist" className="nav-i hide-sm"><Icon d={I.heart} /><span>Wishlist</span></Link>
+          <Link href="/wishlist" className="nav-i hide-sm wish-m" aria-label="Wishlist"><Icon d={I.heart} /><span className="hide-sm">Wishlist</span></Link>
           <CartLink serverCount={cartCount} signedIn={!!user} />
           <details className="acct hide-sm">
             <summary className="nav-i"><Icon d={I.user} /><span>{user ? `Hi, ${first}` : 'Account'}</span></summary>
             <div className="acct-menu panel">
-              {user ? <><Link href="/account">My account</Link><Link href="/account/orders">My orders</Link><Link href="/account/balance">ShopEye balance</Link><Link href="/account/tickets">Help requests</Link></>
+              {user ? <><Link href="/account">My account</Link><Link href="/account/orders">My orders</Link><Link href="/account/balance">ShopEye balance</Link><Link href="/recently-viewed">Recently viewed</Link><Link href="/account/tickets">Help requests</Link></>
                 : <Link href="/login">Sign in or create account</Link>}
+              {!user && <Link href="/recently-viewed">Recently viewed</Link>}
               <Link href="/seller">{isSeller ? 'Seller hub' : 'Sell on ShopEye'}</Link>
               {isAdmin && <Link href="/admin">Admin</Link>}
             </div>

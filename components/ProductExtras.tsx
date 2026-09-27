@@ -23,7 +23,10 @@ export function Gallery({ media: all, title }: { media: { url: string; alt_text?
 }
 export function PincodeCheck() {
   const [pin, setPin] = useState(''); const [r, setR] = useState<any>(null); const [busy, setBusy] = useState(false);
-  useEffect(() => { const s = localStorage.getItem('shopeye.pin'); if (s) { setPin(s); check(s); } }, []);
+  useEffect(() => {
+    const load = () => { const s = localStorage.getItem('shopeye.pin'); if (s) { setPin(s); check(s); } };
+    load(); window.addEventListener('shopeye:pin', load); return () => window.removeEventListener('shopeye:pin', load);   // header location changes re-check delivery
+  }, []);
   async function check(v = pin) {
     if (!/^[1-9]\d{5}$/.test(v)) { setR({ valid: false }); return; }
     setBusy(true); const { data } = await (await sbLazy()).rpc('check_pincode', { p_pincode: v }); setBusy(false); setR(data);

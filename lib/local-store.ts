@@ -12,7 +12,7 @@ export function guestCart(): GuestLine[] {
 }
 export function setGuestCart(lines: GuestLine[]) { write(GK, { at: Date.now(), lines: lines.filter((l) => l.qty > 0) }); cartChanged(); }
 export const recentIds = (): string[] => read<string[]>(RK, []);
-export function trackView(id: string) { write(RK, [id, ...recentIds().filter((x) => x !== id)].slice(0, 12)); }
+export function trackView(id: string) { write(RK, [id, ...recentIds().filter((x) => x !== id)].slice(0, 30)); }
 export function clearRecent() { write(RK, []); window.dispatchEvent(new Event('shopeye:recent')); }
 // A signed-in browser carries the Supabase auth cookie; without it there is nothing to fetch for the shopper
 export const hasSession = () => typeof document !== 'undefined' && /(?:^|; )sb-[a-z0-9]+-auth-token/.test(document.cookie);

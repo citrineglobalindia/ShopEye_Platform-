@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { listProducts, getCategory, categoryTree, idsUnder } from '@/lib/catalog';
 import { storefront } from '@/lib/storefront';
 import { ListSkeleton } from '@/components/ListSkeleton';
+import { RecentlyViewed } from '@/components/ShopWidgets';
 import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos } from '@/components/Store';
 
 // SRS: CUST-FR-179 CUST-FR-181 (unique title/description and canonical; filtered, sorted and paged variants are noindex)
@@ -49,6 +50,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           <div className="dept-main">
             <Hero slides={d.slides} side={d.side} />
             <CircleCats title={`Shop ${dept.name} by category`} cats={d.circles} />
+            <RecentlyViewed />
             <Row title="Deals of the day" href={`/c/${slug}?sort=discount`} items={d.deals} />
             <Trending title="Shop by trending styles" tiles={d.trending} />
             <Brands brands={d.brands} />
@@ -65,6 +67,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       <h1 style={{ margin: 0 }}>{cat.name}</h1>
       {siblings.length > 0 && <div className="chips sub-chips">{siblings.map((c) => <Link key={c.id} href={`/c/${c.slug}`} className={`chip${c.slug === slug ? ' on' : ''}`} aria-current={c.slug === slug ? 'page' : undefined}>{c.name}</Link>)}</div>}
       <Suspense fallback={<ListSkeleton />}><Results slug={slug} ids={dept ? idsUnder(dept) : [cat.id]} sp={sp} /></Suspense>
+      <RecentlyViewed />
     </div>
   );
 }
