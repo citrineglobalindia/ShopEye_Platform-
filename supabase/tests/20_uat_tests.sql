@@ -929,3 +929,27 @@ do $$ declare dr numeric; cr numeric; begin
   perform test.ok(dr = cr, format('Trial balance: total debits %s = total credits %s', dr, cr));
 end $$;
 \echo 'ALL TESTS PASSED'
+
+\echo '== 29. Removing products from admin never breaks orders, stock history or carts'
+begin;   -- rolled back afterwards so later checks keep their products
+do $$ declare pid uuid; v uuid; r jsonb; begin
+  select oi.variant_id, pv.product_id into v, pid from public.order_items oi join public.product_variants pv on pv.id = oi.variant_id limit 1;
+  perform test.put('rm_p', pid::text);
+  perform test.act_as(test.id('cust_b'));
+  perform test.throws(format($q$ select public.admin_remove_product(%L) $q$, pid), 'permission|FORBIDDEN', 'Only catalogue moderators can remove products');
+  perform test.act_as(test.id('admin'));
+  perform test.ok(public.admin_remove_product(pid) = 'archived', 'Removing a product that has been ordered archives it instead of deleting it');
+  perform test.ok((select status from public.products where id = pid) = 'archived' and not exists (select 1 from public.catalog_variants where product_id = pid),
+                  'It disappears from the storefront');
+  perform test.ok(exists (select 1 from public.order_items where variant_id = v) and exists (select 1 from public.stock_ledger where variant_id = v),
+                  'Orders and stock history still point at it');
+  perform test.ok(not exists (select 1 from public.cart_items where variant_id in (select id from public.product_variants where product_id = pid)), 'and it is taken out of every cart');
+  perform test.ok(public.admin_remove_product(pid) = 'archived', 'Removing it again is harmless');
+  update public.products set is_demo = true where id <> pid and status <> 'archived';
+  r := public.admin_remove_preview_catalogue();
+  perform test.ok((r->>'archived_products')::int >= 1, 'One click removes every preview product');
+  perform test.ok(not exists (select 1 from public.products where is_demo and status <> 'archived'), 'and none are left on sale');
+  perform test.act_as(null);
+end $$;
+
+rollback;

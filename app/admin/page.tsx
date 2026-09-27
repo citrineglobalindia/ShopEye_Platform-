@@ -11,9 +11,9 @@ export default function Admin() {
   if (ok === null) return <div className="wrap section">Loading…</div>;
   if (!ok) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
   return (<div className="wrap section stack"><div className="order-head"><h1 style={{ margin: 0 }}>Admin</h1><span className="cta-row"><a className="btn ghost sm" href="/admin/reviews">Review moderation</a><a className="btn ghost sm" href="/status">Build status</a></span></div>
-    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['giftcards', 'Gift cards'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
+    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['giftcards', 'Gift cards'], ['catalogue', 'All products'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
       <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'giftcards' && <GiftCards />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
+    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'giftcards' && <GiftCards />}{tab === 'catalogue' && <Products />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
   </div>);
 }
 
@@ -86,6 +86,45 @@ function Orders() {
     {!rows.length ? <div className="panel">No orders yet.</div> : <div className="panel tablewrap"><table><thead><tr><th>Package</th><th>Placed</th><th>Total</th><th>Status</th><th></th></tr></thead>
       <tbody>{rows.map((r) => <tr key={r.id}><td>{r.sub_order_number}</td><td>{new Date(r.created_at).toLocaleString('en-IN')}</td><td>{inr(r.total)}</td><td><StatusChip s={r.status} /></td>
         <td>{r.status === 'shipped' && <button className="btn sm" onClick={() => delivered(r.id)}>Mark delivered</button>}</td></tr>)}</tbody></table></div>}</div>);
+}
+
+// Remove products safely: never a hard delete. Archived products leave the storefront and every cart, while orders,
+// invoices and stock history keep pointing at them, so nothing breaks later.
+function Products() {
+  const [rows, setRows] = useState<any[]>([]); const [q, setQ] = useState(''); const [onlyPreview, setOnlyPreview] = useState(false);
+  const [busy, setBusy] = useState(''); const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
+  async function load() {
+    let r = sb().from('products').select('id,title,status,is_demo,vendors(display_name),categories(name)').neq('status', 'archived').order('created_at', { ascending: false }).limit(300);
+    if (q.trim()) r = r.ilike('title', `%${q.trim()}%`);
+    if (onlyPreview) r = r.eq('is_demo', true);
+    const { data } = await r; setRows(data ?? []);
+  }
+  useEffect(() => { load(); }, [onlyPreview]);
+  async function remove(id: string, title: string) {
+    if (!confirm(`Remove “${title}”? It will disappear from the store and from shoppers’ carts. Orders and invoices that include it are kept.`)) return;
+    setBusy(id); setErr(''); const { error } = await sb().rpc('admin_remove_product', { p_product: id }); setBusy('');
+    if (error) setErr(friendly(error)); else { setMsg(`Removed “${title}”.`); load(); }
+  }
+  async function removeAllPreview() {
+    if (!confirm('Remove every preview product, preview brand and the preview banner? Real sellers’ products are not touched.')) return;
+    setBusy('all'); setErr(''); const { data, error } = await sb().rpc('admin_remove_preview_catalogue'); setBusy('');
+    if (error) setErr(friendly(error)); else { setMsg(`Removed ${data?.archived_products ?? 0} preview products.`); load(); }
+  }
+  const previews = rows.filter((r) => r.is_demo).length;
+  return (<div className="stack">
+    <div className="panel stack">
+      <div className="addr"><form className="addr" style={{ flex: 1 }} onSubmit={(e) => { e.preventDefault(); load(); }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products" aria-label="Search products" style={{ flex: 1 }} />
+        <button className="btn sm">Search</button></form>
+        <label className="radio small"><input type="checkbox" checked={onlyPreview} onChange={(e) => setOnlyPreview(e.target.checked)} style={{ width: 'auto' }} /> Preview only</label></div>
+      <div className="addr"><span className="small muted">Showing {rows.length}{previews ? ` · ${previews} preview` : ''}. Removing archives the product: it leaves the store and carts; order history stays intact.</span>
+        <button className="btn ghost sm" disabled={busy === 'all'} onClick={removeAllPreview}>{busy === 'all' ? 'Removing…' : 'Remove all preview products'}</button></div>
+      {msg && <div className="msg ok" role="status">{msg}</div>}{err && <div className="msg err" role="alert">{err}</div>}
+    </div>
+    <div className="panel tablewrap" tabIndex={0} role="region" aria-label="Products"><table><thead><tr><th>Product</th><th>Seller</th><th>Category</th><th>Status</th><th /></tr></thead>
+      <tbody>{rows.map((r) => <tr key={r.id}><td><a href={`/p/${r.id}`} target="_blank">{r.title}</a>{r.is_demo && <span className="small muted"> · Preview</span>}</td><td className="small">{r.vendors?.display_name}</td><td className="small">{r.categories?.name}</td>
+        <td><StatusChip s={r.status} /></td><td><button className="linklike danger-t" disabled={busy === r.id} onClick={() => remove(r.id, r.title)}>{busy === r.id ? 'Removing…' : 'Remove'}</button></td></tr>)}</tbody></table></div>
+  </div>);
 }
 
 // SRS: CUST-FR-076 (ShopEye issues closed-loop gift cards; codes are shown once and only their hash is kept)

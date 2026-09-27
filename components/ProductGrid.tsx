@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { inr } from '@/lib/config';
 import { WishHeart } from '@/components/ShopWidgets';
 import { Pic } from '@/components/Pic';
-export type Card = { is_demo?: boolean; product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean; rating_avg?: number | null; rating_count?: number };
+import { QuickAdd } from '@/components/QuickAdd';
+export type Card = { category_id?: string; is_demo?: boolean; variant_id?: string; brand_name?: string; brand_slug?: string; vendor_id?: string; sizes?: string[]; colours?: string[]; product_id: string; title: string; selling_price: number; mrp: number; discount_pct: number; vendor_name: string; image?: string | null; in_stock?: boolean; rating_avg?: number | null; rating_count?: number };
 export function ProductCard({ p }: { p: Card }) {
   return (
     <div className={`card${p.in_stock === false ? ' oos' : ''}`}>
@@ -13,13 +14,17 @@ export function ProductCard({ p }: { p: Card }) {
         {p.is_demo ? <span className="demo-badge">Preview</span> : p.in_stock === false ? <span className="oos-badge">Out of stock</span> : p.discount_pct >= 5 && <span className="off-badge">{p.discount_pct}% off</span>}
       </div>
       <div className="b">
-        <span className="small muted">{p.vendor_name}</span>
+        <span className="small muted">{p.brand_name ?? p.vendor_name}</span>
         <span className="card-t">{p.title}</span>
         {!!p.rating_count && <span className="small card-rating" aria-label={`Rated ${Number(p.rating_avg).toFixed(1)} out of 5 from ${p.rating_count} reviews`}><span aria-hidden="true">★ {Number(p.rating_avg).toFixed(1)} ({p.rating_count})</span></span>}
         <span><span className="price">{inr(p.selling_price)}</span>{p.mrp > p.selling_price && <span className="mrp">{inr(p.mrp)}</span>}</span>
       </div>
       </Link>
       <WishHeart productId={p.product_id} />
+      <div className="card-cta">{p.is_demo || !p.variant_id
+        ? <span className="btn ghost sm soon" aria-disabled="true">Coming soon</span>
+        : p.in_stock === false ? <Link className="btn ghost sm" href={`/p/${p.product_id}`}>Notify me</Link>
+        : <QuickAdd variantId={p.variant_id} price={p.selling_price} />}</div>
     </div>
   );
 }

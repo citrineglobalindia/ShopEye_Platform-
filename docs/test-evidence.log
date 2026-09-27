@@ -322,6 +322,15 @@ PASS  Vendor cannot publish without moderation (rejected: new row violates row-l
 == 11. Books balance
 PASS  Trial balance: total debits 36923.02 = total credits 36923.02
 ALL TESTS PASSED
+== 29. Removing products from admin never breaks orders, stock history or carts
+PASS  Only catalogue moderators can remove products (rejected: FORBIDDEN: missing permission catalog.product.moderate)
+PASS  Removing a product that has been ordered archives it instead of deleting it
+PASS  It disappears from the storefront
+PASS  Orders and stock history still point at it
+PASS  and it is taken out of every cart
+PASS  Removing it again is harmless
+PASS  One click removes every preview product
+PASS  and none are left on sale
 == 12. Concurrency: 10 simultaneous checkouts for the last unit
 orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0
 PASS  Exactly one winner, no oversell under race
