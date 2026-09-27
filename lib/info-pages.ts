@@ -31,7 +31,14 @@ export const INFO: Record<string, Info> = {
   privacy: { title: 'Privacy policy', intro: 'How ShopEye collects and uses your information.', sections: [
     ['What we collect', 'Your name, email, phone number and delivery addresses; your orders; and payment status from Razorpay. We never see or store your card details.'],
     ['How we use it', 'To deliver your orders, process payments and refunds, provide support and keep your account secure. We share delivery details only with the seller and courier handling your package.'],
-    ['Your choices', 'You can update your details in My account. Marketing messages are only sent if you opt in.']] },
+    ['Your choices', 'You can update your details in My account. Marketing messages are only sent if you opt in.'],
+    ['Signing in with Google or Facebook', 'If you choose to, we receive only your name and email address from Google or Facebook, to create and sign in to your account. We never post to your accounts or see your contacts.'],
+    ['Deleting your data', 'See Delete your data (www.shopeye.in/data-deletion) for how to ask us to delete your account.']] },
+  'data-deletion': { title: 'Delete your data', intro: 'How to ask ShopEye to delete your account and personal data, including data received from Google or Facebook sign-in.', sections: [
+    ['What you can do yourself', 'Sign in and open My account. You can download a copy of your data, change your details, remove saved addresses and turn off marketing messages at any time.'],
+    ['Ask us to delete your account', 'Write to support@shopeye.in from the email address on your account, or raise a request from Help → Contact us with the subject “Delete my account”. We confirm it’s you, then delete your account and personal data within 30 days.'],
+    ['What we have to keep', 'Indian tax law requires us to keep invoices and order records for 8 years. These are kept securely, used only for tax and legal purposes, and removed when the period ends.'],
+    ['Google or Facebook sign-in', 'Deleting your ShopEye account also removes the name and email we received from Google or Facebook. You can also disconnect ShopEye in your Google or Facebook account settings; this stops future sign-ins but doesn’t delete your ShopEye data by itself.']] },
   terms: { title: 'Terms of use', intro: 'The terms that apply when you use ShopEye.', sections: [
     ['Who you buy from', 'Products are sold by independent sellers. ShopEye provides the marketplace, payment and support.'],
     ['Prices', 'Prices include GST. The price is confirmed when you place the order; if it changed since you added the item, checkout shows the new price before you pay.'],
