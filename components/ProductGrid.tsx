@@ -11,13 +11,15 @@ export function ProductCard({ p }: { p: Card }) {
       <Link href={`/p/${p.product_id}`} className="card-link">
       <div className="ph">
         {p.image ? <Pic src={p.image} alt={p.title} /> : <span className="small">Photo coming soon</span>}
-        {p.is_demo ? <span className="demo-badge">Preview</span> : p.in_stock === false ? <span className="oos-badge">Out of stock</span> : p.discount_pct >= 5 && <span className="off-badge">{p.discount_pct}% off</span>}
+        {p.is_demo ? <span className="demo-badge">Preview</span> : p.in_stock === false ? <span className="oos-badge">Out of stock</span>
+          : (p as any).published_at && Date.now() - new Date((p as any).published_at).getTime() < 14 * 864e5 ? <span className="new-badge">New</span>
+          : p.discount_pct >= 40 ? <span className="offer-badge">On offer</span> : null}
       </div>
       <div className="b">
-        <span className="small muted">{p.brand_name ?? p.vendor_name}</span>
+        <span className="card-brand">{p.brand_name ?? p.vendor_name}</span>
         <span className="card-t">{p.title}</span>
         {!!p.rating_count && <span className="small card-rating" aria-label={`Rated ${Number(p.rating_avg).toFixed(1)} out of 5 from ${p.rating_count} reviews`}><span aria-hidden="true">★ {Number(p.rating_avg).toFixed(1)} ({p.rating_count})</span></span>}
-        <span><span className="price">{inr(p.selling_price)}</span>{p.mrp > p.selling_price && <span className="mrp">{inr(p.mrp)}</span>}</span>
+        <span className="card-price"><span className="price">{inr(p.selling_price)}</span>{p.mrp > p.selling_price && <><span className="mrp">{inr(p.mrp)}</span><span className="card-off">{p.discount_pct}% Off</span></>}</span>
       </div>
       </Link>
       <WishHeart productId={p.product_id} />

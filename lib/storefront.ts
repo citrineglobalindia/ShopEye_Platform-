@@ -20,7 +20,8 @@ export async function storefront(slug?: string) {
     sub: `${upTo(g.items) >= 10 ? `Up to ${upTo(g.items)}% off · ` : ''}${g.items.length} products`,
     href: `/c/${g.n.slug}`, cta: 'Shop now', img: img(g.items), tone: TONES[k % TONES.length],
   }));
-  const circles = groups.map((g) => ({ name: g.n.name, slug: g.n.slug, img: g.n.image_url ?? img(g.items) }));
+  const circles = groups.map((g) => ({ name: g.n.name, slug: g.n.slug, img: g.n.image_url ?? img(g.items), off: upTo(g.items) }));
+  const cotd = [...circles].sort((a, b) => b.off - a.off)[0];
   const deals = [...all].filter((p) => p.discount_pct >= 20).sort((a, b) => b.discount_pct - a.discount_pct).slice(0, 12);
   const trending = [...groups].sort((a, b) => b.items.length - a.items.length).slice(0, 4)
     .map((g) => ({ name: g.n.name, slug: g.n.slug, img: img(g.items.slice(1)) ?? img(g.items), from: Math.min(...g.items.map((p) => p.selling_price)) }));
@@ -33,6 +34,6 @@ export async function storefront(slug?: string) {
   const { data: vrows } = FIXTURES || !vids.length ? { data: [] as any[] } : await sbPublic().from('vendors').select('id,slug').in('id', vids);
   const vslug = new Map((vrows ?? []).map((v: any) => [v.id, v.slug]));
   const tabs = groups.slice(0, 6).map((g) => ({ label: g.n.name, items: g.items.slice(0, 10) }));
-  return { tree, dept, all, groups, slides: slides.slice(0, 5), side: slides.slice(5, 7).length ? slides.slice(5, 7) : slides.slice(1, 3),
+  return { tree, dept, all, groups, cotd, slides: slides.slice(0, 5), side: slides.slice(5, 7).length ? slides.slice(5, 7) : slides.slice(1, 3),
            promos: slides.slice(2, 5), circles, deals, trending, brands, vendors: [...vmap.values()].filter((v) => vslug.has(v.id)).map((v) => ({ ...v, slug: vslug.get(v.id) as string })).sort((a, b) => b.count - a.count).slice(0, 5), tabs };
 }

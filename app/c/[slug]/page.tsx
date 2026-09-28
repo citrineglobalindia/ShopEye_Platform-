@@ -7,7 +7,7 @@ import { listProducts, getCategory, categoryTree, idsUnder } from '@/lib/catalog
 import { storefront } from '@/lib/storefront';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { RecentlyViewed } from '@/components/ShopWidgets';
-import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos } from '@/components/Store';
+import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos, CategoryOfDay, CatTiles, SubRail, ValueFinds } from '@/components/Store';
 
 // SRS: CUST-FR-179 CUST-FR-181 (unique title/description and canonical; filtered, sorted and paged variants are noindex)
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Params> }) {
@@ -49,7 +49,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           </aside>
           <div className="dept-main">
             <Hero slides={d.slides} side={d.side} />
-            <CircleCats title={`Shop ${dept.name} by category`} cats={d.circles} />
+            <div className="m-only"><CategoryOfDay c={d.cotd} /><CatTiles cats={d.circles} /></div>
+            <div className="d-only"><CircleCats title={`Shop ${dept.name} by category`} cats={d.circles} /></div>
             <RecentlyViewed />
             <Row title="Deals of the day" href={`/c/${slug}?sort=discount`} items={d.deals} />
             <Trending title="Shop by trending styles" tiles={d.trending} />
@@ -65,7 +66,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     <div className="wrap section stack">
       <Crumbs items={[['Home', '/'], ...(parent ? [[parent.name, `/c/${parent.slug}`] as [string, string]] : []), [cat.name]]} />
       <h1 style={{ margin: 0 }}>{cat.name}</h1>
-      {siblings.length > 0 && <div className="chips sub-chips">{siblings.map((c) => <Link key={c.id} href={`/c/${c.slug}`} className={`chip${c.slug === slug ? ' on' : ''}`} aria-current={c.slug === slug ? 'page' : undefined}>{c.name}</Link>)}</div>}
+      {siblings.length > 0 && (dept || parent) && <SubRail current={slug} cats={(await storefront((dept ?? parent)!.slug)).circles} />}
+      {!filtered && <ValueFinds base={`/c/${slug}`} />}
       <Suspense fallback={<ListSkeleton />}><Results slug={slug} ids={dept ? idsUnder(dept) : [cat.id]} sp={sp} /></Suspense>
       <RecentlyViewed />
     </div>

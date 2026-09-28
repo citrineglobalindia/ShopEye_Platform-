@@ -120,3 +120,41 @@ export const PROMISES = [
 export function Promises() {
   return <ul className="promises" aria-label="Our promises">{PROMISES.map(([t, d]) => <li key={t}><strong>{t}</strong><span className="small muted">{d}</span></li>)}</ul>;
 }
+
+// Phone department landing (Tata CLiQ style): "Category of the day" banner and two-column picture tiles
+export function CategoryOfDay({ c }: { c?: { name: string; slug: string; img?: string | null; off?: number } }) {
+  if (!c) return null;
+  return (
+    <Link href={`/c/${c.slug}`} className="cotd">
+      <span className="cotd-t"><em>Category of the day</em><strong>{c.name}</strong>{!!c.off && <span>Up to {c.off}% off</span>}</span>
+      {c.img && <Pic src={c.img} alt="" w={400} h={400} sizes="45vw" />}
+    </Link>);
+}
+export function CatTiles({ cats }: { cats: { name: string; slug: string; img?: string | null }[] }) {
+  if (!cats.length) return null;
+  return (
+    <nav className="cat-tiles2" aria-label="Categories">
+      {cats.map((c) => (
+        <Link key={c.slug} href={`/c/${c.slug}`} className="tile2"><span>{c.name}</span>{c.img && <Pic src={c.img} alt="" w={240} h={240} sizes="25vw" />}</Link>))}
+    </nav>);
+}
+// Sub-category picture rail + "Value finds" price shortcuts on listing pages
+export function SubRail({ cats, current }: { cats: { name: string; slug: string; img?: string | null }[]; current?: string }) {
+  if (cats.length < 2) return null;
+  return (
+    <nav className="subrail" aria-label="Related categories">
+      {cats.map((c) => (
+        <Link key={c.slug} href={`/c/${c.slug}`} className={`subrail-i${c.slug === current ? ' on' : ''}`} aria-current={c.slug === current ? 'page' : undefined}>
+          <span className="subrail-img">{c.img ? <Pic src={c.img} alt="" w={200} h={240} sizes="110px" /> : <span aria-hidden="true">{c.name[0]}</span>}</span>
+          <span className="small">{c.name}</span>
+        </Link>))}
+    </nav>);
+}
+export function ValueFinds({ base }: { base: string }) {
+  const V: [string, string, string][] = [['Newest', 'arrivals', '?sort=new'], ['Under', '₹999', '?max=999'], ['Under', '₹1,499', '?max=1499'], ['Min', '30% off', '?off=30']];
+  return (
+    <section aria-labelledby="vf-h" className="vf-wrap">
+      <h2 id="vf-h" className="serif-h">Value finds</h2>
+      <div className="vf">{V.map(([a, b, q]) => <Link key={q} href={`${base}${q}`} className="vf-t"><span>{a}</span><strong>{b}</strong></Link>)}</div>
+    </section>);
+}

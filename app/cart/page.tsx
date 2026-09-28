@@ -7,6 +7,7 @@ import { inr, shipFor, SHIP_DEFAULT, type ShipRules } from '@/lib/config';
 import { guestCart, setGuestCart, cartChanged, shippingRules } from '@/lib/shop-client';
 import { Crumbs } from '@/components/Crumbs';
 import { Pic } from '@/components/Pic';
+import { DeliverTo } from '@/components/DeliverTo';
 
 type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
 export default function Cart() {
@@ -86,6 +87,7 @@ export default function Cart() {
     <div className="wrap section split">
       <div className="stack">
         <Crumbs items={[['Home', '/'], ['Cart']]} />
+        <div className="ship-strip"><DeliverTo compact /></div>
         <h1 style={{ margin: 0 }}>My cart{live.length ? ` (${live.reduce((s, l) => s + l.qty, 0)})` : ''}</h1>
         {!user && <div className="msg info">You’re not signed in. Your cart is saved on this device; <Link href="/login?next=/cart">sign in</Link> to keep it with your account.</div>}
         {blocked && <div className="msg err" role="alert">Some items need attention before checkout.</div>}

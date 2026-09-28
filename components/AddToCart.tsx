@@ -7,13 +7,14 @@ import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 
 import { AlertButton } from '@/components/Alerts';
+import { WishHeart } from '@/components/ShopWidgets';
 import { useEffect } from 'react';
 import { track } from '@/lib/analytics';
 
 type V = { variant_id: string; sku: string; attributes: Record<string, string>; mrp: number; selling_price: number; discount_pct: number; available: number };
 const label = (v: V) => Object.values(v.attributes || {}).join(' / ') || v.sku;
 
-export default function AddToCart({ variants }: { variants: V[] }) {
+export default function AddToCart({ variants, productId }: { variants: V[]; productId?: string }) {
   const router = useRouter();
   const first = variants.find((v) => v.available > 0) ?? variants[0];
   const [sel, setSel] = useState<V>(first);
@@ -34,8 +35,8 @@ export default function AddToCart({ variants }: { variants: V[] }) {
   }
   return (
     <div className="stack">
-      <div><span className="price" style={{ fontSize: '1.6rem' }}>{inr(sel.selling_price)}</span>
-        {sel.mrp > sel.selling_price && <><span className="mrp">MRP {inr(sel.mrp)}</span><span className="off">{sel.discount_pct}% off</span></>}</div>
+      <div className="pdp-price"><span className="price">{inr(sel.selling_price)}</span>
+        {sel.mrp > sel.selling_price && <><span className="mrp">MRP {inr(sel.mrp)}</span><span className="off">{sel.discount_pct}% off</span></>}<div className="small muted">Inclusive of all taxes</div></div>
       {variants.length > 1 && (
         <div role="group" aria-label="Choose an option" className="variants">
           {variants.map((v) => (
@@ -55,6 +56,7 @@ export default function AddToCart({ variants }: { variants: V[] }) {
             {Array.from({ length: Math.min(sel.available, 10) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
           </select></label>
         <div className="buy-bar">
+          {productId && <span className="m-only-flex"><WishHeart productId={productId} big /></span>}
           <button className="btn ghost" disabled={busy} onClick={() => go(false)}>Add to cart</button>
           <button className="btn" disabled={busy} onClick={() => go(true)}>Buy now</button>
         </div></>)}
