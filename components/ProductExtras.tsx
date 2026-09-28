@@ -35,28 +35,37 @@ export function Gallery({ media: all, title }: { media: { url: string; alt_text?
     </div>
   );
 }
-export function PincodeCheck() {
-  const [pin, setPin] = useState(''); const [r, setR] = useState<any>(null); const [busy, setBusy] = useState(false);
+export function PincodeCheck({ returnDays, returnable = true }: { returnDays?: number; returnable?: boolean }) {
+  const [pin, setPin] = useState(''); const [city, setCity] = useState(''); const [edit, setEdit] = useState(false);
+  const [r, setR] = useState<any>(null); const [busy, setBusy] = useState(false);
   useEffect(() => {
-    const load = () => { const s = localStorage.getItem('shopeye.pin'); if (s) { setPin(s); check(s); } };
+    const load = () => { const s = localStorage.getItem('shopeye.pin'); try { setCity(JSON.parse(localStorage.getItem('shopeye.loc') || '{}').city ?? ''); } catch {}
+      if (s) { setPin(s); check(s); } else setEdit(true); };
     load(); window.addEventListener('shopeye:pin', load); return () => window.removeEventListener('shopeye:pin', load);   // header location changes re-check delivery
   }, []);
   async function check(v = pin) {
     if (!/^[1-9]\d{5}$/.test(v)) { setR({ valid: false }); return; }
-    setBusy(true); const { data } = await (await sbLazy()).rpc('check_pincode', { p_pincode: v }); setBusy(false); setR(data);
+    setBusy(true); const { data } = await (await sbLazy()).rpc('check_pincode', { p_pincode: v }); setBusy(false); setR(data); setEdit(false);
+    if (data?.city) setCity(data.city);
     try { localStorage.setItem('shopeye.pin', v); } catch {}
   }
-  const eta = (d: number) => new Date(Date.now() + d * 864e5).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const eta = (d: number) => { const x = new Date(Date.now() + d * 864e5); const n = x.getDate(); const sfx = n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th';
+    return `${n}${sfx} ${x.toLocaleDateString('en-IN', { month: 'short' })}`; };
   return (
-    <div className="panel pin">
-      <form onSubmit={(e) => { e.preventDefault(); check(); }} className="pin-row">
-        <label className="small" htmlFor="pin">Check delivery</label>
-        <input id="pin" inputMode="numeric" maxLength={6} placeholder="Enter pincode" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
-        <button className="btn ghost sm" disabled={busy}>{busy ? 'Checking…' : 'Check'}</button>
-      </form>
-      {r && (r.valid === false ? <p className="small bad-t">Enter a valid 6-digit pincode.</p>
-        : r.serviceable ? <p className="small ok-t">Delivery by {eta(r.eta_min)}–{eta(r.eta_max)}{r.cod ? '. Cash on delivery available.' : '. Pay online at checkout.'}</p>
+    <div className="shipto">
+      <strong className="shipto-h">Ship to</strong>
+      {edit || !pin ? (
+        <form onSubmit={(e) => { e.preventDefault(); check(); }} className="shipto-box">
+          <label className="sr-only" htmlFor="pin">Delivery pincode</label>
+          <input id="pin" inputMode="numeric" maxLength={6} placeholder="Enter pincode" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} autoFocus={!!pin} />
+          <button className="linklike shipto-a" disabled={busy}>{busy ? 'Checking…' : 'Check'}</button>
+        </form>
+      ) : (
+        <div className="shipto-box"><span>{pin}{city ? `, ${city}` : ''}</span><button type="button" className="linklike shipto-a" onClick={() => setEdit(true)}>Change Pincode</button></div>)}
+      {r && (r.valid === false ? <p className="small bad-t" role="alert">Enter a valid 6-digit pincode.</p>
+        : r.serviceable ? <p className="shipto-l"><span aria-hidden="true">🚚</span>Delivery by <strong>{eta(r.eta_max)}</strong> <span className="muted">|</span> <span className="ok-t">Free</span>{r.cod ? <span className="muted small"> · COD available</span> : null}</p>
         : <p className="small bad-t">We don’t deliver to {pin} yet.</p>)}
+      {returnDays != null && <p className="shipto-l"><span aria-hidden="true">↺</span><strong>{returnable ? `${returnDays} Days Return available` : 'Not returnable'}</strong> <a href="/returns-policy" className="shipto-a small">Know More</a></p>}
     </div>
   );
 }

@@ -56,7 +56,7 @@ export function Listing({ base, params, result, empty }: { base: string; params:
       </aside>
       <div className="stack" style={{ gap: 14 }}>
         <div className="list-bar">
-          <span className="small muted" aria-live="polite">{result.total.toLocaleString('en-IN')} {result.total === 1 ? 'product' : 'products'}</span>
+          <span className="small muted" aria-live="polite" data-mcount={`${result.total.toLocaleString('en-IN')} Products`}>{result.total.toLocaleString('en-IN')} {result.total === 1 ? 'product' : 'products'}</span>
           <div className="sort-form"><SortSelect base={base} params={params} options={SORTS} /></div>
         </div>
         {chips.length > 0 && (

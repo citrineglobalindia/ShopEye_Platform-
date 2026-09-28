@@ -43,15 +43,19 @@ export function MobileListBar({ base, params, options, filterCount }: { base: st
     setTimeout(() => (document.getElementById(focus ?? 'filters-close') as HTMLElement | null)?.focus(), 60);
   };
   const [sortOpen, setSortOpen] = useSortState();
+  const [one, setOne] = useState(false);
+  useEffect(() => { try { const v = localStorage.getItem('shopeye.grid1') === '1'; setOne(v); document.body.classList.toggle('grid-1', v); } catch {} }, []);
+  const toggleGrid = () => { const v = !one; setOne(v); document.body.classList.toggle('grid-1', v); try { localStorage.setItem('shopeye.grid1', v ? '1' : '0'); } catch {} };
   const setSort = (v: string) => {
     const u = new URLSearchParams(); Object.entries(params).forEach(([k, x]) => x && k !== 'sort' && k !== 'page' && u.set(k, x)); if (v) u.set('sort', v);
     setSortOpen(false); start(() => router.push(`${base}${u.toString() ? `?${u}` : ''}`, { scroll: false }));
   };
   return (<>
     <div className="m-bar" aria-busy={pending}>
-      <button type="button" onClick={() => setSortOpen(true)}>⇅ Sort</button>
-      <button type="button" onClick={() => openFilters()}>☰ Filter{filterCount ? ` (${filterCount})` : ''}</button>
-      <button type="button" onClick={() => openFilters('f-brand')}>Brand</button>
+      <button type="button" className="m-grid" aria-label={one ? 'Show two products per row' : 'Show one product per row'} onClick={toggleGrid}>
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">{one ? <><rect x="4" y="4" width="7" height="16" rx="1.5" /><rect x="13" y="4" width="7" height="16" rx="1.5" /></> : <><rect x="4" y="4" width="16" height="7" rx="1.5" /><rect x="4" y="13" width="16" height="7" rx="1.5" /></>}</svg></button>
+      <button type="button" onClick={() => setSortOpen(true)}><span className="m-bar-t">⇅ Sort</span><span className="m-bar-s">{options.find(([v]) => v === (params.sort ?? ''))?.[1] ?? 'Relevance'}</span></button>
+      <button type="button" onClick={() => openFilters()}><span className="m-bar-t">☰ Filter{filterCount ? <span className="m-badge">{filterCount}</span> : null}</span></button>
     </div>
     {sortOpen && <>
       <div className="sheet-back" onClick={() => setSortOpen(false)} />

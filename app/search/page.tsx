@@ -6,6 +6,7 @@ import { listProducts, listCategories } from '@/lib/catalog';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { Crumbs } from '@/components/Crumbs';
 import { TrackSearch } from '@/components/Analytics';
+import { MobileTitle } from '@/components/MobileTitle';
 export const metadata = { title: 'Search', robots: { index: false } };
 
 export default async function Search({ searchParams }: { searchParams: Promise<Params> }) {
@@ -14,7 +15,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<P
   return (
     <div className="wrap section stack">
       <Crumbs items={[['Home', '/'], ['Search']]} />
-      <h1 style={{ margin: 0 }}>{q ? <>Results for “{q}”</> : 'All products'}</h1>
+      <h1 className="page-h1" style={{ margin: 0 }}>{q ? <>Results for “{q}”</> : 'All products'}</h1>
       <Suspense fallback={<ListSkeleton />}><Results q={q} sp={sp} /></Suspense>
     </div>
   );
@@ -23,6 +24,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<P
 async function Results({ q, sp }: { q: string; sp: Params }) {
   const [result, cats] = await Promise.all([listProducts({ q: q || undefined, ...parseList(sp) }), listCategories()]);
   return (<>
+    <MobileTitle title={q ? `“${q}”` : 'All products'} sub={`${result.total.toLocaleString('en-IN')} Products`} />
     <TrackSearch q={q} count={(result as any).total ?? (result as any).items?.length ?? 0} />
     <Listing base="/search" params={sp} result={result} empty={<>
         <h3>No matches{q ? <> for “{q}”</> : ''}</h3>

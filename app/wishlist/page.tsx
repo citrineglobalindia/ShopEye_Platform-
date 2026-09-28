@@ -8,6 +8,7 @@ import { inr } from '@/lib/config';
 import { toggleWishlist, addToCart } from '@/lib/shop-client';
 import { Crumbs } from '@/components/Crumbs';
 import { Pic } from '@/components/Pic';
+import { MobileTitle } from '@/components/MobileTitle';
 
 export default function Wishlist() {
   const router = useRouter(); const [items, setItems] = useState<any[] | null>(null); const [signedIn, setSignedIn] = useState(true); const [msg, setMsg] = useState('');
@@ -39,6 +40,7 @@ export default function Wishlist() {
   return (
     <div className="wrap section stack">
       <Crumbs items={[['Home', '/'], ['Wishlist']]} />
+      <MobileTitle title="Wishlist" />
       <h1 style={{ margin: 0 }}>Wishlist</h1>
       {!signedIn ? <div className="panel empty"><p>Sign in to save products you like and find them on any device.</p><Link className="btn" href="/login?next=/wishlist">Sign in</Link></div>
         : !items.length ? <div className="panel empty"><h3>Nothing saved yet</h3><p className="muted">Tap the heart on any product to save it here.</p><Link className="btn" href="/">Start shopping</Link></div>

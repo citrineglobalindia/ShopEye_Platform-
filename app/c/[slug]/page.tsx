@@ -7,7 +7,8 @@ import { listProducts, getCategory, categoryTree, idsUnder } from '@/lib/catalog
 import { storefront } from '@/lib/storefront';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { RecentlyViewed } from '@/components/ShopWidgets';
-import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos, CategoryOfDay, CatTiles, SubRail, ValueFinds } from '@/components/Store';
+import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos, CategoryOfDay, CatTiles, SubRail, ValueFinds, ExploreAll, GetTheLook } from '@/components/Store';
+import { MobileTitle } from '@/components/MobileTitle';
 
 // SRS: CUST-FR-179 CUST-FR-181 (unique title/description and canonical; filtered, sorted and paged variants are noindex)
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Params> }) {
@@ -36,6 +37,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     const d = await storefront(slug);
     return (
       <div className="wrap section">
+        <MobileTitle title={dept.name} sub={`${d.all.length.toLocaleString('en-IN')} Products`} tabs />
+        <h1 className="sr-only">{dept.name}</h1>
         <Crumbs items={[['Home', '/'], [dept.name]]} />
         <div className="dept">
           <aside className="dept-side">{side}
@@ -49,7 +52,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           </aside>
           <div className="dept-main">
             <Hero slides={d.slides} side={d.side} />
-            <div className="m-only"><CategoryOfDay c={d.cotd} /><CatTiles cats={d.circles} /></div>
+            <div className="m-only"><ExploreAll cats={d.circles} /><CategoryOfDay c={d.cotd} /></div>
             <div className="d-only"><CircleCats title={`Shop ${dept.name} by category`} cats={d.circles} /></div>
             <RecentlyViewed />
             <Row title="Deals of the day" href={`/c/${slug}?sort=discount`} items={d.deals} />
@@ -65,17 +68,33 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   return (
     <div className="wrap section stack">
       <Crumbs items={[['Home', '/'], ...(parent ? [[parent.name, `/c/${parent.slug}`] as [string, string]] : []), [cat.name]]} />
-      <h1 style={{ margin: 0 }}>{cat.name}</h1>
+      <h1 className="page-h1" style={{ margin: 0 }}>{cat.name}</h1>
       {siblings.length > 0 && (dept || parent) && <SubRail current={slug} cats={(await storefront((dept ?? parent)!.slug)).circles} />}
-      {!filtered && <ValueFinds base={`/c/${slug}`} />}
-      <Suspense fallback={<ListSkeleton />}><Results slug={slug} ids={dept ? idsUnder(dept) : [cat.id]} sp={sp} /></Suspense>
+      {!filtered && <><CatBanner slug={slug} name={cat.name} ids={dept ? idsUnder(dept) : [cat.id]} /><ValueFinds base={`/c/${slug}`} /><Look ids={dept ? idsUnder(dept) : [cat.id]} /></>}
+      <Suspense fallback={<ListSkeleton />}><Results slug={slug} ids={dept ? idsUnder(dept) : [cat.id]} sp={sp} title={cat.name} /></Suspense>
       <RecentlyViewed />
     </div>
   );
 }
 
-async function Results({ slug, ids, sp }: { slug: string; ids: string[]; sp: Params }) {
+async function Results({ slug, ids, sp, title }: { slug: string; ids: string[]; sp: Params; title: string }) {
   const result = await listProducts({ categoryIds: ids, ...parseList(sp) });
-  return <Listing base={`/c/${slug}`} params={sp} result={result}
-    empty={<><h3>Nothing matches yet</h3><p className="muted">Try removing a filter, or <Link href="/">browse everything</Link>.</p></>} />;
+  return <><MobileTitle title={title} sub={`${result.total.toLocaleString('en-IN')} Products`} /><Listing base={`/c/${slug}`} params={sp} result={result}
+    empty={<><h3>Nothing matches yet</h3><p className="muted">Try removing a filter, or <Link href="/">browse everything</Link>.</p></>} /></>;
+}
+
+// Promo banner for the category (its biggest real discount) and "Get the look" photo rail
+async function CatBanner({ slug, name, ids }: { slug: string; name: string; ids: string[] }) {
+  const r = await listProducts({ categoryIds: ids, sort: 'discount', perPage: 24 });
+  const top = r.items[0]; if (!top) return null;
+  const off = top.discount_pct;
+  return (
+    <Link href={`/c/${slug}?sort=discount`} className="cat-ban">
+      {top.image && <img src={top.image.replace(/w=\d+/, 'w=900')} alt="" />}
+      <span className="cat-ban-t"><strong>The {name} store</strong>{off >= 10 && <span>Up to {off}% off</span>}<span className="cat-ban-cta">Shop now</span></span>
+    </Link>);
+}
+async function Look({ ids }: { ids: string[] }) {
+  const r = await listProducts({ categoryIds: ids, sort: 'new', perPage: 12 });
+  return <GetTheLook items={r.items} />;
 }

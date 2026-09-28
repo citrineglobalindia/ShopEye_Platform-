@@ -57,8 +57,8 @@ export default function AddToCart({ variants, productId }: { variants: V[]; prod
           </select></label>
         <div className="buy-bar">
           {productId && <span className="m-only-flex"><WishHeart productId={productId} big /></span>}
-          <button className="btn ghost" disabled={busy} onClick={() => go(false)}>Add to cart</button>
-          <button className="btn" disabled={busy} onClick={() => go(true)}>Buy now</button>
+          <button className="btn ghost" disabled={busy} onClick={() => go(true)}>Buy now</button>
+          <button className="btn" disabled={busy} onClick={() => go(false)}>Add to cart</button>
         </div></>)}
       {msg && <div className={`msg ${msg.t}`} role="status">{msg.m} {msg.t === 'ok' && <a href="/cart">View cart</a>}</div>}
     </div>

@@ -12,6 +12,7 @@ import { payForOrder } from '@/lib/pay';
 import dynamic from 'next/dynamic';
 const MapPin = dynamic(() => import('@/components/MapPin').then((m) => m.MapPin), { ssr: false });
 import { track } from '@/lib/analytics';
+import { MobileTitle } from '@/components/MobileTitle';
 
 const blank = { recipient: '', mobile: '', line1: '', line2: '', landmark: '', city: '', state_code: 'KA', pincode: '', address_type: 'home' };
 
@@ -120,6 +121,7 @@ export default function Checkout() {
     <div className="wrap section split">
       <div className="stack">
         <h1>Checkout</h1>
+        <MobileTitle title="Checkout" />
         <ol className="stepper" aria-label="Checkout steps">
           {STEPS.map(([n, l]) => (
             <li key={n} className={step === n ? 'on' : step > n ? 'done' : ''} aria-current={step === n ? 'step' : undefined}>

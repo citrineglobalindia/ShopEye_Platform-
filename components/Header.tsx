@@ -4,6 +4,7 @@ import { Mark } from '@/components/Logo';
 import { CartLink } from '@/components/ShopWidgets';
 import { DeliverTo } from '@/components/DeliverTo';
 import { SearchBox } from '@/components/SearchBox';
+import { MobileBar } from '@/components/MobileBar';
 
 type Cat = { id: string; name: string; slug: string; parent_id: string | null };
 const I = {
@@ -19,6 +20,7 @@ export function Header({ user, cartCount, isSeller, isAdmin, cats }: { user: { e
   const first = (user?.name || user?.email || '').split(/[\s@]/)[0];
   return (
     <header className="top">
+      <MobileBar serverCount={cartCount} signedIn={!!user} logo={<Mark />} />
       <div className="wrap top-row">
         <details className="drawer">
           <summary aria-label="Open menu"><span className="burger" aria-hidden="true" /></summary>

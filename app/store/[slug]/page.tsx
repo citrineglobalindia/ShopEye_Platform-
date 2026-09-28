@@ -6,6 +6,7 @@ import { Listing, parseList, type Params } from '@/components/Listing';
 import { Crumbs } from '@/components/Crumbs';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { getSeller, listProducts } from '@/lib/catalog';
+import { MobileTitle } from '@/components/MobileTitle';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const s = await getSeller((await params).slug);
@@ -17,6 +18,7 @@ export default async function Store({ params, searchParams }: { params: Promise<
   if (!s) notFound();
   return (
     <div className="wrap section stack">
+      <MobileTitle title={s.display_name} />
       <Crumbs items={[['Home', '/'], ['Sellers'], [s.display_name]]} />
       <div className="store-head panel"><span className="seller-av lg" aria-hidden="true">{s.display_name[0]}</span>
         <div><h1 style={{ margin: 0 }}>{s.display_name}</h1><p className="small muted" style={{ margin: 0 }}>Independent seller on ShopEye · every listing reviewed before it goes live</p></div></div>

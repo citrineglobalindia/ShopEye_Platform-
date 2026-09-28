@@ -9,7 +9,17 @@ export function SearchBox({ placeholder = 'Search for products, brands and more'
   const router = useRouter();
   const [q, setQ] = useState(''); const [open, setOpen] = useState(false); const [sug, setSug] = useState<Sug | null>(null);
   const [recent, setRecent] = useState<string[]>([]); const [hi, setHi] = useState(-1); const box = useRef<HTMLFormElement>(null);
-  useEffect(() => { try { setRecent(JSON.parse(localStorage.getItem(RK) || '[]')); } catch {} }, []);
+  useEffect(() => { try { setRecent(JSON.parse(localStorage.getItem(RK) || '[]')); } catch {} setVoice(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)); }, []);
+  // voice search where the browser supports it (Chrome on Android/desktop): Indian English, then search
+  const [voice, setVoice] = useState(false); const [listening, setListening] = useState(false); const rec = useRef<any>(null);
+  function listen() {
+    if (listening) { rec.current?.stop(); return; }
+    const R = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition; if (!R) return;
+    const r = new R(); r.lang = 'en-IN'; r.interimResults = true; r.maxAlternatives = 1; rec.current = r;
+    r.onresult = (e: any) => { const t = Array.from(e.results).map((x: any) => x[0].transcript).join(' '); setQ(t); if (e.results[e.results.length - 1].isFinal) go(t); };
+    r.onend = () => setListening(false); r.onerror = () => setListening(false);
+    setListening(true); r.start();
+  }
   useEffect(() => {
     const t = q.trim(); if (t.length < 2) { setSug(null); return; }
     const c = new AbortController();
@@ -38,6 +48,8 @@ export function SearchBox({ placeholder = 'Search for products, brands and more'
       <input name="q" value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); setHi(-1); }} onFocus={() => setOpen(true)} onKeyDown={key}
         placeholder={placeholder} aria-label="Search products" autoComplete="off" role="combobox" aria-expanded={open && items.length > 0} aria-controls="search-sug"
         aria-activedescendant={hi >= 0 ? `sug-${hi}` : undefined} />
+      {voice && <button type="button" className="mic" aria-label={listening ? 'Listening… tap to stop' : 'Search by voice'} aria-pressed={listening} onClick={listen}>
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>{listening && <span className="mic-on" aria-hidden="true" />}</button>}
       <button type="submit" aria-label="Search"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
       {open && items.length > 0 && (
         <ul id="search-sug" className="sug panel" role="listbox">

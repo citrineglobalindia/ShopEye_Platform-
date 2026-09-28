@@ -158,3 +158,24 @@ export function ValueFinds({ base }: { base: string }) {
       <div className="vf">{V.map(([a, b, q]) => <Link key={q} href={`${base}${q}`} className="vf-t"><span>{a}</span><strong>{b}</strong></Link>)}</div>
     </section>);
 }
+export function ExploreAll({ cats }: { cats: { name: string; slug: string; img?: string | null; off?: number }[] }) {
+  if (!cats.length) return null;
+  return (
+    <section aria-labelledby="ex-h" style={{ margin: '14px 0' }}>
+      <h2 id="ex-h" className="serif-h">Explore it all</h2>
+      <div className="explore">{cats.map((c) => (
+        <Link key={c.slug} href={`/c/${c.slug}`}><span className="ex-img">{c.img && <Pic src={c.img} alt="" w={220} h={220} sizes="108px" />}</span>
+          <strong>{c.name}</strong>{!!c.off && <span className="small">Up to {c.off}% off</span>}</Link>))}</div>
+    </section>);
+}
+
+// "Get the look": tall photo-only cards leading to products
+export function GetTheLook({ items, title = 'Get the look' }: { items: { product_id: string; title: string; image?: string | null }[]; title?: string }) {
+  const xs = items.filter((p) => p.image).slice(0, 8);
+  if (xs.length < 3) return null;
+  return (
+    <section aria-label={title} className="look-sec">
+      <h2 className="serif-h">{title}</h2>
+      <div className="look-rail">{xs.map((p) => <Link key={p.product_id} href={`/p/${p.product_id}`} className="look-c" aria-label={p.title}><Pic src={p.image!} alt="" w={320} h={420} sizes="45vw" /></Link>)}</div>
+    </section>);
+}

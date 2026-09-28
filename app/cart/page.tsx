@@ -8,6 +8,7 @@ import { guestCart, setGuestCart, cartChanged, shippingRules } from '@/lib/shop-
 import { Crumbs } from '@/components/Crumbs';
 import { Pic } from '@/components/Pic';
 import { DeliverTo } from '@/components/DeliverTo';
+import { MobileTitle } from '@/components/MobileTitle';
 
 type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
 export default function Cart() {
@@ -77,7 +78,7 @@ export default function Cart() {
               <output aria-live="polite">{l.qty}</output>
               <button type="button" aria-label="Increase quantity" disabled={l.qty >= max} onClick={() => setQty(l, l.qty + 1)}>+</button>
             </span>); })()}
-          {user && l.v && <button className="linklike" onClick={() => toggleSaved(l)}>{l.saved ? 'Move to cart' : 'Save for later'}</button>}
+          {user && l.v && <button className="linklike" onClick={() => toggleSaved(l)}>{l.saved ? 'Move to bag' : '♡ Save for later'}</button>}
           <button className="linklike danger-t" onClick={() => remove(l)}>Remove</button>
         </div>
       </div>
@@ -88,7 +89,8 @@ export default function Cart() {
       <div className="stack">
         <Crumbs items={[['Home', '/'], ['Cart']]} />
         <div className="ship-strip"><DeliverTo compact /></div>
-        <h1 style={{ margin: 0 }}>My cart{live.length ? ` (${live.reduce((s, l) => s + l.qty, 0)})` : ''}</h1>
+        <MobileTitle title="Your cart" sub={live.length ? (() => { const n = live.reduce((s, l) => s + l.qty, 0); return `${n} ${n === 1 ? 'item' : 'items'}`; })() : undefined} />
+        <h1 className="page-h1" style={{ margin: 0 }}>My cart{live.length ? ` (${live.reduce((s, l) => s + l.qty, 0)})` : ''}</h1>
         {!user && <div className="msg info">You’re not signed in. Your cart is saved on this device; <Link href="/login?next=/cart">sign in</Link> to keep it with your account.</div>}
         {blocked && <div className="msg err" role="alert">Some items need attention before checkout.</div>}
         {groups.map((g, i) => {
@@ -105,13 +107,14 @@ export default function Cart() {
         {saved.length > 0 && <section className="panel stack"><h3 style={{ margin: 0 }}>Saved for later ({saved.length})</h3><p className="small muted" style={{ margin: 0 }}>Not included in your total.</p>{saved.map(row)}</section>}
       </div>
       <aside className="panel sum sticky-sum">
+        <Link href={user ? '/checkout' : '/login?next=/checkout'} className="coupon-row"><span aria-hidden="true">%</span><span><strong>Apply coupon</strong><span className="small muted">Enter your code at checkout</span></span><span aria-hidden="true">›</span></Link>
         <h2 style={{ margin: 0 }}>Price details</h2>
-        <div><span>Price ({live.reduce((s, l) => s + l.qty, 0)} items)</span><span>{inr(mrpTotal)}</span></div>
+        <div><span>Bag total ({live.reduce((s, l) => s + l.qty, 0)} items)</span><span>{inr(mrpTotal)}</span></div>
         {mrpTotal > items && <div className="ok-t"><span>Discount</span><span>−{inr(mrpTotal - items)}</span></div>}
         <div><span>Shipping ({groups.length} {groups.length === 1 ? 'package' : 'packages'})</span><span>{ship ? inr(ship) : 'Free'}</span></div>
-        <div className="tot"><span>Total</span><span>{inr(items + ship)}</span></div>
+        <div className="tot"><span>Total payable</span><span>{inr(items + ship)}</span></div>
         {mrpTotal > items && <div className="small ok-t" style={{ fontWeight: 700 }}>You save {inr(mrpTotal - items)} on this order</div>}
-        <p className="small muted" style={{ margin: 0 }}>Coupons are applied at checkout. Prices include GST.</p>
+        <p className="small muted secure-note" style={{ margin: 0 }}><span aria-hidden="true">🔒</span> Safe and secure payments. Easy returns. Prices include GST.</p>
         {blocked || !live.length ? <button className="btn" disabled>Continue to checkout</button> : <Link className="btn" href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Proceed to checkout' : 'Sign in to check out'}</Link>}
       </aside>
       {live.length > 0 && <div className="m-checkout" aria-hidden="true">

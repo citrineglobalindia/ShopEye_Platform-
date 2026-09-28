@@ -17,6 +17,7 @@ import { ReviewList, Stars } from '@/components/Reviews';
 import { Questions } from '@/components/Questions';
 import { TrackEvent } from '@/components/Analytics';
 import { CompareToggle } from '@/components/Alerts';
+import { MobileTitle } from '@/components/MobileTitle';
 export const revalidate = 30;
 
 async function load(id: string) {
@@ -71,6 +72,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 }, ...(r.title ? { name: r.title } : {}), ...(r.body ? { reviewBody: r.body } : {}) })) } : {}) };
   return (
     <div className="wrap section">
+      <MobileTitle title={(p as any).brands?.name ?? cat?.name ?? ''} />
       {!p.is_demo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />}
       <Crumbs items={[['Home', '/'], ...(cat ? [[cat.name, `/c/${cat.slug}`] as [string, string]] : []), [p.title]]} />
       <div className="pdp">
@@ -89,7 +91,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               <div className="buy-bar demo"><WishHeart productId={id} big /><span className="btn soon" aria-disabled="true">Coming soon</span></div>
               <div className="msg info" role="note"><strong>Preview product.</strong> This listing shows what ShopEye will offer and can’t be bought yet. Sellers are joining now; save it to your wishlist and we’ll have the real thing soon.</div></>
             : <AddToCart variants={variants} productId={id} />}
-          <PincodeCheck />
+          <PincodeCheck returnDays={days} returnable={!!p.is_returnable} />
           {storeSlug && <Link href={`/store/${storeSlug}`} className="sold-row">Sold by <strong>{variants[0].vendor_name}</strong><span aria-hidden="true">›</span></Link>}
           <ul className="assure small">
             <li><strong>{p.is_returnable ? `${days}-day returns` : 'Not returnable'}</strong><span>{p.is_returnable ? 'From the date of delivery. See the returns policy.' : 'This item can’t be returned once delivered.'}</span></li>
