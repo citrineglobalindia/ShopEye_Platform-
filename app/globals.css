@@ -624,7 +624,7 @@ body.gate-open { overflow: hidden; }
   h1, h2, h3, .rail-head h2, .trend-cap strong, .side-t strong, .cotd strong { font-family: var(--ui); letter-spacing: -.01em; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 10px; }
   body.grid-1 .grid { grid-template-columns: minmax(0, 1fr); }
-  .rail { grid-auto-columns: minmax(0, 44%); }
+  .rail { grid-auto-columns: 44%; }
 }
 .stack { grid-template-columns: minmax(0, 1fr); } .stack > *, .listing > * { min-width: 0; }
 .card-rating { justify-self: start; display: inline-flex; border: 1px solid #DADADA; border-radius: 12px; padding: 1px 8px; font: 600 .75rem var(--ui); color: #111; width: fit-content; margin-top: 2px; }
@@ -661,7 +661,7 @@ section.section, section.look-sec, section.explore, section.vf-wrap { content-vi
 @media (min-width: 601px) and (max-width: 860px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cat-tiles2 { grid-template-columns: repeat(3, 1fr); }
-  .rail { grid-auto-columns: minmax(0, 30%); }
+  .rail { grid-auto-columns: 30%; }
   .look-rail { grid-auto-columns: 30%; }
 }
 @media (min-width: 861px) and (max-width: 1100px) {
@@ -826,3 +826,6 @@ section.section, section.look-sec, section.explore, section.vf-wrap { content-vi
 }
 @media (max-width: 860px) { .d-only-flex { display: none; } }
 .wish-sq .heart { font-size: 0; gap: 0; padding: 0; justify-content: center; } .wish-sq .heart svg { width: 22px; height: 22px; }
+/* preview products: icon-only wishlist square in the bottom bar, like the regular bar */
+.buy-bar.demo .heart { position: static; width: 46px; height: 46px; border: 1px solid #BDBDBD; border-radius: 4px; box-shadow: none; font-size: 0; gap: 0; padding: 0; justify-content: center; }
+.buy-bar.demo .heart svg { width: 22px; height: 22px; }
