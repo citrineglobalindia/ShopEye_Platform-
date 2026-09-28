@@ -61,7 +61,7 @@ PASS  Vendor ledger is append-only (AF-FR-0234) (rejected: IMMUTABLE_RECORD: DEL
 PASS  Audit log cannot be deleted (AF-FR-0603) (rejected: IMMUTABLE_RECORD: DELETE on app.audit_log is not permitted; post a reversal/correction ins)
 PASS  Posted journal lines frozen (rejected: IMMUTABLE_RECORD: journal is posted; post a reversing journal)
 PASS  Unbalanced journal cannot post (UAT-17) (rejected: UNBALANCED_JOURNAL: debit 100.00 credit 90.00 lines 2)
-PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-18 is in a closed period)
+PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-19 is in a closed period)
 PASS  Reversal creates linked counter-entry, original preserved (UAT-30)
 PASS  Audit log captures before/after for vendor activation (UAT-28)
 == 6. Fulfilment, delivery, returns (UAT-013/016, VS-FR-892)
@@ -313,6 +313,13 @@ PASS  Extra letters are tolerated ("kurtaa" finds kurtas)
 PASS  Partial words match
 PASS  Nonsense finds nothing
 PASS  Only products on sale are returned
+== 31. Real-visitor page speed is recorded anonymously and summarised for admin (CUST-FR-153)
+PASS  Browsers can report their page-speed measurements without signing in
+PASS  Malformed or out-of-range measurements are dropped
+PASS  Oversized batches are refused
+PASS  The raw table can't be read from the website (rejected: permission denied for table web_vitals)
+PASS  Only admins can see the summary (rejected: permission denied for function admin_vitals)
+PASS  No user id, IP address, session or full URL is stored — only page type and device class
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
@@ -346,8 +353,8 @@ PASS  Every note belongs to a real SRS requirement ID
 PASS  Every note says what the functionality does and how to check it
 PASS  Every "Try it" link in the notes points at a page that exists
 PASS  Every page derived from the code points at a page that exists
-PASS  Unfinished requirements are labelled Planned and say what they wait on (5)
-PASS  Finished requirements are not described as planned (183)
+PASS  Unfinished requirements are labelled Planned and say what they wait on (4)
+PASS  Finished requirements are not described as planned (184)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text
@@ -389,7 +396,7 @@ PASS  Sign-in link handler redirects to a clean, uncached URL with no raw auth e
 PASS  No code puts access or refresh tokens in a URL (CUST-FR-023)
 PASS  Redactor removes emails, phone numbers, OTPs, tokens, card numbers, keys and signatures (CUST-FR-174)
 PASS  Redactor leaves ordinary messages readable
-== 16. Core Web Vitals, lab (phone, 4x CPU, slow network) — informational, not yet all within target
+== 16. Core Web Vitals, lab (phone, 4x CPU, slow network) — informational; field data now collected (Admin → Site speed)
 PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /: LCP 1016 ms, CLS 0.000, TBT 269 ms
 PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /search?q=saree: LCP 868 ms, CLS 0.000, TBT 205 ms
 PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /c/sarees: LCP 828 ms, CLS 0.000, TBT 232 ms

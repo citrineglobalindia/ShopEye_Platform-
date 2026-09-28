@@ -6,7 +6,30 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useReportWebVitals } from 'next/web-vitals';
 import { GA_ID, readConsent, writeConsent, track, type Consent } from '@/lib/analytics';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/config';
 
+// SRS: CUST-FR-153 (real-visitor Core Web Vitals: page type + device class only, sent when the page is hidden)
+const pageType = (p: string) => p === '/' ? 'home' : p.startsWith('/p/') ? 'product' : p.startsWith('/c/') ? 'category' : p.startsWith('/search') ? 'search'
+  : p.startsWith('/cart') ? 'cart' : p.startsWith('/checkout') ? 'checkout' : p.startsWith('/account') ? 'account' : p.startsWith('/store/') ? 'store' : 'other';
+let vq: { _k?: string; metric: string; value: number; page: string; device: string; conn?: string }[] = []; let hooked = false; const seen = new Set<string>();
+function flushVitals() {
+  if (!vq.length) return; const rows = vq.splice(0, 8).map(({ _k, ...r }: any) => r);
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/record_vitals`, { method: 'POST', keepalive: true,
+      headers: { 'content-type': 'application/json', apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }, body: JSON.stringify({ p_rows: rows }) }).catch(() => {});
+  } catch {}
+}
+function queueVital(id: string, name: string, value: number, path: string) {
+  if (typeof window === 'undefined' || (navigator as any).webdriver || !['LCP', 'INP', 'CLS', 'FCP', 'TTFB'].includes(name)) return;
+  const key = name; void id; const prev = vq.findIndex((x: any) => x._k === key);
+  if (prev >= 0) vq.splice(prev, 1); else if (seen.has(key)) return;   // one value per metric per page view (latest wins)
+  seen.add(key);
+  const conn = (navigator as any).connection?.effectiveType;
+  vq.push({ _k: key, metric: name, value: Math.round(value * (name === 'CLS' ? 10000 : 1)) / (name === 'CLS' ? 10000 : 1), page: pageType(path),
+            device: window.matchMedia('(max-width: 860px)').matches ? 'mobile' : 'desktop', ...(conn ? { conn } : {}) });
+  if (!hooked) { hooked = true; addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flushVitals()); addEventListener('pagehide', flushVitals); }
+  if (vq.length >= 8) flushVitals();
+}
 function loadGa() {
   const w = window as any;
   if (!GA_ID || w.__seGa) return; w.__seGa = true;
@@ -30,7 +53,10 @@ export function Analytics() {
   }, []);
   // Page views: path only; query strings (search terms, order ids) are never sent as the page location
   useEffect(() => { if (consent === 'analytics') track('page_view', { page_path: path, page_location: location.origin + path, page_title: document.title }); }, [path, consent]);
-  useReportWebVitals((m) => track('web_vital', { metric_name: m.name, value: Math.round(m.name === 'CLS' ? m.value * 1000 : m.value), metric_rating: (m as any).rating, page_path: path }));
+  useReportWebVitals((m) => {
+    track('web_vital', { metric_name: m.name, value: Math.round(m.name === 'CLS' ? m.value * 1000 : m.value), metric_rating: (m as any).rating, page_path: path });
+    queueVital(m.id, m.name, m.value, path);   // first-party, anonymous real-visitor speed (no consent needed: no identifiers)
+  });
   if (!GA_ID || consent === 'unknown' || (consent !== null && !open)) return null;   // nothing to ask when GA isn't configured
   function choose(c: 'analytics' | 'necessary') {
     const was = readConsent(); writeConsent(c); setConsent(c); setOpen(false);

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { sb } from '@/lib/sb-browser';
 import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
@@ -11,9 +11,9 @@ export default function Admin() {
   if (ok === null) return <div className="wrap section">Loading…</div>;
   if (!ok) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
   return (<div className="wrap section stack"><div className="order-head"><h1 style={{ margin: 0 }}>Admin</h1><span className="cta-row"><a className="btn ghost sm" href="/admin/reviews">Review moderation</a><a className="btn ghost sm" href="/status">Build status</a></span></div>
-    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['giftcards', 'Gift cards'], ['catalogue', 'All products'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
+    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['giftcards', 'Gift cards'], ['catalogue', 'All products'], ['speed', 'Site speed'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
       <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'giftcards' && <GiftCards />}{tab === 'catalogue' && <Products />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
+    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'giftcards' && <GiftCards />}{tab === 'catalogue' && <Products />}{tab === 'speed' && <Speed />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
   </div>);
 }
 
@@ -86,6 +86,35 @@ function Orders() {
     {!rows.length ? <div className="panel">No orders yet.</div> : <div className="panel tablewrap"><table><thead><tr><th>Package</th><th>Placed</th><th>Total</th><th>Status</th><th></th></tr></thead>
       <tbody>{rows.map((r) => <tr key={r.id}><td>{r.sub_order_number}</td><td>{new Date(r.created_at).toLocaleString('en-IN')}</td><td>{inr(r.total)}</td><td><StatusChip s={r.status} /></td>
         <td>{r.status === 'shipped' && <button className="btn sm" onClick={() => delivered(r.id)}>Mark delivered</button>}</td></tr>)}</tbody></table></div>}</div>);
+}
+
+// SRS: CUST-FR-153 (real-visitor Core Web Vitals at the 75th percentile, per page type and device, against Google's thresholds)
+function Speed() {
+  const [days, setDays] = useState(28); const [d, setD] = useState<any>(null); const [err, setErr] = useState('');
+  useEffect(() => { sb().rpc('admin_vitals', { p_days: days }).then(({ data, error }: any) => { if (error) setErr(friendly(error)); else setD(data); }); }, [days]);
+  if (err) return <div className="msg err" role="alert">{err}</div>;
+  if (!d) return <p className="muted">Loading…</p>;
+  const M = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'];
+  const NAMES: Record<string, string> = { LCP: 'Largest content shown', INP: 'Response to taps/clicks', CLS: 'Layout stability', FCP: 'First content shown', TTFB: 'Server response' };
+  const cell = (r: any) => { if (!r) return <td className="muted">—</td>; const [g, p] = d.thresholds[r.metric]; const v = Number(r.p75);
+    const st = v <= g ? ['ok-t', 'Good'] : v <= p ? ['warn-t', 'Needs work'] : ['danger-t', 'Poor'];
+    return <td><strong className={st[0]}>{r.metric === 'CLS' ? v.toFixed(3) : `${Math.round(v).toLocaleString('en-IN')} ms`}</strong><span className="small muted"> · {st[1]} · {r.samples}</span></td>; };
+  const find = (page: string, device: string, metric: string) => d.rows.find((r: any) => r.page === page && r.device === device && r.metric === metric);
+  const pages = [...new Set(d.rows.map((r: any) => r.page).filter((x: string) => x !== 'all'))] as string[];
+  const total = find('all', 'all', 'LCP')?.samples ?? 0;
+  return (<div className="stack">
+    <div className="panel stack">
+      <div className="addr"><strong>Real-visitor page speed (75th percentile)</strong>
+        <label className="small">Period <select value={days} onChange={(e) => setDays(Number(e.target.value))}><option value={7}>7 days</option><option value={28}>28 days</option><option value={90}>90 days</option></select></label></div>
+      <p className="small muted" style={{ margin: 0 }}>Measured in visitors’ browsers on every page view: page type and device only, no personal data. “Good” uses Google’s Core Web Vitals thresholds (LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1). {total ? `${total} page views measured.` : 'No visits measured yet in this period.'}</p>
+    </div>
+    <div className="panel tablewrap" tabIndex={0} role="region" aria-label="Page speed by device"><table>
+      <thead><tr><th>Metric</th><th>All</th><th>Phones</th><th>Desktop</th></tr></thead>
+      <tbody>{M.map((m) => <tr key={m}><th scope="row">{m}<div className="small muted">{NAMES[m]}</div></th>{cell(find('all', 'all', m))}{cell(find('all', 'mobile', m))}{cell(find('all', 'desktop', m))}</tr>)}</tbody></table></div>
+    {pages.length > 0 && <div className="panel tablewrap" tabIndex={0} role="region" aria-label="Page speed by page type"><table>
+      <thead><tr><th>Page type</th>{['LCP', 'INP', 'CLS', 'TTFB'].map((m) => <th key={m}>{m}</th>)}</tr></thead>
+      <tbody>{pages.map((p) => <tr key={p}><th scope="row" style={{ textTransform: 'capitalize' }}>{p}</th>{['LCP', 'INP', 'CLS', 'TTFB'].map((m) => <Fragment key={m}>{cell(find(p, 'all', m))}</Fragment>)}</tr>)}</tbody></table></div>}
+  </div>);
 }
 
 // Remove products safely: never a hard delete. Archived products leave the storefront and every cart, while orders,

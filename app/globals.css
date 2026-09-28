@@ -448,3 +448,4 @@ main { min-height: 60vh; }
 .gate-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; } .gate-form input { text-align: center; font-size: 1.05rem; letter-spacing: .08em; }
 body.gate-open { overflow: hidden; }
 @media (max-width: 600px) { .gate-back { place-items: end center; padding: 0; } .gate { border-radius: 18px 18px 0 0; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); } }
+.warn-t { color: var(--warn); }

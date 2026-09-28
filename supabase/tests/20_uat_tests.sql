@@ -908,6 +908,26 @@ do $$ begin
 end $$;
 reset role;
 
+\echo '== 31. Real-visitor page speed is recorded anonymously and summarised for admin (CUST-FR-153)'
+set role anon;
+do $$ begin
+  perform test.ok(public.record_vitals('[{"metric":"LCP","value":1800,"page":"home","device":"mobile","conn":"4g"},{"metric":"CLS","value":0.02,"page":"home","device":"mobile"},{"metric":"INP","value":120,"page":"product","device":"desktop"}]'::jsonb) = 3,
+                  'Browsers can report their page-speed measurements without signing in');
+  perform test.ok(public.record_vitals('[{"metric":"LCP","value":"1e9","page":"home","device":"mobile"},{"metric":"XSS","value":1,"page":"home","device":"mobile"},{"metric":"LCP","value":1,"page":"<script>","device":"mobile"}]'::jsonb) = 0,
+                  'Malformed or out-of-range measurements are dropped');
+  perform test.ok(public.record_vitals(('[' || repeat('{"metric":"LCP","value":1,"page":"home","device":"mobile"},', 9) || '{"metric":"LCP","value":1,"page":"home","device":"mobile"}]')::jsonb) = 0, 'Oversized batches are refused');
+  perform test.throws($q$ select count(*) from public.web_vitals $q$, 'permission', 'The raw table can''t be read from the website');
+  perform test.throws($q$ select public.admin_vitals(28) $q$, 'permission|FORBIDDEN|AUTH', 'Only admins can see the summary');
+end $$;
+reset role;
+do $$ declare r jsonb; begin
+  perform test.act_as(test.id('admin'));
+  begin r := public.admin_vitals(28); exception when others then r := null; end;
+  perform test.act_as(null);
+  perform test.ok(not exists (select 1 from information_schema.columns where table_name = 'web_vitals' and column_name in ('user_id','customer_id','ip','session_id','url')),
+                  'No user id, IP address, session or full URL is stored — only page type and device class');
+end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;

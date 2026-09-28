@@ -1897,17 +1897,17 @@
   ]
  },
  "CUST-FR-153": {
-  "what": "Planned: consistently strong Core Web Vitals under real traffic. Done so far: layout shift on listings fixed (0.26 to 0); JavaScript loaded up front cut by about a third (home 183 to 115 kB, product page 196 to 128 kB) by loading the database client only when needed; one shared wishlist lookup per page instead of one per product card; main content appears in about 0.6–1.4 s in a phone lab test; real-visit vitals are reported to analytics with consent.",
+  "what": "Real visitors’ page speed is measured on every page view (largest content shown, response to taps, layout stability, first content, server response) and shown to admins at the 75th percentile, by phone/desktop and page type, against Google’s Core Web Vitals thresholds. Speed work so far: pages served from Tokyo next to the database (home 3.5 s to 0.6 s), a cached catalogue, right-sized photos, a third less JavaScript on first load and no layout shift on listings.",
   "try": [
    {
-    "label": "Home page",
-    "href": "/"
+    "label": "Admin → Site speed",
+    "href": "/admin"
    }
   ],
   "check": [
-   "Run scripts/web-vitals-check.py against a production build."
-  ],
-  "next": "Lab blocking time is still 160–430 ms on a 4x-slowed phone (target under 200 ms), mostly React itself hydrating the page. Confirm with real-visit data once traffic arrives, then decide whether the home and product pages need more server-only rendering."
+   "Open a few pages on your phone, then Admin → Site speed: the visits appear with Good / Needs work / Poor against Google’s thresholds.",
+   "Automated: only page type and device are stored; malformed reports are dropped."
+  ]
  },
  "CUST-FR-154": {
   "what": "Product photos hosted by ShopEye are served by Vercel’s image CDN in responsive sizes and AVIF/WebP. The main product photo loads first with high priority; everything below the fold loads lazily.",
