@@ -602,3 +602,30 @@ body.gate-open { overflow: hidden; }
 .coupon-row > span:first-child { width: 28px; height: 28px; border-radius: 50%; background: #FCE4EE; color: #D4145A; display: grid; place-items: center; font-weight: 700; }
 .coupon-row > span:nth-child(2) { flex: 1; display: grid; } .secure-note { display: flex; gap: 6px; align-items: center; }
 @media (max-width: 860px) { .ship-strip { border-radius: 0; margin: 0 -12px; border-left: 0; border-right: 0; } .ship-strip .deliver-btn strong { color: var(--ink); } }
+/* ---------- product cards, reference style ---------- */
+.grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.card { border: 0; border-radius: 0; background: transparent; }
+.card .ph { aspect-ratio: 3 / 4; background: #F1F1F3; border-radius: 6px; }
+.card .b { padding: 8px 2px 4px; gap: 2px; }
+.card-brand { font: 700 .92rem/1.25 var(--ui); color: #111; }
+.card .card-t { font: 400 .82rem/1.3 var(--ui); color: #4A4A4A; }
+.card-price { gap: 6px; margin-top: 2px; } .card-price .price { font: 700 .95rem var(--ui); color: #111; }
+.card-price .mrp { font: 400 .78rem var(--ui); color: #6B6B6B; text-decoration: line-through; } .card-off { font: 600 .78rem var(--ui); color: #137A30; }
+.card-low { font: 600 .78rem var(--ui); color: #D0021B; }
+.new-badge, .offer-badge, .demo-badge, .oos-badge { top: 8px; left: 8px; border-radius: 0 10px 10px 0; left: 0; padding: 3px 9px; font: 600 .72rem var(--ui); box-shadow: none; }
+.new-badge, .offer-badge { background: #FFF0B3; color: #3A2E00; }
+.heart { top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px #0000001f; }
+.card-dots { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 3px; background: #ffffffcc; border-radius: 8px; padding: 3px 5px; }
+.card-dots i { width: 5px; height: 5px; border-radius: 50%; background: #BDBDBD; } .card-dots i.on { background: #333; }
+:root { --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+@media (max-width: 860px) {
+  /* app look on phones: system font throughout, like the native apps */
+  body, button, input, select, textarea { font-family: var(--ui); }
+  h1, h2, h3, .rail-head h2, .trend-cap strong, .side-t strong, .cotd strong { font-family: var(--ui); letter-spacing: -.01em; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 10px; }
+  body.grid-1 .grid { grid-template-columns: minmax(0, 1fr); }
+  .rail { grid-auto-columns: minmax(0, 44%); }
+}
+.stack { grid-template-columns: minmax(0, 1fr); } .stack > *, .listing > * { min-width: 0; }
+.card-rating { justify-self: start; display: inline-flex; border: 1px solid #DADADA; border-radius: 12px; padding: 1px 8px; font: 600 .75rem var(--ui); color: #111; width: fit-content; margin-top: 2px; }
+.demo-badge { background: #E8ECF6; color: #1B2A55; }

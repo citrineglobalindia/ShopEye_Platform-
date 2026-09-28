@@ -46,11 +46,11 @@ const snapshot = unstable_cache(async () => {
   const parts = await Promise.all(chunk(ids, 300).map((c) => Promise.all([
     db.from('catalog_variants').select('variant_id,product_id,title,selling_price,mrp,discount_pct,vendor_name,vendor_id,is_demo,attributes').in('product_id', c),
     db.from('product_media').select('product_id,url,sort_order').in('product_id', c).order('sort_order'),
-    db.rpc('product_stock', { p_ids: c }),
+    db.rpc('product_stock_levels', { p_ids: c }),
   ])));
   const vars = parts.flatMap((p) => p[0].data ?? []), media = parts.flatMap((p) => p[1].data ?? []), stock = parts.flatMap((p) => p[2].data ?? []);
   const { data: brands } = await db.from('brands').select('id,name,slug');
-  const inStock = new Map(stock.map((x: any) => [x.product_id, x.in_stock]));
+  const avail = new Map(stock.map((x: any) => [x.product_id, Number(x.available)]));
   const best = new Map<string, any>(); const sizes = new Map<string, Set<string>>(); const colours = new Map<string, Set<string>>();
   for (const v of vars) {
     const b = best.get(v.product_id); if (!b || Number(v.selling_price) < Number(b.selling_price)) best.set(v.product_id, v);
@@ -58,15 +58,16 @@ const snapshot = unstable_cache(async () => {
     if (a.size) (sizes.get(v.product_id) ?? sizes.set(v.product_id, new Set()).get(v.product_id)!).add(String(a.size));
     if (a.colour) (colours.get(v.product_id) ?? colours.set(v.product_id, new Set()).get(v.product_id)!).add(String(a.colour));
   }
-  const img = new Map<string, string>(); for (const m of media) if (!img.has(m.product_id)) img.set(m.product_id, m.url);
+  const img = new Map<string, string>(); const nimg = new Map<string, number>();
+  for (const m of media) { if (!img.has(m.product_id)) img.set(m.product_id, m.url); nimg.set(m.product_id, (nimg.get(m.product_id) ?? 0) + 1); }
   const bmap = new Map((brands ?? []).map((b: any) => [b.id, b]));
   return (prods ?? []).filter((m: any) => best.has(m.id)).map((m: any) => {
     const b = best.get(m.id); const br: any = bmap.get(m.brand_id);
     return { ...b, attributes: undefined, selling_price: Number(b.selling_price), mrp: Number(b.mrp), image: img.get(m.id) ?? null, published_at: m.published_at,
-      in_stock: inStock.get(m.id) ?? false, rating_avg: m.rating_avg ?? null, rating_count: m.rating_count ?? 0, category_id: m.category_id,
+      in_stock: (avail.get(m.id) ?? 0) > 0, stock_left: avail.get(m.id) ?? 0, photos: nimg.get(m.id) ?? 0, rating_avg: m.rating_avg ?? null, rating_count: m.rating_count ?? 0, category_id: m.category_id,
       brand_slug: br?.slug, brand_name: br?.name, sizes: [...(sizes.get(m.id) ?? [])], colours: [...(colours.get(m.id) ?? [])] };
   });
-}, ['catalog-snapshot-v1'], { revalidate: 60, tags: ['catalog'] });
+}, ['catalog-snapshot-v2'], { revalidate: 60, tags: ['catalog'] });
 
 // CUST-FR-030/033/035/036/037: search (typo-tolerant, ranked) and listing with filters and sort, URL-driven
 export async function listProducts(o: ListOpts = {}): Promise<ListResult> {
