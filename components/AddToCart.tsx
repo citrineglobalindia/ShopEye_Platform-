@@ -36,8 +36,8 @@ export default function AddToCart({ variants, productId }: { variants: V[]; prod
   }
   return (
     <div className="stack">
-      <div className="pdp-price"><span className="price">{inr(sel.selling_price)}</span>
-        {sel.mrp > sel.selling_price && <><span className="mrp">MRP {inr(sel.mrp)}</span><span className="off">{sel.discount_pct}% off</span></>}<div className="small muted">Inclusive of all taxes</div></div>
+      <div className="pdp-price"><span className="price">{inr(sel.selling_price).replace(/\.00$/, '')}</span>
+        {sel.mrp > sel.selling_price && <><span className="mrp-l">MRP: <s>{inr(sel.mrp).replace(/\.00$/, '')}</s></span><span className="off">{sel.discount_pct}% Off</span></>}<div className="incl">inclusive of all taxes</div></div>
       {variants.length > 1 && (
         <div role="group" aria-label="Choose an option" className="variants">
           {variants.map((v) => (

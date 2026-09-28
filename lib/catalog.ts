@@ -146,3 +146,13 @@ export async function getSeller(slug: string) {
   const { data } = await sbPublic().from('vendors').select('id,display_name,slug').eq('slug', slug).eq('status', 'active').maybeSingle();
   return data;
 }
+// Any-depth category helpers: find a node, its ancestors (for breadcrumbs and tabs) and all leaves below it
+export function findNode(tree: CatNode[], slug: string): CatNode | null {
+  for (const n of tree) { if (n.slug === slug) return n; const f = findNode(n.children, slug); if (f) return f; }
+  return null;
+}
+export function pathTo(tree: CatNode[], slug: string): CatNode[] {
+  for (const n of tree) { if (n.slug === slug) return [n]; const p = pathTo(n.children, slug); if (p.length) return [n, ...p]; }
+  return [];
+}
+export const leavesUnder = (n: CatNode): CatNode[] => (n.children.length ? n.children.flatMap(leavesUnder) : [n]);

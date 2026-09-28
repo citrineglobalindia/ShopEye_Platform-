@@ -5,6 +5,7 @@ import { sbPublic } from '@/lib/sb-server';
 import { storefront } from '@/lib/storefront';
 import { RecentlyViewed } from '@/components/ShopWidgets';
 import { BodyClass } from '@/components/BodyClass';
+import { HomeTop } from '@/components/Landing';
 import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos, Promises, CategoryOfDay, CatTiles } from '@/components/Store';
 import { ProductGrid } from '@/components/ProductGrid';
 export const revalidate = 60;
@@ -22,7 +23,8 @@ export default async function Home() {
           <div className="cta-row"><Link className="btn" href="/search?sort=new">Browse products</Link><Link className="btn ghost" href="/seller">Sell on ShopEye</Link></div></div></section>)}
       {(banners ?? []).map((b: any) => (
         <Link key={b.id} href={b.link_path || '/'} className="promo"><strong>{b.title}</strong>{b.subtitle && <span>{b.subtitle}</span>}<span className="promo-cta" aria-hidden="true">Shop now ›</span></Link>))}
-      <div className="m-only"><CategoryOfDay c={d.cotd} /><CatTiles cats={d.circles} /></div>
+      <HomeTop img={d.slides[0]?.img ?? d.all[0]?.image} off={Math.max(0, ...d.all.map((p) => p.discount_pct))} count={d.all.length} brands={d.brands.map((b) => b.name)} />
+      <div className="m-only"><CatTiles cats={d.circles} /></div>
       <div className="d-only"><CircleCats title="Shop by category" cats={d.circles} /></div>
       <RecentlyViewed />
       <Row title="Deals of the day" href="/search?sort=discount" items={d.deals} />

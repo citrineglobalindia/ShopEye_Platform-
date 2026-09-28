@@ -410,7 +410,7 @@ FAIL  Core Web Vitals (lab, phone, 4x CPU, slow network) on /p/00000000-0000-400
 PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /cart: LCP 1204 ms, CLS 0.000, TBT 212 ms
 PASS  Core Web Vitals (lab, phone, 4x CPU, slow network) on /login: LCP 632 ms, CLS 0.000, TBT 207 ms
 == 17. Scroll smoothness (phone, 4x CPU slowdown, frames during a scripted scroll; target: none over 33 ms)
-PASS  /                                                {"frames": 89, "p50": 17, "p95": 17, "max": 17, "over33": 0, "over50": 0}
-PASS  /c/fashion                                       {"frames": 62, "p50": 17, "p95": 17, "max": 33, "over33": 1, "over50": 0}
+PASS  /                                                {"frames": 82, "p50": 17, "p95": 17, "max": 17, "over33": 0, "over50": 0}
+PASS  /c/fashion                                       {"frames": 80, "p50": 17, "p95": 17, "max": 17, "over33": 0, "over50": 0}
 PASS  /c/dresses                                       {"frames": 32, "p50": 17, "p95": 17, "max": 17, "over33": 0, "over50": 0}
 PASS  /p/bac4a715-0713-48b4-aa4c-0730fb356209          {"frames": 58, "p50": 17, "p95": 17, "max": 17, "over33": 0, "over50": 0}

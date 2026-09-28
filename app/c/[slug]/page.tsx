@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { Listing, parseList, type Params } from '@/components/Listing';
 import { Crumbs } from '@/components/Crumbs';
 import { Suspense } from 'react';
-import { listProducts, getCategory, categoryTree, idsUnder } from '@/lib/catalog';
-import { storefront } from '@/lib/storefront';
+import { listProducts, getCategory, categoryTree, idsUnder, findNode, pathTo } from '@/lib/catalog';
+import { landing } from '@/lib/landing';
+import { LTabs, LHero, LExplore, LWontLast, LCelebrate, LPick, LWorthIt } from '@/components/Landing';
+import { ProductCard } from '@/components/ProductGrid';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { RecentlyViewed } from '@/components/ShopWidgets';
 import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos, CategoryOfDay, CatTiles, SubRail, ValueFinds, ExploreAll, GetTheLook } from '@/components/Store';
@@ -20,66 +22,60 @@ export const revalidate = 60;
 
 export default async function CategoryPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Params> }) {
   const { slug } = await params; const sp = await searchParams;
-  const cat = await getCategory(slug);
-  if (!cat) notFound();
   const tree = await categoryTree();
-  const dept = tree.find((d) => d.slug === slug);
-  const parent = cat.parent_id ? tree.find((d) => d.id === cat.parent_id) : null;
-  const siblings = (dept ?? parent)?.children ?? [];
+  const node = findNode(tree, slug);
+  if (!node) notFound();
+  const path = pathTo(tree, slug);                          // e.g. Fashion › Women › Western Wear › Dresses
+  const parent = path.length > 1 ? path[path.length - 2] : null;
   const filtered = Object.values(sp).some(Boolean);
-  const side = (
-    <nav className="panel cat-side" aria-label={`${(dept ?? parent)?.name ?? cat.name} categories`}>
-      <strong>{(dept ?? parent)?.name ?? 'Categories'}</strong>
-      {(dept ?? parent) && <Link href={`/c/${(dept ?? parent)!.slug}`} aria-current={dept ? 'page' : undefined}>All {(dept ?? parent)!.name}</Link>}
-      {siblings.map((c) => <Link key={c.id} href={`/c/${c.slug}`} aria-current={c.slug === slug ? 'page' : undefined}>{c.name}</Link>)}
-    </nav>);
-  if (dept && dept.children.length && !filtered) {
-    const d = await storefront(slug);
+  const crumbs: [string, string?][] = [['Home', '/'], ...path.map((n, k) => (k === path.length - 1 ? [n.name] : [n.name, `/c/${n.slug}`]) as [string, string?])];
+  const switcher = (parent ? parent.children : tree).map((n) => ({ name: n.name, slug: n.slug }));
+
+  // A category with sub-categories gets its own landing page (any depth: Fashion, Women, Western Wear…)
+  if (node.children.length && !filtered) {
+    const d = await landing(node);
+    const tabsOf = path.length >= 2 ? path[0] : node;       // tabs: the department's sections, current one underlined
+    const slides = d.children.length >= 2 ? d.children : d.leaves;
     return (
-      <div className="wrap section">
-        <MobileTitle title={dept.name} sub={`${d.all.length.toLocaleString('en-IN')} Products`} tabs />
-        <h1 className="sr-only">{dept.name}</h1>
-        <Crumbs items={[['Home', '/'], [dept.name]]} />
-        <div className="dept">
-          <aside className="dept-side">{side}
-            <form className="panel stack" action={`/c/${slug}`} style={{ gap: 8 }}>
-              <strong>Filter {dept.name}</strong>
-              <div className="row2" style={{ gap: 8 }}><label className="small">Min ₹<input name="min" inputMode="numeric" /></label><label className="small">Max ₹<input name="max" inputMode="numeric" /></label></div>
-              <label className="radio small"><input type="checkbox" name="instock" value="1" style={{ width: 'auto' }} /> In stock only</label>
-              <select name="sort" aria-label="Sort" defaultValue=""><option value="">Relevance</option><option value="new">Newest first</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="discount">Biggest discount</option></select>
-              <button className="btn dark sm">Show products</button>
-            </form>
-          </aside>
-          <div className="dept-main">
-            <Hero slides={d.slides} side={d.side} />
-            <div className="m-only"><ExploreAll cats={d.circles} /><CategoryOfDay c={d.cotd} /></div>
-            <div className="d-only"><CircleCats title={`Shop ${dept.name} by category`} cats={d.circles} /></div>
-            <RecentlyViewed />
-            <Row title="Deals of the day" href={`/c/${slug}?sort=discount`} items={d.deals} />
-            <Trending title="Shop by trending styles" tiles={d.trending} />
-            <Brands brands={d.brands} />
-            <Sellers sellers={d.vendors} />
-            <BestSellers title={`Top picks in ${dept.name}`} tabs={d.tabs} />
-            <Promos items={d.promos} />
-          </div>
+      <div className="landing">
+        <MobileTitle title={node.name} sub={`${d.all.length.toLocaleString('en-IN')} Products`} tabs switcher={switcher} />
+        <h1 className="sr-only">{node.name}</h1>
+        <LTabs items={tabsOf.children} current={path[1]?.slug} />
+        <div className="wrap">
+          <div className="d-only"><Crumbs items={crumbs} /></div>
+          <LHero slides={slides} name={node.name} />
+          <LExplore tiles={d.explore} />
+          <LWontLast brands={d.brands} />
+          <LCelebrate slides={d.leaves.length >= 2 ? d.leaves : d.children} />
+          <LPick lead={d.leaves[0]} tiles={d.leaves.slice(1)} />
+          <LWorthIt brands={d.brands} />
+          <RecentlyViewed />
+          <section className="lsec" aria-label={`Trending in ${node.name}`}>
+            <h2 className="lh">Trending in {node.name}</h2>
+            <div className="grid">{d.all.slice(0, 12).map((p) => <ProductCard key={p.product_id} p={p} />)}</div>
+            {d.all.length > 12 && <p style={{ textAlign: 'center' }}><Link className="btn ghost" href={`/c/${slug}?sort=new`}>View all {d.all.length} products</Link></p>}
+          </section>
         </div>
       </div>);
   }
+
+  // A category without sub-categories (or any filtered view): sibling picture rail, banner, value finds, products
+  const sib = parent ? (await landing(parent)).children : [];
   return (
     <div className="wrap section stack">
-      <Crumbs items={[['Home', '/'], ...(parent ? [[parent.name, `/c/${parent.slug}`] as [string, string]] : []), [cat.name]]} />
-      <h1 className="page-h1" style={{ margin: 0 }}>{cat.name}</h1>
-      {siblings.length > 0 && (dept || parent) && <SubRail current={slug} cats={(await storefront((dept ?? parent)!.slug)).circles} />}
-      {!filtered && <><CatBanner slug={slug} name={cat.name} ids={dept ? idsUnder(dept) : [cat.id]} /><ValueFinds base={`/c/${slug}`} /><Look ids={dept ? idsUnder(dept) : [cat.id]} /></>}
-      <Suspense fallback={<ListSkeleton />}><Results slug={slug} ids={dept ? idsUnder(dept) : [cat.id]} sp={sp} title={cat.name} /></Suspense>
+      <div className="d-only"><Crumbs items={crumbs} /></div>
+      <h1 className="page-h1" style={{ margin: 0 }}>{node.name}</h1>
+      {sib.length > 1 && <SubRail current={slug} cats={sib.map((t) => ({ name: t.name, slug: t.slug, img: t.img }))} />}
+      {!filtered && <><CatBanner slug={slug} name={node.name} ids={idsUnder(node)} /><ValueFinds base={`/c/${slug}`} /><Look ids={idsUnder(node)} /></>}
+      <Suspense fallback={<ListSkeleton />}><Results slug={slug} ids={idsUnder(node)} sp={sp} title={node.name} switcher={switcher} /></Suspense>
       <RecentlyViewed />
     </div>
   );
 }
 
-async function Results({ slug, ids, sp, title }: { slug: string; ids: string[]; sp: Params; title: string }) {
+async function Results({ slug, ids, sp, title, switcher }: { slug: string; ids: string[]; sp: Params; title: string; switcher?: { name: string; slug: string }[] }) {
   const result = await listProducts({ categoryIds: ids, ...parseList(sp) });
-  return <><MobileTitle title={title} sub={`${result.total.toLocaleString('en-IN')} Products`} /><Listing base={`/c/${slug}`} params={sp} result={result}
+  return <><MobileTitle title={title} sub={`${result.total.toLocaleString('en-IN')} Products`} switcher={switcher} /><Listing base={`/c/${slug}`} params={sp} result={result}
     empty={<><h3>Nothing matches yet</h3><p className="muted">Try removing a filter, or <Link href="/">browse everything</Link>.</p></>} /></>;
 }
 

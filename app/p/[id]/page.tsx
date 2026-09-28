@@ -77,7 +77,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       {!p.is_demo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />}
       <Crumbs items={[['Home', '/'], ...(cat ? [[cat.name, `/c/${cat.slug}`] as [string, string]] : []), [p.title]]} />
       <div className="pdp">
-        <div>
+        <div className="gal-wrap">
+          {variants[0].discount_pct >= 5 && <span className="off-ribbon">{variants[0].discount_pct}% Off</span>}
           <Gallery media={media} title={p.title} />
           {media[0]?.credit && <p className="small muted" style={{ margin: '6px 0 0' }}>Photo: {media[0].credit_url ? <a href={media[0].credit_url} target="_blank" rel="noopener nofollow">{media[0].credit}</a> : media[0].credit}</p>}
         </div>
@@ -88,7 +89,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <p className="small" style={{ margin: 0 }}>{p.rating_count > 0 ? <a href="#rev-h" className="rating-link"><Stars value={Number(p.rating_avg)} /> {Number(p.rating_avg).toFixed(1)} · {p.rating_count} {p.rating_count === 1 ? 'review' : 'reviews'}</a> : <span className="muted">No reviews yet</span>} · <CompareToggle productId={id} /></p>
           </div>
           {p.is_demo
-            ? <><div className="pdp-price"><span className="price">{inr(low)}</span>{variants[0].mrp > low && <><span className="mrp">MRP {inr(variants[0].mrp)}</span><span className="off">{variants[0].discount_pct}% off</span></>}<div className="small muted">Inclusive of all taxes</div></div>
+            ? <><div className="pdp-price"><span className="price">{inr(low).replace(/\.00$/, '')}</span>{variants[0].mrp > low && <><span className="mrp-l">MRP: <s>{inr(variants[0].mrp).replace(/\.00$/, '')}</s></span><span className="off">{variants[0].discount_pct}% Off</span></>}<div className="incl">inclusive of all taxes</div></div>
               <BodyClass name="has-buybar" />
               <div className="buy-bar demo"><WishHeart productId={id} big /><span className="btn soon" aria-disabled="true">Coming soon</span></div>
               <div className="msg info" role="note"><strong>Preview product.</strong> This listing shows what ShopEye will offer and can’t be bought yet. Sellers are joining now; save it to your wishlist and we’ll have the real thing soon.</div></>
