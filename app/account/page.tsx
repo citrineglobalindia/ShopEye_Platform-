@@ -8,6 +8,8 @@ import { sb } from '@/lib/sb-browser';
 import { STATES } from '@/lib/config';
 import { clearRecent, recentIds } from '@/lib/shop-client';
 import { Crumbs } from '@/components/Crumbs';
+import dynamic from 'next/dynamic';
+const MapPin = dynamic(() => import('@/components/MapPin').then((m) => m.MapPin), { ssr: false });
 
 const REAUTH_MIN = 10;
 // Minutes since this session last proved who it is (the access token's authentication-method timestamps)
@@ -181,6 +183,9 @@ export default function Account() {
             <div className="row2"><label>Landmark (optional)<input maxLength={100} {...f('landmark')} /></label><label>Pincode<input required inputMode="numeric" maxLength={6} {...f('pincode')} /></label></div>
             <div className="row2"><label>City<input required {...f('city')} /></label>
               <label>State<select {...f('state_code')}>{STATES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></label></div>
+            <MapPin value={form.latitude != null ? { latitude: Number(form.latitude), longitude: Number(form.longitude), pin_source: form.pin_source } : null} pincode={form.pincode}
+              onPin={(p) => setForm({ ...form, latitude: p?.latitude ?? null, longitude: p?.longitude ?? null, pin_source: p?.pin_source ?? null })}
+              onApply={(sg) => setForm((f0: any) => ({ ...f0, ...(sg.line2 ? { line2: sg.line2 } : {}), ...(sg.city ? { city: sg.city } : {}), ...(sg.state_code ? { state_code: sg.state_code } : {}), ...(sg.pincode ? { pincode: sg.pincode } : {}) }))} />
             <label>Address type<select {...f('address_type')}><option value="home">Home</option><option value="work">Work</option><option value="other">Other</option></select></label>
             <div style={{ display: 'flex', gap: 10 }}><button className="btn dark">{form.id ? 'Save changes' : 'Save address'}</button><button type="button" className="btn ghost" onClick={() => setForm(null)}>Cancel</button></div>
           </form>)}

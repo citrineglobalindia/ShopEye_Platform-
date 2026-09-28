@@ -449,3 +449,9 @@ main { min-height: 60vh; }
 body.gate-open { overflow: hidden; }
 @media (max-width: 600px) { .gate-back { place-items: end center; padding: 0; } .gate { border-radius: 18px 18px 0 0; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); } }
 .warn-t { color: var(--warn); }
+.pin-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.pin-box { gap: 10px; } .pin-map { height: 300px; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line); z-index: 0; }
+.pin-ic span { display: block; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; background: var(--bad); transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 3px 8px #0005; }
+.pin-sug { display: grid; gap: 8px; background: #F1FBF6; border: 1px solid #CDEBDB; border-radius: var(--r-md); padding: 10px 12px; }
+@media (max-width: 600px) { .pin-map { height: 260px; } }
+.pin-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }

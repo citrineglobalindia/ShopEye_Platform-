@@ -3,6 +3,7 @@ psql:supabase/migrations/20260926000022_qa_security_shipping.sql:224: NOTICE:  t
 psql:supabase/migrations/20260926000024_google_signin_analytics.sql:42: NOTICE:  trigger "on_auth_identity_added" for relation "auth.identities" does not exist, skipping
 psql:supabase/migrations/20260926000028_demo_products.sql:28: NOTICE:  trigger "cart_items_no_demo" for relation "public.cart_items" does not exist, skipping
 psql:supabase/migrations/20260926000028_demo_products.sql:30: NOTICE:  trigger "order_items_no_demo" for relation "public.order_items" does not exist, skipping
+psql:supabase/migrations/20260926000033_address_map_pin.sql:8: NOTICE:  constraint "customer_addresses_pin_pair" of relation "customer_addresses" does not exist, skipping
 == 1. Status models & direct-write guards
 PASS  Vendor active→draft rejected by server (VS-FR-887) (rejected: INVALID_TRANSITION: vendor cannot move from active to draft)
 PASS  Draft product cannot self-activate without review (rejected: INVALID_TRANSITION: product cannot move from draft to active)
@@ -320,6 +321,11 @@ PASS  Oversized batches are refused
 PASS  The raw table can't be read from the website (rejected: permission denied for table web_vitals)
 PASS  Only admins can see the summary (rejected: permission denied for function admin_vitals)
 PASS  No user id, IP address, session or full URL is stored — only page type and device class
+== 32. Map pin on addresses supplements the typed address (CUST-FR-068)
+PASS  An address can carry a map pin alongside the typed address, which is kept as entered
+PASS  A pin outside India is refused (rejected: new row for relation "customer_addresses" violates check constraint "customer_addresses_la)
+PASS  Half a pin (latitude without longitude) is refused (rejected: new row for relation "customer_addresses" violates check constraint "customer_addresses_pi)
+PASS  Addresses without a pin still work (the pin is optional)
 == 10. Row-level security as real API roles (UAT-021, AF-FR-0583)
 PASS  Anonymous shopper sees only active products (drafts and rejected hidden)
 PASS  Anonymous has no access to orders at all (rejected: permission denied for table orders)
@@ -353,8 +359,8 @@ PASS  Every note belongs to a real SRS requirement ID
 PASS  Every note says what the functionality does and how to check it
 PASS  Every "Try it" link in the notes points at a page that exists
 PASS  Every page derived from the code points at a page that exists
-PASS  Unfinished requirements are labelled Planned and say what they wait on (4)
-PASS  Finished requirements are not described as planned (184)
+PASS  Unfinished requirements are labelled Planned and say what they wait on (3)
+PASS  Finished requirements are not described as planned (185)
 PASS  Every requirement cited in code shows where it lives (page, server or database)
 PASS  Every In progress requirement names the groundwork behind it
 PASS  Notes are written in our own words, never copied from the confidential SRS text

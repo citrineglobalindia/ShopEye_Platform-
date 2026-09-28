@@ -883,11 +883,21 @@
   ]
  },
  "CUST-FR-068": {
-  "what": "Planned: if a map pin is added, it will only fill in the address after you confirm, never overwrite it silently. There is no map pin today.",
-  "check": [
-   "Not applicable until a map pin is added."
+  "what": "Addresses can carry an optional map pin: open the map from the address form, drag the pin to the door or use your location. Details suggested from the pin (street, area, city, pincode) are only filled in when you tap “Use these details”; otherwise your typed address stays exactly as written. The pin is saved with the address and copied onto orders for the courier.",
+  "try": [
+   {
+    "label": "Checkout (add an address)",
+    "href": "/checkout"
+   },
+   {
+    "label": "My account → Addresses",
+    "href": "/account"
+   }
   ],
-  "next": "Only needed if you decide to add map-based address entry."
+  "check": [
+   "Add an address, open the map, move the pin: your typed street stays until you tap Use these details.",
+   "Automated: pins outside India or with only one coordinate are refused; addresses without a pin still work."
+  ]
  },
  "CUST-FR-069": {
   "what": "Double-clicking, refreshing or retrying “Place order” can never create two orders.",

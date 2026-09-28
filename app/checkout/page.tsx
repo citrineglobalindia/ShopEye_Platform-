@@ -9,6 +9,8 @@ import { shippingRules } from '@/lib/shop-client';
 import { inr, STATES, shipFor, SHIP_DEFAULT, type ShipRules } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { payForOrder } from '@/lib/pay';
+import dynamic from 'next/dynamic';
+const MapPin = dynamic(() => import('@/components/MapPin').then((m) => m.MapPin), { ssr: false });
 import { track } from '@/lib/analytics';
 
 const blank = { recipient: '', mobile: '', line1: '', line2: '', landmark: '', city: '', state_code: 'KA', pincode: '', address_type: 'home' };
@@ -130,7 +132,7 @@ export default function Checkout() {
             <label key={a.id} className={`choice${addrId === a.id ? ' on' : ''}`}>
               <input type="radio" name="addr" checked={addrId === a.id} onChange={() => setAddrId(a.id)} />
               <span><strong>{a.recipient}</strong>{a.address_type ? <span className="small muted"> · {a.address_type === 'work' ? 'Work' : 'Home'}</span> : null}<br />
-                <span className="small">{a.line1}, {a.line2}{a.landmark ? `, ${a.landmark}` : ''}, {a.city} – {a.pincode}</span><br /><span className="small muted">{a.mobile}</span></span></label>))}
+                <span className="small">{a.line1}, {a.line2}{a.landmark ? `, ${a.landmark}` : ''}, {a.city} – {a.pincode}</span><br /><span className="small muted">{a.mobile}{a.latitude != null ? ' · 📍 map pin set' : ''}</span></span></label>))}
           {!adding ? <button className="btn ghost sm" style={{ justifySelf: 'start' }} onClick={() => setAdding(true)}>+ Add a new address</button> : (
             <form className="form" onSubmit={saveAddress} style={{ maxWidth: 'none' }} noValidate>
               <div className="row2"><label>Full name<input required maxLength={100} {...f('recipient')} />{fx('recipient')}</label>
@@ -141,6 +143,9 @@ export default function Checkout() {
                 <label>Pincode<input required inputMode="numeric" maxLength={6} {...f('pincode')} />{fx('pincode')}</label></div>
               <div className="row2"><label>City<input required {...f('city')} />{fx('city')}</label>
                 <label>State<select {...f('state_code')}>{STATES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></label></div>
+              <MapPin value={form.latitude != null ? { latitude: form.latitude, longitude: form.longitude, pin_source: form.pin_source } : null} pincode={form.pincode}
+                onPin={(p) => setForm({ ...form, latitude: p?.latitude ?? null, longitude: p?.longitude ?? null, pin_source: p?.pin_source ?? null })}
+                onApply={(sg) => setForm((f0: any) => ({ ...f0, ...(sg.line2 ? { line2: sg.line2 } : {}), ...(sg.city ? { city: sg.city } : {}), ...(sg.state_code ? { state_code: sg.state_code } : {}), ...(sg.pincode ? { pincode: sg.pincode } : {}) }))} />
               <fieldset><legend>Address type</legend><div style={{ display: 'flex', gap: 16 }}>
                 {[['home', 'Home'], ['work', 'Work']].map(([v, l]) => <label key={v} className="radio"><input type="radio" name="atype" checked={form.address_type === v} onChange={() => setForm({ ...form, address_type: v })} style={{ width: 'auto' }} /> {l}</label>)}</div></fieldset>
               <div style={{ display: 'flex', gap: 10 }}><button className="btn dark">Save address</button>

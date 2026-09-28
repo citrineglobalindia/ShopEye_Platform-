@@ -928,6 +928,22 @@ do $$ declare r jsonb; begin
                   'No user id, IP address, session or full URL is stored — only page type and device class');
 end $$;
 
+\echo '== 32. Map pin on addresses supplements the typed address (CUST-FR-068)'
+set role authenticated;
+do $$ begin perform test.act_as(test.id('cust_a')); end $$;
+do $$ declare a uuid; begin
+  insert into public.customer_addresses(customer_id, recipient, mobile, line1, line2, city, state_code, pincode, address_type, latitude, longitude, pin_source)
+  values (test.id('cust_a'), 'Pin Test', '+919876543210', '12 MG Road', 'Ashok Nagar', 'Bengaluru', 'KA', '560001', 'home', 12.975, 77.605, 'map') returning id into a;
+  perform test.ok((select latitude = 12.975 and pin_source = 'map' and line1 = '12 MG Road' from public.customer_addresses where id = a), 'An address can carry a map pin alongside the typed address, which is kept as entered');
+  perform test.throws($q$ insert into public.customer_addresses(customer_id, recipient, mobile, line1, line2, city, state_code, pincode, address_type, latitude, longitude, pin_source)
+                         values (test.id('cust_a'), 'Pin Test', '+919876543210', 'x1', 'y1', 'Bengaluru', 'KA', '560001', 'home', 51.5, -0.12, 'map') $q$, 'check', 'A pin outside India is refused');
+  perform test.throws($q$ insert into public.customer_addresses(customer_id, recipient, mobile, line1, line2, city, state_code, pincode, address_type, latitude)
+                         values (test.id('cust_a'), 'Pin Test', '+919876543210', 'x1', 'y1', 'Bengaluru', 'KA', '560001', 'home', 12.9) $q$, 'check', 'Half a pin (latitude without longitude) is refused');
+  perform test.ok(exists (select 1 from public.customer_addresses where recipient <> 'Pin Test' and latitude is null), 'Addresses without a pin still work (the pin is optional)');
+end $$;
+reset role;
+do $$ begin perform test.act_as(null); end $$;
+
 \echo '== 10. Row-level security as real API roles (UAT-021, AF-FR-0583)'
 set role anon;
 do $$ begin perform test.act_as(null); end $$;
