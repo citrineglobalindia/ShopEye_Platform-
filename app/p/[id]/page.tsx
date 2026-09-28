@@ -13,7 +13,7 @@ import { BodyClass } from '@/components/BodyClass';
 import { Gallery, PincodeCheck } from '@/components/ProductExtras';
 import { WishHeart, TrackView, RecentlyViewed } from '@/components/ShopWidgets';
 import { Rail } from '@/components/ProductGrid';
-import { listProducts } from '@/lib/catalog';
+import { listProducts, categoryTree, pathTo } from '@/lib/catalog';
 import { ReviewList, Stars } from '@/components/Reviews';
 import { Questions } from '@/components/Questions';
 import { TrackEvent } from '@/components/Analytics';
@@ -27,15 +27,16 @@ async function load(id: string) {
   const db = sbPublic();
   const { data: p } = await db.from('products').select('id,title,description,gst_rate,return_window_days,is_returnable,category_id,vendor_id,specifications,rating_avg,rating_count,is_demo,brands(name,slug),vendors(slug)').eq('id', id).eq('status', 'active').maybeSingle();
   if (!p) return null;
-  const [{ data: vars }, { data: media }, { data: avail }, { data: cat }] = await Promise.all([
+  const [{ data: vars }, { data: media }, { data: avail }, { data: cat }, { data: wished }] = await Promise.all([
     db.from('catalog_variants').select('variant_id,sku,attributes,mrp,selling_price,discount_pct,vendor_name').eq('product_id', id),
     db.from('product_media').select('url,alt_text,variant_id,credit,credit_url').eq('product_id', id).order('sort_order'),
     db.rpc('variant_availability', { p_product: id }),
     db.from('categories').select('name,slug,return_window_days').eq('id', p.category_id).maybeSingle(),
+    db.rpc('product_wishlist_count', { p_product: id }),
   ]);
   if (!vars?.length) return null;
   const stock = new Map((avail ?? []).map((a: any) => [a.variant_id, a.available]));
-  return { p, cat, media: media ?? [], variants: vars.map((v: any) => ({ ...v, mrp: Number(v.mrp), selling_price: Number(v.selling_price), available: stock.get(v.variant_id) ?? 0 })) };
+  return { p, cat, wished: Number(wished ?? 0), media: media ?? [], variants: vars.map((v: any) => ({ ...v, mrp: Number(v.mrp), selling_price: Number(v.selling_price), available: stock.get(v.variant_id) ?? 0 })) };
 }
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const d = await load(id);
@@ -46,7 +47,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const d = await load(id);
   if (!d) notFound();
-  const { p, media, variants, cat } = d as any;
+  const { p, media, variants, cat, wished } = d as any;
+  const path = cat && !FIXTURES ? pathTo(await categoryTree(), cat.slug) : [];
   const days = p.return_window_days ?? cat?.return_window_days ?? 7;
   const low = Math.min(...variants.map((v: any) => v.selling_price));
   const more = cat ? (await listProducts({ categoryId: p.category_id, perPage: 9 })).items.filter((x) => x.product_id !== id).slice(0, 8) : [];
@@ -75,7 +77,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     <div className="wrap section">
       <MobileTitle title={(p as any).brands?.name ?? cat?.name ?? ''} />
       {!p.is_demo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />}
-      <Crumbs items={[['Home', '/'], ...(cat ? [[cat.name, `/c/${cat.slug}`] as [string, string]] : []), [p.title]]} />
+      <Crumbs items={[['Home', '/'], ...(path.length ? path.map((n) => [n.name, `/c/${n.slug}`] as [string, string]) : cat ? [[cat.name, `/c/${cat.slug}`] as [string, string]] : []), [p.title]]} />
       <div className="pdp">
         <div className="gal-wrap">
           {variants[0].discount_pct >= 5 && <span className="off-ribbon">{variants[0].discount_pct}% Off</span>}
@@ -84,8 +86,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         </div>
         <div className="stack">
           <div>
+            {wished >= 3 && <p className="popular"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20s-7-4.4-8.8-8.6C2 8 4.1 5 7.3 5c1.9 0 3.4 1 4.7 2.8C13.3 6 14.8 5 16.7 5c3.2 0 5.3 3 4.1 6.4C19 15.6 12 20 12 20z"/></svg>Popular: recently wishlisted {wished} times</p>}
             {brand ? <Link href={`/search?brand=${brand.slug}`} className="pdp-brand">{brand.name}</Link> : <p className="small muted d-only" style={{ margin: 0 }}>Sold by <strong>{variants[0].vendor_name}</strong></p>}
-            <div className="title-row"><h1 className="pdp-title">{p.title}</h1><span className="d-only"><WishHeart productId={id} big /></span></div>
+            <div className="title-row"><h1 className="pdp-title">{p.title}</h1></div>
             <p className="small" style={{ margin: 0 }}>{p.rating_count > 0 ? <a href="#rev-h" className="rating-link"><Stars value={Number(p.rating_avg)} /> {Number(p.rating_avg).toFixed(1)} · {p.rating_count} {p.rating_count === 1 ? 'review' : 'reviews'}</a> : <span className="muted">No reviews yet</span>} · <CompareToggle productId={id} /></p>
           </div>
           {p.is_demo
@@ -93,7 +96,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               <BodyClass name="has-buybar" />
               <div className="buy-bar demo"><WishHeart productId={id} big /><span className="btn soon" aria-disabled="true">Coming soon</span></div>
               <div className="msg info" role="note"><strong>Preview product.</strong> This listing shows what ShopEye will offer and can’t be bought yet. Sellers are joining now; save it to your wishlist and we’ll have the real thing soon.</div></>
-            : <AddToCart variants={variants} productId={id} />}
+            : <AddToCart variants={variants} productId={id} title={p.title} fitNote={[p.specifications?.Fabric, p.specifications?.Material, p.specifications?.Care].filter(Boolean).join(', ') || undefined} />}
           <PincodeCheck returnDays={days} returnable={!!p.is_returnable} />
           {storeSlug && <Link href={`/store/${storeSlug}`} className="sold-row">Sold by <strong>{variants[0].vendor_name}</strong><span aria-hidden="true">›</span></Link>}
           <ul className="assure small">
@@ -105,7 +108,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
       <div className="pdp-info">
-        {(p.description || specs.length > 0) && <details className="acc" open><summary><h2>Product details</h2></summary>
+        {(p.description || specs.length > 0) && <details className="acc" open id="details"><summary><h2>Product details</h2></summary>
           {p.description && <p style={{ whiteSpace: 'pre-line' }}>{p.description}</p>}
           {specs.length > 0 && <dl className="specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{String(v)}</dd></div>)}</dl>}</details>}
         <details className="acc"><summary><h2>Know more</h2></summary>

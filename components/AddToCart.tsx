@@ -9,13 +9,14 @@ import { friendly } from '@/lib/errors';
 import { AlertButton } from '@/components/Alerts';
 import { WishHeart } from '@/components/ShopWidgets';
 import { BodyClass } from '@/components/BodyClass';
+import { SizeGuide, ShareButton } from '@/components/SizeGuide';
 import { useEffect } from 'react';
 import { track } from '@/lib/analytics';
 
 type V = { variant_id: string; sku: string; attributes: Record<string, string>; mrp: number; selling_price: number; discount_pct: number; available: number };
 const label = (v: V) => Object.values(v.attributes || {}).join(' / ') || v.sku;
 
-export default function AddToCart({ variants, productId }: { variants: V[]; productId?: string }) {
+export default function AddToCart({ variants, productId, fitNote, title = '' }: { variants: V[]; productId?: string; fitNote?: string; title?: string }) {
   const router = useRouter();
   const first = variants.find((v) => v.available > 0) ?? variants[0];
   const [sel, setSel] = useState<V>(first);
@@ -25,6 +26,8 @@ export default function AddToCart({ variants, productId }: { variants: V[]; prod
   const [msg, setMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null);
   const out = sel.available <= 0;
 
+  // size chips (XS/S/M/L/XL…) get the size layout, size guide and strike-through for sold-out sizes
+  const isSize = variants.every((v: any) => /^(XXS|XS|S|M|L|XL|XXL|3XL|\d{2}|UK ?\d+|Free size)$/i.test(String(v.attributes?.size ?? '')));
   async function go(buyNow: boolean) {
     setBusy(true); setMsg(null);
     try {
@@ -38,13 +41,15 @@ export default function AddToCart({ variants, productId }: { variants: V[]; prod
     <div className="stack">
       <div className="pdp-price"><span className="price">{inr(sel.selling_price).replace(/\.00$/, '')}</span>
         {sel.mrp > sel.selling_price && <><span className="mrp-l">MRP: <s>{inr(sel.mrp).replace(/\.00$/, '')}</s></span><span className="off">{sel.discount_pct}% Off</span></>}<div className="incl">inclusive of all taxes</div></div>
+      {variants.length > 1 && isSize && <div className="size-h"><strong>Select Size</strong><SizeGuide /></div>}
       {variants.length > 1 && (
-        <div role="group" aria-label="Choose an option" className="variants">
+        <div role="group" aria-label={isSize ? 'Select size' : 'Choose an option'} className={`variants${isSize ? ' sizes' : ''}`}>
           {variants.map((v) => (
             <button key={v.variant_id} aria-pressed={v.variant_id === sel.variant_id} className={v.available <= 0 ? 'oos-v' : undefined}
               aria-label={v.available <= 0 ? `${label(v)}, sold out` : undefined} title={v.available <= 0 ? 'Sold out: select to get an email when it’s back' : undefined}
               onClick={() => { setSel(v); setQty(1); }}>{label(v)}</button>))}
         </div>)}
+      {fitNote && <p className="fit-note">{fitNote}</p>}
       <div className="cta-row">
         {out ? <AlertButton key={sel.variant_id + 's'} variantId={sel.variant_id} kind="back_in_stock" label="Email me when it’s back" onLabel="We’ll email you when it’s back ✓" />
              : <AlertButton key={sel.variant_id + 'p'} variantId={sel.variant_id} kind="price_drop" label="Watch price" onLabel="Watching price ✓" />}
@@ -58,9 +63,10 @@ export default function AddToCart({ variants, productId }: { variants: V[]; prod
           </select></label>
         <BodyClass name="has-buybar" />
         <div className="buy-bar">
-          {productId && <span className="m-only-flex"><WishHeart productId={productId} big /></span>}
-          <button className="btn ghost" disabled={busy} onClick={() => go(true)}>Buy now</button>
-          <button className="btn" disabled={busy} onClick={() => go(false)}>Add to cart</button>
+          <span className="d-only-flex"><ShareButton title={title} /></span>
+          {productId && <span className="wish-sq"><WishHeart productId={productId} big /></span>}
+          <button className="btn ghost" disabled={busy} onClick={() => go(true)}>Buy Now</button>
+          <button className="btn" disabled={busy} onClick={() => go(false)}>Add to Cart</button>
         </div></>)}
       {msg && <div className={`msg ${msg.t}`} role="status">{msg.m} {msg.t === 'ok' && <a href="/cart">View cart</a>}</div>}
     </div>

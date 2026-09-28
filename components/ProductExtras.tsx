@@ -26,11 +26,15 @@ export function Gallery({ media: all, title }: { media: { url: string; alt_text?
         <button type="button" className="gal-share" onClick={share} aria-label="Share this product">{copied ? '✓' : <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>}</button>
       </div>
       <div className="d-only">
-      <div className="gallery-main"><Pic src={media[i].url} alt={media[i].alt_text || title} w={900} h={1125} sizes="(max-width: 800px) 100vw, 560px" priority /></div>
-      {media.length > 1 && (
-        <div className="thumbs" role="list">
-          {media.map((m, k) => <button key={k} role="listitem" aria-label={`Show photo ${k + 1}`} aria-current={k === i} onClick={() => setI(k)}><img src={m.url.replace(/w=\d+/, 'w=160')} alt="" /></button>)}
-        </div>)}
+        {media.length === 1
+          ? <div className="gallery-main"><Pic src={media[0].url} alt={media[0].alt_text || title} w={900} h={1125} sizes="560px" priority /></div>
+          : <div className="gal-grid" role="list" aria-label="Product photos">
+              {media.slice(0, 5).map((m, k) => (
+                <div key={k} role="listitem" className={k < 2 ? 'big' : 'small'}>
+                  <Pic src={m.url} alt={m.alt_text || `${title}, photo ${k + 1}`} w={k < 2 ? 600 : 400} h={k < 2 ? 800 : 530} sizes={k < 2 ? '300px' : '200px'} priority={k < 2} />
+                  {k === 1 && <a href="#details" className="finer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 20 20 4M14 4h6v6M9 20H4v-5"/></svg>Finer Details</a>}
+                </div>))}
+            </div>}
       </div>
     </div>
   );
