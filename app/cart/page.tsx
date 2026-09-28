@@ -8,6 +8,7 @@ import { guestCart, setGuestCart, cartChanged, shippingRules } from '@/lib/shop-
 import { Crumbs } from '@/components/Crumbs';
 import { Pic } from '@/components/Pic';
 import { DeliverTo } from '@/components/DeliverTo';
+import { BodyClass } from '@/components/BodyClass';
 import { MobileTitle } from '@/components/MobileTitle';
 
 type Line = { key: string; qty: number; price_at_add: number; variant_id: string; saved: boolean; v?: any; stock?: number };
@@ -117,6 +118,7 @@ export default function Cart() {
         <p className="small muted secure-note" style={{ margin: 0 }}><span aria-hidden="true">🔒</span> Safe and secure payments. Easy returns. Prices include GST.</p>
         {blocked || !live.length ? <button className="btn" disabled>Continue to checkout</button> : <Link className="btn" href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Proceed to checkout' : 'Sign in to check out'}</Link>}
       </aside>
+      {live.length > 0 && <BodyClass name="has-mcheckout" />}
       {live.length > 0 && <div className="m-checkout" aria-hidden="true">
         <span><span className="small muted">Total</span><strong>{inr(items + ship)}</strong></span>
         {blocked ? <button className="btn" disabled tabIndex={-1}>Fix cart first</button> : <Link className="btn" tabIndex={-1} href={user ? '/checkout' : '/login?next=/checkout'}>{user ? 'Proceed to checkout' : 'Sign in to check out'}</Link>}

@@ -14,6 +14,9 @@ async def main():
             pg = await b.new_page(viewport={'width': w, 'height': 900})
             for u in PAGES:
                 await pg.goto(os.environ.get('BASE', 'http://localhost:3101') + u); await pg.wait_for_load_state('networkidle'); await pg.wait_for_timeout(400)
+                # sections below the fold use content-visibility:auto (rendered on approach); render them all so
+                # axe measures real colours instead of an unpainted placeholder
+                await pg.add_style_tag(content='section, .section { content-visibility: visible !important; }')
                 await pg.add_script_tag(content=AXE)
                 r = await pg.evaluate("axe.run(document, {runOnly: {type: 'tag', values: ['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}}).then(r => r.violations.map(v => ({id: v.id, impact: v.impact, n: v.nodes.length, t: v.nodes.slice(0,2).map(n => n.target.join(' ') + ' :: ' + (n.failureSummary||'').split('\\n')[1]) })))")
                 total += len(r)

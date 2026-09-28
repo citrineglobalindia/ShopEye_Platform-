@@ -9,6 +9,7 @@ import { FIXTURES } from '@/lib/catalog';
 import { FIX_PDP } from '@/lib/fixtures';
 import { Crumbs } from '@/components/Crumbs';
 import AddToCart from '@/components/AddToCart';
+import { BodyClass } from '@/components/BodyClass';
 import { Gallery, PincodeCheck } from '@/components/ProductExtras';
 import { WishHeart, TrackView, RecentlyViewed } from '@/components/ShopWidgets';
 import { Rail } from '@/components/ProductGrid';
@@ -88,6 +89,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           </div>
           {p.is_demo
             ? <><div className="pdp-price"><span className="price">{inr(low)}</span>{variants[0].mrp > low && <><span className="mrp">MRP {inr(variants[0].mrp)}</span><span className="off">{variants[0].discount_pct}% off</span></>}<div className="small muted">Inclusive of all taxes</div></div>
+              <BodyClass name="has-buybar" />
               <div className="buy-bar demo"><WishHeart productId={id} big /><span className="btn soon" aria-disabled="true">Coming soon</span></div>
               <div className="msg info" role="note"><strong>Preview product.</strong> This listing shows what ShopEye will offer and can’t be bought yet. Sellers are joining now; save it to your wishlist and we’ll have the real thing soon.</div></>
             : <AddToCart variants={variants} productId={id} />}

@@ -8,6 +8,7 @@ import { friendly } from '@/lib/errors';
 
 import { AlertButton } from '@/components/Alerts';
 import { WishHeart } from '@/components/ShopWidgets';
+import { BodyClass } from '@/components/BodyClass';
 import { useEffect } from 'react';
 import { track } from '@/lib/analytics';
 
@@ -55,6 +56,7 @@ export default function AddToCart({ variants, productId }: { variants: V[]; prod
           <select value={qty} onChange={(e) => setQty(Number(e.target.value))}>
             {Array.from({ length: Math.min(sel.available, 10) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
           </select></label>
+        <BodyClass name="has-buybar" />
         <div className="buy-bar">
           {productId && <span className="m-only-flex"><WishHeart productId={productId} big /></span>}
           <button className="btn ghost" disabled={busy} onClick={() => go(true)}>Buy now</button>

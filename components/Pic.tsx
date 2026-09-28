@@ -5,12 +5,14 @@ const OPTIMISABLE = /^https:\/\/byaaaesufrneivzcsxtv\.supabase\.co\/storage\/v1\
 export function Pic({ src, alt, w = 600, h = 750, sizes = '(max-width: 600px) 50vw, (max-width: 1000px) 33vw, 260px', priority = false, className }:
   { src: string; alt: string; w?: number; h?: number; sizes?: string; priority?: boolean; className?: string }) {
   if (OPTIMISABLE.test(src)) return <Image src={src} alt={alt} width={w} height={h} sizes={sizes} priority={priority} className={className} />;
-  // Unsplash-hosted previews: ask the image CDN for the size actually shown (and 2x for sharp screens)
+  // Unsplash-hosted previews: width descriptors + sizes, so a phone showing a 180 px card downloads and decodes
+  // ~360 px instead of 960 px (the biggest cost while scrolling); q=70, auto WebP/AVIF from Unsplash's CDN
   if (/^https:\/\/images\.unsplash\.com\//.test(src)) {
-    const at = (px: number) => src.replace(/([?&])w=\d+/, `$1w=${px}`);
-    const base = Math.min(w, 900) > 480 ? 480 : Math.min(w, 900);
+    const at = (px: number) => src.replace(/([?&])w=\d+/, `$1w=${px}`).replace(/([?&])q=\d+/, '$1q=70');
+    const max = Math.min(Math.max(w * 2, 480), 1200);
+    const steps = [160, 240, 320, 400, 480, 640, 800, 1000, 1200].filter((x) => x <= max);
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={at(base)} srcSet={`${at(base)} 1x, ${at(Math.min(base * 2, 1100))} 2x`} alt={alt} width={w} height={h} className={className}
+    return <img src={at(Math.min(w, 480))} srcSet={steps.map((x) => `${at(x)} ${x}w`).join(', ')} sizes={sizes} alt={alt} width={w} height={h} className={className}
       loading={priority ? 'eager' : 'lazy'} decoding="async" {...(priority ? { fetchPriority: 'high' as const } : {})} />;
   }
   // eslint-disable-next-line @next/next/no-img-element

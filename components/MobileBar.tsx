@@ -18,6 +18,25 @@ export function MobileBar({ serverCount, signedIn, logo }: { serverCount: number
     const stop = setTimeout(() => mo.disconnect(), 3000);
     return () => { clearTimeout(t); clearTimeout(stop); mo.disconnect(); };
   }, [path]);
+  // App-style header on phones: slides away while scrolling down the page, comes back as soon as you scroll up.
+  // One passive listener, work batched into animation frames, only a class toggle (transform-only animation).
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 860px)').matches) return;
+    let lastY = window.scrollY, ticking = false, hidden = false;
+    const root = document.documentElement;
+    const on = () => {
+      if (ticking) return; ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY, dy = y - lastY;
+        const busy = document.body.classList.contains('sheet-open') || document.body.classList.contains('gate-open') || !!document.querySelector('.sug');
+        const hide = !busy && y > 160 && dy > 6 ? true : dy < -6 || y < 80 ? false : hidden;
+        if (hide !== hidden) { hidden = hide; root.classList.toggle('hdr-hide', hide); }
+        if (Math.abs(dy) > 6) lastY = y; ticking = false;
+      });
+    };
+    window.addEventListener('scroll', on, { passive: true });
+    return () => { window.removeEventListener('scroll', on); root.classList.remove('hdr-hide'); };
+  }, [path]);
   useEffect(() => {
     const upd = () => { if (!signedIn) setN(guestCart().reduce((s, l) => s + l.qty, 0)); };
     upd(); window.addEventListener('shopeye:cart', upd); return () => window.removeEventListener('shopeye:cart', upd);

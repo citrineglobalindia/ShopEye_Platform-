@@ -4,6 +4,7 @@ import { FIXTURES } from '@/lib/catalog';
 import { sbPublic } from '@/lib/sb-server';
 import { storefront } from '@/lib/storefront';
 import { RecentlyViewed } from '@/components/ShopWidgets';
+import { BodyClass } from '@/components/BodyClass';
 import { Hero, CircleCats, Row, Trending, Brands, Sellers, BestSellers, Promos, Promises, CategoryOfDay, CatTiles } from '@/components/Store';
 import { ProductGrid } from '@/components/ProductGrid';
 export const revalidate = 60;
@@ -14,6 +15,7 @@ export default async function Home() {
   const { data: banners } = FIXTURES ? { data: [] as any[] } : await sbPublic().from('promo_banners').select('id,title,subtitle,link_path').order('sort_order').limit(2);
   return (
     <div className="wrap home-page">
+      <BodyClass name="home" />
       {d.slides.length ? <Hero slides={d.slides} side={d.side} /> : (
         <section className="hero"><div><p className="kicker">Made in India, sold by the people who make it</p>
           <h1>Handpicked from sellers across India, checked before it reaches you.</h1>
