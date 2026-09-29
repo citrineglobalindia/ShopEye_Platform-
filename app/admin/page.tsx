@@ -4,16 +4,51 @@ import { sb } from '@/lib/sb-browser';
 import { inr } from '@/lib/config';
 import { friendly } from '@/lib/errors';
 import { StatusChip } from '@/components/Status';
+import { Dashboard } from './modules/Dashboard';
+import { Customers } from './modules/Customers';
+import { Staff } from './modules/Staff';
+import { Audit } from './modules/Audit';
 
+// Super Admin portal shell: sidebar grouped by area, sections shown only when the signed-in admin may use them
+const NAV: { group: string; items: [string, string, string[]][] }[] = [
+  { group: 'Overview', items: [['dashboard', 'Dashboard', ['dashboard.view']]] },
+  { group: 'Commerce', items: [['orders', 'Orders', ['order.view.all']], ['tickets', 'Help requests', ['customer.view', 'order.view.all']]] },
+  { group: 'People', items: [['customers', 'Customers', ['customer.view']], ['vendors', 'Seller applications', ['vendor.approve']]] },
+  { group: 'Catalogue', items: [['products', 'Listings to review', ['catalog.product.moderate']], ['catalogue', 'All products', ['catalog.product.moderate']], ['categories', 'Categories', ['catalog.product.moderate']], ['reviews', 'Reviews', ['review.moderate']]] },
+  { group: 'Marketing', items: [['giftcards', 'Gift cards', ['gift_card.manage']]] },
+  { group: 'Insights', items: [['speed', 'Site speed', ['analytics.view']], ['build', 'Build status', ['dashboard.view']]] },
+  { group: 'Administration', items: [['staff', 'Admin users & roles', ['admin.users.manage']], ['audit', 'Audit log', ['audit.view']]] },
+];
 export default function Admin() {
-  const [ok, setOk] = useState<boolean | null>(null); const [tab, setTab] = useState('vendors');
-  useEffect(() => { sb().rpc('my_roles').then(({ data }: any) => setOk((data ?? []).some((r: string) => ['super_admin', 'catalog_moderator'].includes(r)))); }, []);
-  if (ok === null) return <div className="wrap section">Loading…</div>;
-  if (!ok) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
-  return (<div className="wrap section stack"><div className="order-head"><h1 style={{ margin: 0 }}>Admin</h1><span className="cta-row"><a className="btn ghost sm" href="/admin/reviews">Review moderation</a><a className="btn ghost sm" href="/status">Build status</a></span></div>
-    <div className="tabs" role="tablist">{[['vendors', 'Seller applications'], ['products', 'Listings to review'], ['tickets', 'Help requests'], ['giftcards', 'Gift cards'], ['catalogue', 'All products'], ['speed', 'Site speed'], ['orders', 'Orders'], ['categories', 'Categories']].map(([k, l]) =>
-      <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'vendors' && <Vendors />}{tab === 'products' && <Moderation />}{tab === 'tickets' && <Tickets />}{tab === 'giftcards' && <GiftCards />}{tab === 'catalogue' && <Products />}{tab === 'speed' && <Speed />}{tab === 'orders' && <Orders />}{tab === 'categories' && <Categories />}
+  const [acc, setAcc] = useState<{ roles: string[]; permissions: string[] } | null>(null);
+  const [tab, setTabState] = useState('');
+  useEffect(() => { sb().rpc('admin_my_access').then(({ data }: any) => setAcc(data ?? { roles: [], permissions: [] })); }, []);
+  useEffect(() => { const t = new URLSearchParams(location.search).get('tab'); if (t) setTabState(t);
+    const pop = () => setTabState(new URLSearchParams(location.search).get('tab') ?? ''); addEventListener('popstate', pop); return () => removeEventListener('popstate', pop); }, []);
+  if (acc === null) return <div className="wrap section">Loading…</div>;
+  const can = (perms: string[]) => acc.roles.includes('super_admin') || perms.some((p) => acc.permissions.includes(p));
+  const nav = NAV.map((g) => ({ ...g, items: g.items.filter(([, , perms]) => can(perms)) })).filter((g) => g.items.length);
+  if (!acc.roles.length || !nav.length) return <div className="wrap section"><h1>Admin</h1><p>You don’t have admin access. Sign in with an admin account.</p></div>;
+  const first = nav[0].items[0][0];
+  const cur = nav.some((g) => g.items.some(([k]) => k === tab)) ? tab : first;
+  const setTab = (k: string) => {
+    if (k === 'reviews') { location.href = '/admin/reviews'; return; } if (k === 'build') { location.href = '/status'; return; }
+    history.pushState(null, '', `/admin?tab=${k}`); setTabState(k); window.scrollTo(0, 0);
+  };
+  const label = nav.flatMap((g) => g.items).find(([k]) => k === cur)?.[1] ?? 'Admin';
+  return (<div className="admin-shell">
+    <nav className="admin-nav" aria-label="Admin sections">
+      <div className="admin-brand"><strong>ShopEye Admin</strong><span className="small muted">{acc.roles.map((r) => r.replace(/_/g, ' ')).join(', ')}</span></div>
+      {nav.map((g) => <div key={g.group} className="admin-grp"><span className="admin-gh">{g.group}</span>
+        {g.items.map(([k, l]) => <button key={k} type="button" aria-current={k === cur ? 'page' : undefined} onClick={() => setTab(k)}>{l}</button>)}</div>)}
+    </nav>
+    <main className="admin-main stack" id="admin-main">
+      <h1 style={{ margin: 0 }}>{label}</h1>
+      {cur === 'dashboard' && <Dashboard go={setTab} />}{cur === 'customers' && <Customers canManage={can(['customer.manage'])} />}
+      {cur === 'staff' && <Staff />}{cur === 'audit' && <Audit />}
+      {cur === 'vendors' && <Vendors />}{cur === 'products' && <Moderation />}{cur === 'tickets' && <Tickets />}{cur === 'giftcards' && <GiftCards />}
+      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <Orders />}{cur === 'categories' && <Categories />}
+    </main>
   </div>);
 }
 

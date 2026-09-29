@@ -1000,3 +1000,33 @@ do $$ declare pid uuid; v uuid; r jsonb; begin
 end $$;
 
 rollback;
+
+\echo '== 33. Super Admin portal: dashboard, customers, staff roles, audit log'
+begin;
+do $$ declare d jsonb; c record; u uuid; begin
+  insert into public.user_roles(user_id, role_code) values (test.id('admin'), 'super_admin') on conflict do nothing;
+  perform test.act_as(test.id('admin'));
+  d := public.admin_dashboard();
+  perform test.ok(d ? 'gmv_7d' and d ? 'listings_to_review' and jsonb_array_length(d->'sales_14d') = 14, 'Dashboard returns sales, queues and a 14-day series');
+  perform test.ok((select count(*) from public.admin_list_customers(null, null, 50, 0)) >= 2, 'Customers can be listed');
+  perform test.ok((select count(*) from public.admin_list_customers('zzz-nobody', null, 50, 0)) = 0, 'and searched');
+  perform test.ok((public.admin_customer_detail(test.id('cust_a'))->'profile'->>'id')::uuid = test.id('cust_a'), 'A customer''s details open with orders, tickets and balance');
+  perform test.throws(format($q$ select public.admin_set_customer_status(%L, 'suspended', 'x') $q$, test.id('cust_a')), 'REASON_REQUIRED', 'Suspending needs a written reason');
+  perform public.admin_set_customer_status(test.id('cust_a'), 'suspended', 'Chargeback abuse under review');
+  perform test.ok((select status::text from public.profiles where id = test.id('cust_a')) = 'suspended', 'An admin can suspend a customer');
+  perform test.ok(exists (select 1 from public.admin_audit_log('profiles', 'customer.status', null, 10) where reason = 'Chargeback abuse under review'), 'and it is in the audit log with the reason');
+  perform test.throws(format($q$ select public.admin_set_customer_status(%L, 'locked', 'testing self') $q$, test.id('admin')), 'NOT_ALLOWED', 'Admins can''t change their own status');
+  perform test.throws($q$ select public.admin_grant_role('nobody@example.invalid', 'help_desk_agent', 'new hire') $q$, 'NOT_FOUND', 'Roles go only to existing accounts');
+  select email into c from public.profiles where id = test.id('cust_b');
+  u := public.admin_grant_role(c.email::text, 'help_desk_agent', 'Joining support team');
+  perform test.ok(exists (select 1 from public.admin_list_staff() where user_id = u and 'help_desk_agent' = any(roles)), 'A staff role can be granted by email and shows in the staff list');
+  perform test.throws(format($q$ select public.admin_set_customer_status(%L, 'suspended', 'should be blocked') $q$, u), 'NOT_ALLOWED', 'Staff accounts can''t be suspended from the customer screen');
+  perform test.ok(public.admin_revoke_role(u, 'help_desk_agent', 'Left support team'), 'and revoked with a reason');
+  perform test.throws(format($q$ select public.admin_revoke_role(%L, 'super_admin', 'try to remove myself') $q$, test.id('admin')), 'NOT_ALLOWED', 'You can''t remove your own super admin role');
+  perform test.act_as(test.id('cust_b'));
+  perform test.throws($q$ select public.admin_dashboard() $q$, 'FORBIDDEN|permission', 'Customers can''t open the admin dashboard');
+  perform test.throws($q$ select public.admin_list_customers(null, null, 10, 0) $q$, 'FORBIDDEN|permission', 'or list customers');
+  perform test.ok(jsonb_array_length(public.admin_my_access()->'permissions') = 0, 'and their admin access is empty');
+  perform test.act_as(null);
+end $$;
+rollback;
