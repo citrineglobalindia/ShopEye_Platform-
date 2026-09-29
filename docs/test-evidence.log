@@ -386,6 +386,21 @@ PASS  Payment transactions can be listed
 PASS  Customers can't list everyone's orders (rejected: FORBIDDEN: missing permission order.view.all)
 PASS  or move packages (rejected: FORBIDDEN: missing permission order.manage)
 PASS  The gateway-result function can't be called from the website (rejected: permission denied for function svc_record_refund)
+== 35. Super Admin portal: sellers, KYC, commission, holds, settlements
+PASS  Sellers can be listed
+PASS  A seller opens with KYC, bank accounts, stats, commission, holds and payouts
+PASS  Suspending a seller needs a reason (rejected: REASON_REQUIRED: give a reason of at least 5 characters)
+PASS  A seller can be suspended
+PASS  and reactivated
+PASS  Commission can't exceed 60% (rejected: BAD_VALUE: percent must be 0–60)
+PASS  Rules can't be backdated (rejected: NO_BACKDATING: rules can start today or later)
+PASS  A seller commission rule can be created from tomorrow
+PASS  and ended
+PASS  A settlement hold is placed and shows on the seller
+PASS  and released with a reason
+PASS  Settlements show seller balances and batches
+PASS  Customers can't see sellers' finances (rejected: FORBIDDEN: missing permission vendor.view)
+PASS  or settlements (rejected: FORBIDDEN: missing permission payout.prepare)
 == 12. Concurrency: 10 simultaneous checkouts for the last unit
 orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0
 PASS  Exactly one winner, no oversell under race

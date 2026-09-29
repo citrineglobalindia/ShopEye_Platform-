@@ -1073,3 +1073,34 @@ set role authenticated;
 do $$ begin perform test.throws($q$ select public.svc_record_refund(null, 'x', 'processed') $q$, 'permission', 'The gateway-result function can''t be called from the website'); end $$;
 reset role;
 rollback;
+
+\echo '== 35. Super Admin portal: sellers, KYC, commission, holds, settlements'
+begin;
+do $$ declare v uuid; d jsonb; r uuid; h uuid; s jsonb; b text; begin
+  insert into public.user_roles(user_id, role_code) values (test.id('admin'), 'super_admin') on conflict do nothing;
+  perform test.act_as(test.id('admin'));
+  perform test.ok((select count(*) from public.admin_vendor_list(null, null)) >= 1, 'Sellers can be listed');
+  select id into v from public.vendors where status = 'active' limit 1;
+  d := public.admin_vendor_detail(v);
+  perform test.ok(d ? 'kyc' and d ? 'banks' and d ? 'commission' and d->'stats' ? 'balance', 'A seller opens with KYC, bank accounts, stats, commission, holds and payouts');
+  perform test.throws(format($q$ select public.admin_set_vendor_status(%L, 'suspended', 'x') $q$, v), 'REASON_REQUIRED', 'Suspending a seller needs a reason');
+  perform public.admin_set_vendor_status(v, 'suspended', 'Repeated late dispatch');
+  perform test.ok((select status::text from public.vendors where id = v) = 'suspended', 'A seller can be suspended');
+  perform public.admin_set_vendor_status(v, 'active', 'Issues resolved');
+  perform test.ok((select status::text from public.vendors where id = v) = 'active', 'and reactivated');
+  perform test.throws(format($q$ select public.admin_save_commission_rule(null, null, 'percent', 99, current_date, 'too high') $q$), 'BAD_VALUE', 'Commission can''t exceed 60%');
+  perform test.throws(format($q$ select public.admin_save_commission_rule(null, null, 'percent', 10, current_date - 3, 'backdated') $q$), 'NO_BACKDATING', 'Rules can''t be backdated');
+  r := public.admin_save_commission_rule(v, null, 'percent', 12.5, current_date + 1, 'Launch rate for this seller');
+  perform test.ok(exists (select 1 from public.admin_list_commission_rules() where id = r and commission_value = 12.5), 'A seller commission rule can be created from tomorrow');
+  perform test.ok(public.admin_end_commission_rule(r, 'Not needed after all'), 'and ended');
+  h := public.admin_place_hold(v, 100, 'Open dispute on SUB-TEST');
+  perform test.ok((public.admin_vendor_detail(v)->'stats'->>'held')::numeric >= 100, 'A settlement hold is placed and shows on the seller');
+  perform test.ok(public.admin_release_hold(h, 'Dispute closed in seller favour'), 'and released with a reason');
+  s := public.admin_list_settlements();
+  perform test.ok(s ? 'balances' and s ? 'batches', 'Settlements show seller balances and batches');
+  perform test.act_as(test.id('cust_b'));
+  perform test.throws($q$ select public.admin_vendor_list(null, null) $q$, 'FORBIDDEN|permission', 'Customers can''t see sellers'' finances');
+  perform test.throws($q$ select public.admin_list_settlements() $q$, 'FORBIDDEN|permission', 'or settlements');
+  perform test.act_as(null);
+end $$;
+rollback;

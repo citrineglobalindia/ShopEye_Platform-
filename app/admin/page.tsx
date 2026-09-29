@@ -10,12 +10,14 @@ import { Staff } from './modules/Staff';
 import { Audit } from './modules/Audit';
 import { OrdersAdmin } from './modules/OrdersAdmin';
 import { Returns, Refunds, Payments } from './modules/Money';
+import { Sellers, Commission, Settlements } from './modules/Sellers';
 
 // Super Admin portal shell: sidebar grouped by area, sections shown only when the signed-in admin may use them
 const NAV: { group: string; items: [string, string, string[]][] }[] = [
   { group: 'Overview', items: [['dashboard', 'Dashboard', ['dashboard.view']]] },
   { group: 'Commerce', items: [['orders', 'Orders', ['order.view.all']], ['returns', 'Returns', ['return.manage']], ['refunds', 'Refunds', ['refund.approve', 'payment.view']], ['payments', 'Payments', ['payment.view']], ['tickets', 'Help requests', ['customer.view', 'order.view.all']]] },
-  { group: 'People', items: [['customers', 'Customers', ['customer.view']], ['vendors', 'Seller applications', ['vendor.approve']]] },
+  { group: 'People', items: [['customers', 'Customers', ['customer.view']], ['sellers', 'Sellers', ['vendor.view']], ['vendors', 'Seller applications', ['vendor.approve']]] },
+  { group: 'Finance', items: [['commission', 'Commission', ['commission.manage']], ['settlements', 'Settlements & payouts', ['payout.prepare', 'payout.approve', 'payout.execute']]] },
   { group: 'Catalogue', items: [['products', 'Listings to review', ['catalog.product.moderate']], ['catalogue', 'All products', ['catalog.product.moderate']], ['categories', 'Categories', ['catalog.product.moderate']], ['reviews', 'Reviews', ['review.moderate']]] },
   { group: 'Marketing', items: [['giftcards', 'Gift cards', ['gift_card.manage']]] },
   { group: 'Insights', items: [['speed', 'Site speed', ['analytics.view']], ['build', 'Build status', ['dashboard.view']]] },
@@ -49,7 +51,7 @@ export default function Admin() {
       {cur === 'dashboard' && <Dashboard go={setTab} />}{cur === 'customers' && <Customers canManage={can(['customer.manage'])} />}
       {cur === 'staff' && <Staff />}{cur === 'audit' && <Audit />}
       {cur === 'vendors' && <Vendors />}{cur === 'products' && <Moderation />}{cur === 'tickets' && <Tickets />}{cur === 'giftcards' && <GiftCards />}
-      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <OrdersAdmin canManage={can(['order.manage'])} />}{cur === 'returns' && <Returns />}{cur === 'refunds' && <Refunds canApprove={can(['refund.approve'])} />}{cur === 'payments' && <Payments />}{cur === 'categories' && <Categories />}
+      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <OrdersAdmin canManage={can(['order.manage'])} />}{cur === 'returns' && <Returns />}{cur === 'refunds' && <Refunds canApprove={can(['refund.approve'])} />}{cur === 'payments' && <Payments />}{cur === 'sellers' && <Sellers canManage={can(['vendor.manage'])} canKyc={can(['vendor.kyc.review'])} />}{cur === 'commission' && <Commission />}{cur === 'settlements' && <Settlements />}{cur === 'categories' && <Categories />}
     </main>
   </div>);
 }
