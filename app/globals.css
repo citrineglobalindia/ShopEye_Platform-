@@ -846,3 +846,45 @@ section.section, section.look-sec, section.explore, section.vf-wrap { content-vi
 .htop-t { max-width: 82%; } .htop-t strong { font-size: clamp(24px, 8vw, 32px); white-space: nowrap; }
 .htop-t em { text-shadow: 0 1px 4px #0008; } .htop-t span { text-shadow: 0 1px 4px #0008; }
 .hstore-t { font-size: clamp(18px, 6.6vw, 26px); gap: clamp(8px, 3vw, 14px); letter-spacing: .1em; } .hstore-t strong { font-size: clamp(40px, 15vw, 58px); }
+/* ===== phone home, proportions measured from the reference (442 px wide): hero 318, gap 4, store banner 183
+   (brand band 35), tiles 107 tall with 4 px gaps. Expressed in vw so every phone keeps the same shape. ===== */
+@media (max-width: 600px) {
+  body.home .mbar { padding: 12px 12px 4px; }
+  body.home .search input { background: #0000004d; border: 1px solid #ffffff38; border-right: 0; border-radius: 8px 0 0 8px; height: 40px; font-weight: 600; color: #fff; }
+  body.home .search input::placeholder { color: #fff; opacity: 1; font-weight: 600; }
+  body.home .search button[type="submit"], body.home .search .mic { background: #0000004d; border: 1px solid #ffffff38; border-left: 0; color: #fff; height: 40px; }
+  body.home .search .mic { border-right: 0; border-radius: 0; } body.home .search button[type="submit"] { border-radius: 0 8px 8px 0; }
+  body.home .top-row { padding: 2px 16px 8px; }
+  body.home .htop { margin: 0 -12px; }
+  body.home .htop-hero { height: 72vw; aspect-ratio: auto; }                      /* 318 / 442 */
+  .htop-t { left: 4vw; bottom: 5vw; max-width: 70%; }
+  .htop-t em { font-size: 4.5vw; } .htop-t strong { font-size: 7.4vw; } .htop-t span { font-size: 3.4vw; }
+  .hstore { height: 41.4vw; margin-top: 0.9vw; padding: 0; display: grid; grid-template-rows: 1fr auto auto; gap: 0; justify-items: center;   /* 183 / 442 */
+    background: radial-gradient(ellipse 80% 90% at 50% 35%, #9b7a52 0%, #7b5b3b 45%, #5b412a 100%); }
+  .hstore-t { align-self: end; gap: 3.6vw; font-size: 5.9vw; letter-spacing: .16em; color: #F3E7D2; font-weight: 400; }
+  .hstore-t strong { font-size: 13vw; font-weight: 800; letter-spacing: -.01em; background: linear-gradient(180deg, #F4E2B0 0%, #D9B86E 55%, #B8913F 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 2px 0 #4a3418); }
+  .hstore-s { font-size: 3.2vw; color: #EFE3CC; margin: 1.4vw 0 2.4vw; }
+  .hstore-b { width: 100%; height: 7.9vw; margin: 0; padding: 0 3vw; border-top: 0; background: #00000038; align-items: center; gap: 6vw; }  /* 35 / 442 */
+  .hstore-b i { font-size: 3vw; letter-spacing: .08em; }
+  .home-page .cat-tiles2 { margin: 0.9vw -12px 0; gap: 0.9vw; }                   /* 4 px gaps */
+  .home-page .tile2 { height: 24.2vw; border-radius: 0; grid-template-columns: minmax(0, 1fr) 46%;           /* 107 / 442 */
+    background: radial-gradient(ellipse 90% 120% at 70% 50%, #F9EFE6 0%, #F1E0D1 55%, #E9D2C0 100%); }
+  .home-page .tile2 > span { padding: 0 2vw 0 3.4vw; font: 500 3.4vw/1.2 var(--ui); letter-spacing: .07em; color: #1c1c1c; }
+  /* photos melt into the tile colour instead of sitting as hard rectangles */
+  .home-page .tile2 > img { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28%); mask-image: linear-gradient(90deg, transparent 0, #000 28%); }
+}
+@media (max-width: 600px) {
+  .home-page .tile2 > span { font-weight: 600; letter-spacing: .04em; }
+  /* reference search bar: magnifier on the left, one rounded box */
+  body.home .search .mic, body.home .search button[type="submit"] { display: none; }
+  body.home .search input { border-radius: 8px; border-right: 1px solid #ffffff38; padding-left: 40px;
+    background: #0000004d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 12px center; }
+}
+@media (max-width: 600px) {
+  body.home .top-row { padding: 2px 4px 8px; }                 /* search box 16 px from the screen edge */
+  .hstore { grid-template-rows: auto auto 1fr; padding-top: 4.2vw; }
+  .hstore-t { align-self: start; } .hstore-s { margin: 2.2vw 0 0; } .hstore-b { align-self: end; }
+}
+@media (max-width: 600px) { .hstore-s { margin-top: 4.8vw; } }
+@media (max-width: 600px) { .home-page .tile2 > span { font-size: 3.1vw; letter-spacing: .03em; padding: 0 1.4vw 0 3.4vw; } }

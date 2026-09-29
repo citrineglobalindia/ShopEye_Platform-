@@ -1,11 +1,13 @@
 'use client';
 // SRS: CUST-FR-030 CUST-FR-033 (search as you type: typo-tolerant product and category suggestions, recent searches on this device, keyboard navigable)
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { inr } from '@/lib/config';
 type Sug = { products: { id: string; title: string; price: number; image?: string | null }[]; categories: { name: string; slug: string }[] };
 const RK = 'shopeye.searches.v1';
-export function SearchBox({ placeholder = 'Search for products, brands and more' }: { placeholder?: string }) {
+export function SearchBox({ placeholder: ph = 'Search for products, brands and more' }: { placeholder?: string }) {
+  // the phone home page asks the question the app does
+  const onHome = usePathname() === '/'; const placeholder = onHome ? 'What are you looking for ?' : ph;
   const router = useRouter();
   const [q, setQ] = useState(''); const [open, setOpen] = useState(false); const [sug, setSug] = useState<Sug | null>(null);
   const [recent, setRecent] = useState<string[]>([]); const [hi, setHi] = useState(-1); const box = useRef<HTMLFormElement>(null);

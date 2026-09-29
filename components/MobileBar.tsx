@@ -58,7 +58,8 @@ export function MobileBar({ serverCount, signedIn, logo }: { serverCount: number
           {sw.map((c) => <Link key={c.slug} href={`/c/${c.slug}`} className={`sheet-opt${c.name === title ? ' on' : ''}`} onClick={() => setSwOpen(false)}>{c.name}{c.name === title ? ' ✓' : ''}</Link>)}
         </div></>}
       {inner && <Link href="/search" className="mbar-i" aria-label="Search"><Svg><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></Svg></Link>}
-      <Link href="/wishlist" className="mbar-i" aria-label="Wishlist"><Svg><path d="M12 20s-7-4.4-8.8-8.6C2 8 4.1 5 7.3 5c1.9 0 3.4 1 4.7 2.8C13.3 6 14.8 5 16.7 5c3.2 0 5.3 3 4.1 6.4C19 15.6 12 20 12 20z" /></Svg></Link>
+      {home ? <Link href="/account" className="mbar-i" aria-label="Account"><Svg><circle cx="12" cy="9" r="3.6" /><circle cx="12" cy="12" r="9.2" /><path d="M5.8 18.6c1.4-2.2 3.6-3.4 6.2-3.4s4.8 1.2 6.2 3.4" /></Svg></Link>
+        : <Link href="/wishlist" className="mbar-i" aria-label="Wishlist"><Svg><path d="M12 20s-7-4.4-8.8-8.6C2 8 4.1 5 7.3 5c1.9 0 3.4 1 4.7 2.8C13.3 6 14.8 5 16.7 5c3.2 0 5.3 3 4.1 6.4C19 15.6 12 20 12 20z" /></Svg></Link>}
       <Link href="/cart" className="mbar-i" aria-label={`Bag, ${n} item${n === 1 ? '' : 's'}`}><Svg><path d="M6 8h12l-1 12H7L6 8z" /><path d="M9 8V7a3 3 0 0 1 6 0v1" /></Svg>{n > 0 && <b className="mbar-badge">{n > 99 ? '99+' : n}</b>}</Link>
     </div>);
 }
