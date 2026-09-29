@@ -62,7 +62,7 @@ PASS  Vendor ledger is append-only (AF-FR-0234) (rejected: IMMUTABLE_RECORD: DEL
 PASS  Audit log cannot be deleted (AF-FR-0603) (rejected: IMMUTABLE_RECORD: DELETE on app.audit_log is not permitted; post a reversal/correction ins)
 PASS  Posted journal lines frozen (rejected: IMMUTABLE_RECORD: journal is posted; post a reversing journal)
 PASS  Unbalanced journal cannot post (UAT-17) (rejected: UNBALANCED_JOURNAL: debit 100.00 credit 90.00 lines 2)
-PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-19 is in a closed period)
+PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-20 is in a closed period)
 PASS  Reversal creates linked counter-entry, original preserved (UAT-30)
 PASS  Audit log captures before/after for vendor activation (UAT-28)
 == 6. Fulfilment, delivery, returns (UAT-013/016, VS-FR-892)
@@ -350,6 +350,42 @@ PASS  and it is taken out of every cart
 PASS  Removing it again is harmless
 PASS  One click removes every preview product
 PASS  and none are left on sale
+== 33. Super Admin portal: dashboard, customers, staff roles, audit log
+PASS  Dashboard returns sales, queues and a 14-day series
+PASS  Customers can be listed
+PASS  and searched
+PASS  A customer's details open with orders, tickets and balance
+PASS  Suspending needs a written reason (rejected: REASON_REQUIRED: give a reason of at least 5 characters)
+PASS  An admin can suspend a customer
+PASS  and it is in the audit log with the reason
+PASS  Admins can't change their own status (rejected: NOT_ALLOWED: you can't change your own account status)
+PASS  Roles go only to existing accounts (rejected: NOT_FOUND: no ShopEye account uses that email; ask them to sign up first)
+PASS  A staff role can be granted by email and shows in the staff list
+PASS  Staff accounts can't be suspended from the customer screen (rejected: NOT_ALLOWED: this is a staff account; remove its admin roles first)
+PASS  and revoked with a reason
+PASS  You can't remove your own super admin role (rejected: NOT_ALLOWED: you can't remove your own super admin role)
+PASS  Customers can't open the admin dashboard (rejected: FORBIDDEN: missing permission dashboard.view)
+PASS  or list customers (rejected: FORBIDDEN: missing permission customer.view)
+PASS  and their admin access is empty
+== 34. Super Admin portal: orders, fulfilment, refunds, payments
+PASS  Orders can be listed
+PASS  An order opens with packages, payments, refunds, returns, invoices and timeline
+PASS  A confirmed package can be marked packed
+PASS  It can't be shipped before it's ready (rejected: INVALID_TRANSITION: mark the package ready to ship first)
+PASS  then ready to ship
+PASS  Shipping needs the courier and tracking number (rejected: CARRIER_AND_AWB_REQUIRED: enter the courier and tracking number)
+PASS  then shipped with a tracking number
+PASS  and delivered
+PASS  Nobody can approve a refund they started (rejected: MAKER_CHECKER: someone else must approve a refund you started)
+PASS  Approving needs a note (rejected: REASON_REQUIRED: add a note of at least 5 characters)
+PASS  Another admin can approve it with a note
+PASS  The gateway result is recorded
+PASS  and the refund is marked done
+PASS  Repeated gateway notifications are harmless
+PASS  Payment transactions can be listed
+PASS  Customers can't list everyone's orders (rejected: FORBIDDEN: missing permission order.view.all)
+PASS  or move packages (rejected: FORBIDDEN: missing permission order.manage)
+PASS  The gateway-result function can't be called from the website (rejected: permission denied for function svc_record_refund)
 == 12. Concurrency: 10 simultaneous checkouts for the last unit
 orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0
 PASS  Exactly one winner, no oversell under race

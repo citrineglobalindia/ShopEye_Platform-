@@ -911,3 +911,4 @@ section.section, section.look-sec, section.explore, section.vf-wrap { content-vi
   .admin-brand, .admin-gh { display: none; } .admin-grp { display: flex; gap: 6px; } .admin-nav button { white-space: nowrap; }
   .dash2 { grid-template-columns: 1fr; } .admin-main { padding: 14px 12px 30px; }
 }
+.filters-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; } .filters-row input:not([type="date"]) { flex: 1 1 220px; }

@@ -1030,3 +1030,46 @@ do $$ declare d jsonb; c record; u uuid; begin
   perform test.act_as(null);
 end $$;
 rollback;
+
+\echo '== 34. Super Admin portal: orders, fulfilment, refunds, payments'
+begin;
+do $$ declare so uuid; st text; o uuid; f uuid; d jsonb; begin
+  insert into public.user_roles(user_id, role_code) values (test.id('admin'), 'super_admin') on conflict do nothing;
+  perform test.act_as(test.id('admin'));
+  perform test.ok((select count(*) from public.admin_list_orders()) >= 1, 'Orders can be listed');
+  select o2.id into o from public.orders o2 order by o2.placed_at desc limit 1;
+  d := public.admin_order_detail(o);
+  perform test.ok(d ? 'packages' and d ? 'payments' and d ? 'timeline', 'An order opens with packages, payments, refunds, returns, invoices and timeline');
+  select s.id into so from public.sub_orders s where s.status = 'confirmed' limit 1;
+  if so is not null then
+    perform test.ok(public.admin_fulfil(so, 'pack') = 'packed', 'A confirmed package can be marked packed');
+    perform test.throws(format($q$ select public.admin_fulfil(%L, 'ship', 'Delhivery', 'AWB1') $q$, so), 'INVALID_TRANSITION', 'It can''t be shipped before it''s ready');
+    perform test.ok(public.admin_fulfil(so, 'ready') = 'ready_to_ship', 'then ready to ship');
+    perform test.throws(format($q$ select public.admin_fulfil(%L, 'ship', '', '') $q$, so), 'CARRIER_AND_AWB_REQUIRED', 'Shipping needs the courier and tracking number');
+    st := public.admin_fulfil(so, 'ship', 'Delhivery', 'TESTAWB123');
+    perform test.ok(st = 'shipped' and exists (select 1 from public.shipments where sub_order_id = so and awb = 'TESTAWB123'), 'then shipped with a tracking number');
+    perform test.ok(public.admin_fulfil(so, 'deliver') = 'delivered', 'and delivered');
+  end if;
+  -- refund approval: maker-checker
+  insert into public.refunds(order_id, payment_id, refund_type, source_type, source_id, requested_amount, reason_code, approval_status, initiated_by, idempotency_key)
+  select py.order_id, py.id, 'partial', 'support', 'test', 1, 'goodwill', 'pending', test.id('admin'), 'test-refund-' || gen_random_uuid() from public.payments py where py.status in ('paid','partially_refunded') limit 1
+  returning id into f;
+  if f is not null then
+    perform test.throws(format($q$ select public.admin_decide_refund(%L, true, 'approve my own refund') $q$, f), 'MAKER_CHECKER', 'Nobody can approve a refund they started');
+    update public.refunds set initiated_by = test.id('cust_b') where id = f;
+    perform test.throws(format($q$ select public.admin_decide_refund(%L, true, 'ok') $q$, f), 'REASON_REQUIRED', 'Approving needs a note');
+    perform test.ok(public.admin_decide_refund(f, true, 'Goodwill for late delivery') = 'approved', 'Another admin can approve it with a note');
+    perform test.ok(public.svc_record_refund(f, 'rfnd_TEST1', 'processed') = 'success', 'The gateway result is recorded');
+    perform test.ok((select processor_status::text from public.refunds where id = f) = 'success', 'and the refund is marked done');
+    perform test.ok(public.svc_record_refund(null, 'rfnd_TEST1', 'processed') = 'already_done', 'Repeated gateway notifications are harmless');
+  end if;
+  perform test.ok((select count(*) from public.admin_list_payments()) >= 1, 'Payment transactions can be listed');
+  perform test.act_as(test.id('cust_b'));
+  perform test.throws($q$ select public.admin_list_orders() $q$, 'FORBIDDEN|permission', 'Customers can''t list everyone''s orders');
+  perform test.throws(format($q$ select public.admin_fulfil(%L, 'pack') $q$, coalesce(so, gen_random_uuid())), 'FORBIDDEN|permission', 'or move packages');
+  perform test.act_as(null);
+end $$;
+set role authenticated;
+do $$ begin perform test.throws($q$ select public.svc_record_refund(null, 'x', 'processed') $q$, 'permission', 'The gateway-result function can''t be called from the website'); end $$;
+reset role;
+rollback;

@@ -8,11 +8,13 @@ import { Dashboard } from './modules/Dashboard';
 import { Customers } from './modules/Customers';
 import { Staff } from './modules/Staff';
 import { Audit } from './modules/Audit';
+import { OrdersAdmin } from './modules/OrdersAdmin';
+import { Returns, Refunds, Payments } from './modules/Money';
 
 // Super Admin portal shell: sidebar grouped by area, sections shown only when the signed-in admin may use them
 const NAV: { group: string; items: [string, string, string[]][] }[] = [
   { group: 'Overview', items: [['dashboard', 'Dashboard', ['dashboard.view']]] },
-  { group: 'Commerce', items: [['orders', 'Orders', ['order.view.all']], ['tickets', 'Help requests', ['customer.view', 'order.view.all']]] },
+  { group: 'Commerce', items: [['orders', 'Orders', ['order.view.all']], ['returns', 'Returns', ['return.manage']], ['refunds', 'Refunds', ['refund.approve', 'payment.view']], ['payments', 'Payments', ['payment.view']], ['tickets', 'Help requests', ['customer.view', 'order.view.all']]] },
   { group: 'People', items: [['customers', 'Customers', ['customer.view']], ['vendors', 'Seller applications', ['vendor.approve']]] },
   { group: 'Catalogue', items: [['products', 'Listings to review', ['catalog.product.moderate']], ['catalogue', 'All products', ['catalog.product.moderate']], ['categories', 'Categories', ['catalog.product.moderate']], ['reviews', 'Reviews', ['review.moderate']]] },
   { group: 'Marketing', items: [['giftcards', 'Gift cards', ['gift_card.manage']]] },
@@ -47,7 +49,7 @@ export default function Admin() {
       {cur === 'dashboard' && <Dashboard go={setTab} />}{cur === 'customers' && <Customers canManage={can(['customer.manage'])} />}
       {cur === 'staff' && <Staff />}{cur === 'audit' && <Audit />}
       {cur === 'vendors' && <Vendors />}{cur === 'products' && <Moderation />}{cur === 'tickets' && <Tickets />}{cur === 'giftcards' && <GiftCards />}
-      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <Orders />}{cur === 'categories' && <Categories />}
+      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <OrdersAdmin canManage={can(['order.manage'])} />}{cur === 'returns' && <Returns />}{cur === 'refunds' && <Refunds canApprove={can(['refund.approve'])} />}{cur === 'payments' && <Payments />}{cur === 'categories' && <Categories />}
     </main>
   </div>);
 }
@@ -105,23 +107,6 @@ function Moderation() {
       </div></div>)}</div>);
 }
 
-function Orders() {
-  const [rows, setRows] = useState<any[]>([]); const [err, setErr] = useState('');
-  async function load() {
-    const { data } = await sb().from('sub_orders').select('id,sub_order_number,status,total,created_at,order_id').order('created_at', { ascending: false }).limit(100);
-    setRows(data ?? []);
-  }
-  useEffect(() => { load(); }, []);
-  async function delivered(id: string) {
-    if (!confirm('Record this package as delivered? This starts the return window.')) return;
-    const { error } = await sb().rpc('admin_mark_delivered', { p_sub_order: id }); if (error) setErr(friendly(error)); load();
-  }
-  return (<div className="stack">{err && <div className="msg err">{err}</div>}
-    <p className="small muted">Until a courier integration is connected, delivery is recorded here when the courier confirms it.</p>
-    {!rows.length ? <div className="panel">No orders yet.</div> : <div className="panel tablewrap"><table><thead><tr><th>Package</th><th>Placed</th><th>Total</th><th>Status</th><th></th></tr></thead>
-      <tbody>{rows.map((r) => <tr key={r.id}><td>{r.sub_order_number}</td><td>{new Date(r.created_at).toLocaleString('en-IN')}</td><td>{inr(r.total)}</td><td><StatusChip s={r.status} /></td>
-        <td>{r.status === 'shipped' && <button className="btn sm" onClick={() => delivered(r.id)}>Mark delivered</button>}</td></tr>)}</tbody></table></div>}</div>);
-}
 
 // SRS: CUST-FR-153 (real-visitor Core Web Vitals at the 75th percentile, per page type and device, against Google's thresholds)
 function Speed() {
