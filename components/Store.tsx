@@ -135,7 +135,7 @@ export function CatTiles({ cats }: { cats: { name: string; slug: string; img?: s
   return (
     <nav className="cat-tiles2" aria-label="Categories">
       {cats.map((c) => (
-        <Link key={c.slug} href={`/c/${c.slug}`} className="tile2"><span>{c.name}</span>{c.img && <Pic src={c.img} alt="" w={240} h={240} sizes="25vw" />}</Link>))}
+        <Link key={c.slug} href={`/c/${c.slug}`} className={`tile2${c.img ? "" : " noimg"}`}><span>{c.name}</span>{c.img && <Pic src={c.img} alt="" w={240} h={240} sizes="25vw" />}</Link>))}
     </nav>);
 }
 // Sub-category picture rail + "Value finds" price shortcuts on listing pages

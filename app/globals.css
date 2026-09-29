@@ -829,3 +829,20 @@ section.section, section.look-sec, section.explore, section.vf-wrap { content-vi
 /* preview products: icon-only wishlist square in the bottom bar, like the regular bar */
 .buy-bar.demo .heart { position: static; width: 46px; height: 46px; border: 1px solid #BDBDBD; border-radius: 4px; box-shadow: none; font-size: 0; gap: 0; padding: 0; justify-content: center; }
 .buy-bar.demo .heart svg { width: 22px; height: 22px; }
+/* ---------- home tiles and store banner: aligned grid (label | photo) ---------- */
+.tile2 { display: grid; grid-template-columns: minmax(0, 1fr) 40%; align-items: stretch; justify-content: initial; }
+.tile2 > span { align-self: center; padding: 0 8px 0 14px; font: 600 12.5px/1.25 var(--ui); letter-spacing: .05em; text-transform: uppercase; color: #1d1d1d; overflow-wrap: anywhere; }
+.tile2 > img { width: 100%; height: 100%; min-height: 0; object-fit: cover; display: block; }
+.home-page .tile2 { min-height: 0; height: 104px; } .home-page .tile2 > span { padding-left: 14px; font-size: 12.5px; }
+.tile2.noimg { grid-template-columns: 1fr; }
+.hstore-b { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; padding: 8px 12px 0; gap: 22px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%); }
+.hstore-b::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .hstore-b i:first-child { animation: none; }
+}
+.tile2 > span { overflow-wrap: normal; word-break: keep-all; hyphens: none; }
+.home-page .tile2 > span { font-size: clamp(10.5px, 3.3vw, 13px); letter-spacing: .03em; padding: 0 6px 0 12px; }
+.htop-t { max-width: 82%; } .htop-t strong { font-size: clamp(24px, 8vw, 32px); white-space: nowrap; }
+.htop-t em { text-shadow: 0 1px 4px #0008; } .htop-t span { text-shadow: 0 1px 4px #0008; }
+.hstore-t { font-size: clamp(18px, 6.6vw, 26px); gap: clamp(8px, 3vw, 14px); letter-spacing: .1em; } .hstore-t strong { font-size: clamp(40px, 15vw, 58px); }
