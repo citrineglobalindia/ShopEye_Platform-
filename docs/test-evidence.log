@@ -62,7 +62,7 @@ PASS  Vendor ledger is append-only (AF-FR-0234) (rejected: IMMUTABLE_RECORD: DEL
 PASS  Audit log cannot be deleted (AF-FR-0603) (rejected: IMMUTABLE_RECORD: DELETE on app.audit_log is not permitted; post a reversal/correction ins)
 PASS  Posted journal lines frozen (rejected: IMMUTABLE_RECORD: journal is posted; post a reversing journal)
 PASS  Unbalanced journal cannot post (UAT-17) (rejected: UNBALANCED_JOURNAL: debit 100.00 credit 90.00 lines 2)
-PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-20 is in a closed period)
+PASS  Posting into closed period denied (UAT-22) (rejected: PERIOD_CLOSED: 2026-08-21 is in a closed period)
 PASS  Reversal creates linked counter-entry, original preserved (UAT-30)
 PASS  Audit log captures before/after for vendor activation (UAT-28)
 == 6. Fulfilment, delivery, returns (UAT-013/016, VS-FR-892)
@@ -401,6 +401,18 @@ PASS  and released with a reason
 PASS  Settlements show seller balances and batches
 PASS  Customers can't see sellers' finances (rejected: FORBIDDEN: missing permission vendor.view)
 PASS  or settlements (rejected: FORBIDDEN: missing permission payout.prepare)
+== 36. Super Admin portal: category tree, brands, stock
+PASS  Categories can be nested to any depth (3 levels here)
+PASS  A category can't be moved inside its own sub-category (rejected: BAD_MOVE: a category can't go inside itself or its own sub-categories)
+PASS  Moving and renaming keeps the levels right
+PASS  Only valid GST rates are accepted (rejected: BAD_GST: choose 0, 0.25, 3, 5, 12, 18 or 28)
+PASS  Categories can be reordered
+PASS  Duplicate brand names are refused (rejected: DUPLICATE: that brand already exists)
+PASS  A brand can be blocked
+PASS  Stock changes need a reason (rejected: REASON_REQUIRED: say why (5+ characters, e.g. stock count correction))
+PASS  Stock can be adjusted with a reason
+PASS  Customers can't edit categories (rejected: FORBIDDEN: missing permission catalog.category.manage)
+PASS  or see stock levels (rejected: FORBIDDEN: missing permission inventory.adjust)
 == 12. Concurrency: 10 simultaneous checkouts for the last unit
 orders created=1  rejected INSUFFICIENT_STOCK=9  on_hand=1 reserved=1 available=0
 PASS  Exactly one winner, no oversell under race

@@ -11,6 +11,7 @@ import { Audit } from './modules/Audit';
 import { OrdersAdmin } from './modules/OrdersAdmin';
 import { Returns, Refunds, Payments } from './modules/Money';
 import { Sellers, Commission, Settlements } from './modules/Sellers';
+import { CategoryTree, Brands, Stock } from './modules/Catalogue';
 
 // Super Admin portal shell: sidebar grouped by area, sections shown only when the signed-in admin may use them
 const NAV: { group: string; items: [string, string, string[]][] }[] = [
@@ -18,7 +19,7 @@ const NAV: { group: string; items: [string, string, string[]][] }[] = [
   { group: 'Commerce', items: [['orders', 'Orders', ['order.view.all']], ['returns', 'Returns', ['return.manage']], ['refunds', 'Refunds', ['refund.approve', 'payment.view']], ['payments', 'Payments', ['payment.view']], ['tickets', 'Help requests', ['customer.view', 'order.view.all']]] },
   { group: 'People', items: [['customers', 'Customers', ['customer.view']], ['sellers', 'Sellers', ['vendor.view']], ['vendors', 'Seller applications', ['vendor.approve']]] },
   { group: 'Finance', items: [['commission', 'Commission', ['commission.manage']], ['settlements', 'Settlements & payouts', ['payout.prepare', 'payout.approve', 'payout.execute']]] },
-  { group: 'Catalogue', items: [['products', 'Listings to review', ['catalog.product.moderate']], ['catalogue', 'All products', ['catalog.product.moderate']], ['categories', 'Categories', ['catalog.product.moderate']], ['reviews', 'Reviews', ['review.moderate']]] },
+  { group: 'Catalogue', items: [['products', 'Listings to review', ['catalog.product.moderate']], ['catalogue', 'All products', ['catalog.product.moderate']], ['categories', 'Categories', ['catalog.category.manage']], ['brands', 'Brands', ['catalog.brand.manage']], ['stock', 'Stock', ['inventory.adjust']], ['reviews', 'Reviews', ['review.moderate']]] },
   { group: 'Marketing', items: [['giftcards', 'Gift cards', ['gift_card.manage']]] },
   { group: 'Insights', items: [['speed', 'Site speed', ['analytics.view']], ['build', 'Build status', ['dashboard.view']]] },
   { group: 'Administration', items: [['staff', 'Admin users & roles', ['admin.users.manage']], ['audit', 'Audit log', ['audit.view']]] },
@@ -51,7 +52,7 @@ export default function Admin() {
       {cur === 'dashboard' && <Dashboard go={setTab} />}{cur === 'customers' && <Customers canManage={can(['customer.manage'])} />}
       {cur === 'staff' && <Staff />}{cur === 'audit' && <Audit />}
       {cur === 'vendors' && <Vendors />}{cur === 'products' && <Moderation />}{cur === 'tickets' && <Tickets />}{cur === 'giftcards' && <GiftCards />}
-      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <OrdersAdmin canManage={can(['order.manage'])} />}{cur === 'returns' && <Returns />}{cur === 'refunds' && <Refunds canApprove={can(['refund.approve'])} />}{cur === 'payments' && <Payments />}{cur === 'sellers' && <Sellers canManage={can(['vendor.manage'])} canKyc={can(['vendor.kyc.review'])} />}{cur === 'commission' && <Commission />}{cur === 'settlements' && <Settlements />}{cur === 'categories' && <Categories />}
+      {cur === 'catalogue' && <Products />}{cur === 'speed' && <Speed />}{cur === 'orders' && <OrdersAdmin canManage={can(['order.manage'])} />}{cur === 'returns' && <Returns />}{cur === 'refunds' && <Refunds canApprove={can(['refund.approve'])} />}{cur === 'payments' && <Payments />}{cur === 'sellers' && <Sellers canManage={can(['vendor.manage'])} canKyc={can(['vendor.kyc.review'])} />}{cur === 'commission' && <Commission />}{cur === 'settlements' && <Settlements />}{cur === 'categories' && <CategoryTree />}{cur === 'brands' && <Brands />}{cur === 'stock' && <Stock />}
     </main>
   </div>);
 }
@@ -227,24 +228,3 @@ function Tickets() {
       </details>))}</div>);
 }
 
-function Categories() {
-  const [rows, setRows] = useState<any[]>([]); const [name, setName] = useState(''); const [gst, setGst] = useState('5'); const [days, setDays] = useState('7'); const [err, setErr] = useState('');
-  const load = () => sb().from('categories').select('id,name,slug,default_gst_rate,return_window_days').order('name').then(({ data }: any) => setRows(data ?? []));
-  useEffect(() => { load(); }, []);
-  async function add(e: React.FormEvent) {
-    e.preventDefault(); setErr('');
-    const { error } = await sb().rpc('admin_create_category', { p_name: name, p_parent: null, p_gst_rate: Number(gst), p_return_days: Number(days) });
-    if (error) { setErr(/duplicate/.test(error.message) ? 'A category with that name already exists.' : friendly(error)); return; } setName(''); load();
-  }
-  return (<div className="stack">
-    <form className="form panel" onSubmit={add} style={{ maxWidth: 'none' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 10, alignItems: 'end' }}>
-        <label>Category name<input required value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label>Default GST<select value={gst} onChange={(e) => setGst(e.target.value)}>{['0', '3', '5', '12', '18', '28'].map((g) => <option key={g} value={g}>{g}%</option>)}</select></label>
-        <label>Return days<input inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} /></label>
-        <button className="btn">Add category</button></div>
-      {err && <div className="msg err">{err}</div>}</form>
-    <div className="panel tablewrap"><table><thead><tr><th>Name</th><th>Link</th><th>GST</th><th>Returns</th></tr></thead>
-      <tbody>{rows.map((c) => <tr key={c.id}><td>{c.name}</td><td>/c/{c.slug}</td><td>{Number(c.default_gst_rate)}%</td><td>{c.return_window_days} days</td></tr>)}</tbody></table></div>
-  </div>);
-}

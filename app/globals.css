@@ -912,3 +912,7 @@ section.section, section.look-sec, section.explore, section.vf-wrap { content-vi
   .dash2 { grid-template-columns: 1fr; } .admin-main { padding: 14px 12px 30px; }
 }
 .filters-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; } .filters-row input:not([type="date"]) { flex: 1 1 220px; }
+.ctree, .ctree ul { list-style: none; margin: 0; padding: 0; } .ctree ul { padding-left: 22px; border-left: 1px dashed var(--line); margin-left: 11px; }
+.ct-row { display: flex; align-items: center; gap: 6px; padding: 6px 4px; border-bottom: 1px solid #F0F1F5; } .ct-row.off { opacity: .55; }
+.ct-tog { width: 22px; flex: none; background: none; border: 0; cursor: pointer; color: var(--slate); font-size: .9rem; }
+.ct-name { flex: 1; min-width: 0; } .ct-act { display: flex; gap: 10px; flex-wrap: wrap; font-size: .85rem; }

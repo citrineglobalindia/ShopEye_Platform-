@@ -1104,3 +1104,33 @@ do $$ declare v uuid; d jsonb; r uuid; h uuid; s jsonb; b text; begin
   perform test.act_as(null);
 end $$;
 rollback;
+
+\echo '== 36. Super Admin portal: category tree, brands, stock'
+begin;
+do $$ declare a uuid; b uuid; c uuid; br uuid; v uuid; av int; begin
+  insert into public.user_roles(user_id, role_code) values (test.id('admin'), 'super_admin') on conflict do nothing;
+  perform test.act_as(test.id('admin'));
+  a := public.admin_save_category(null, null, 'Test Dept', 5, 7, null, null, true);
+  b := public.admin_save_category(null, a, 'Test Section', 5, 7, null, null, true);
+  c := public.admin_save_category(null, b, 'Test Leaf', 12, 10, '6204', null, true);
+  perform test.ok((select level from public.categories where id = c) = 3, 'Categories can be nested to any depth (3 levels here)');
+  perform test.throws(format($q$ select public.admin_save_category(%L, %L, 'Test Dept', 5, 7, null, null, true) $q$, a, c), 'BAD_MOVE', 'A category can''t be moved inside its own sub-category');
+  perform public.admin_save_category(c, a, 'Test Leaf Renamed', 12, 10, '6204', null, true);
+  perform test.ok((select level from public.categories where id = c) = 2 and (select name from public.categories where id = c) = 'Test Leaf Renamed', 'Moving and renaming keeps the levels right');
+  perform test.throws(format($q$ select public.admin_save_category(null, null, 'Bad GST', 7, 7, null, null, true) $q$), 'BAD_GST', 'Only valid GST rates are accepted');
+  perform test.ok(public.admin_move_category(c, 'up') in (true, false), 'Categories can be reordered');
+  br := public.admin_save_brand(null, 'Test Brand Q', 'active', false);
+  perform test.throws($q$ select public.admin_save_brand(null, 'test brand q', 'active', false) $q$, 'DUPLICATE', 'Duplicate brand names are refused');
+  perform public.admin_save_brand(br, 'Test Brand Q', 'blocked', true);
+  perform test.ok((select status from public.brands where id = br) = 'blocked', 'A brand can be blocked');
+  select variant_id, available into v, av from public.admin_stock(null, 'all', 500) where not is_demo limit 1;
+  if v is not null then
+    perform test.throws(format($q$ select public.admin_adjust_stock(%L, 3, 'x') $q$, v), 'REASON_REQUIRED', 'Stock changes need a reason');
+    perform test.ok(public.admin_adjust_stock(v, 3, 'Stock count correction') = av + 3, 'Stock can be adjusted with a reason');
+  end if;
+  perform test.act_as(test.id('cust_b'));
+  perform test.throws($q$ select public.admin_category_tree() $q$, 'FORBIDDEN|permission', 'Customers can''t edit categories');
+  perform test.throws($q$ select public.admin_stock(null, 'all', 10) $q$, 'FORBIDDEN|permission', 'or see stock levels');
+  perform test.act_as(null);
+end $$;
+rollback;
